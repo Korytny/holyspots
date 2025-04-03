@@ -100,18 +100,9 @@ const Cities = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredCities.length > 0 ? (
               filteredCities.map(city => {
-                // Parse name if it's a JSON string
-                let cityName = city.name;
-                if (typeof city.name === 'string' && city.name.startsWith('{')) {
-                  try {
-                    cityName = JSON.parse(city.name);
-                  } catch (e) {
-                    cityName = { en: city.name };
-                  }
-                }
-                
-                // Get description from either description or info field
-                let cityDesc = city.description || city.info || { en: 'No description available' };
+                // Get city name and description from the city object
+                const cityName = city.name;
+                const cityDesc = city.description || city.info || { en: 'No description available' };
                 
                 return (
                   <ItemCard

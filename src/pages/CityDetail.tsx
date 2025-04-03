@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -30,6 +31,7 @@ const CityDetail = () => {
   const [activeTab, setActiveTab] = useState('info');
   const [showMap, setShowMap] = useState(false);
   
+  // Fetch city data
   const { 
     data: city,
     isLoading: isLoadingCity,
@@ -40,6 +42,12 @@ const CityDetail = () => {
     enabled: !!cityId,
   });
   
+  // Only fetch spots, routes and events data when the respective tab is active to improve performance
+  const shouldFetchSpots = activeTab === 'spots' || showMap;
+  const shouldFetchRoutes = activeTab === 'routes';
+  const shouldFetchEvents = activeTab === 'events';
+  
+  // Fetch spots data only when needed
   const {
     data: spots = [],
     isLoading: isLoadingSpots,
@@ -47,9 +55,10 @@ const CityDetail = () => {
   } = useQuery({
     queryKey: ['spots', cityId],
     queryFn: () => fetchSpotsByCity(cityId as string),
-    enabled: !!cityId,
+    enabled: !!cityId && shouldFetchSpots,
   });
   
+  // Fetch routes data only when needed
   const {
     data: routes = [],
     isLoading: isLoadingRoutes,
@@ -57,9 +66,10 @@ const CityDetail = () => {
   } = useQuery({
     queryKey: ['routes', cityId],
     queryFn: () => fetchRoutesByCity(cityId as string),
-    enabled: !!cityId,
+    enabled: !!cityId && shouldFetchRoutes,
   });
   
+  // Fetch events data only when needed
   const {
     data: events = [],
     isLoading: isLoadingEvents,
@@ -67,12 +77,15 @@ const CityDetail = () => {
   } = useQuery({
     queryKey: ['events', cityId],
     queryFn: () => fetchEventsByCity(cityId as string),
-    enabled: !!cityId,
+    enabled: !!cityId && shouldFetchEvents,
   });
   
-  const isLoading = isLoadingCity || isLoadingSpots || isLoadingRoutes || isLoadingEvents;
+  const isLoading = isLoadingCity || 
+    (shouldFetchSpots && isLoadingSpots) || 
+    (shouldFetchRoutes && isLoadingRoutes) || 
+    (shouldFetchEvents && isLoadingEvents);
   
-  if (isLoading) {
+  if (isLoadingCity) {
     return (
       <div className="flex flex-col min-h-screen">
         <Navigation />
@@ -166,11 +179,6 @@ const CityDetail = () => {
   const toggleMapView = () => {
     setShowMap(!showMap);
   };
-
-  console.log('City data:', city);
-  console.log('Spots data:', spots);
-  console.log('Routes data:', routes);
-  console.log('Events data:', events);
   
   return (
     <div className="flex flex-col min-h-screen bg-muted">
@@ -243,7 +251,11 @@ const CityDetail = () => {
                 </TabsContent>
                 
                 <TabsContent value="spots" className="pt-4">
-                  {spotsError ? (
+                  {shouldFetchSpots && isLoadingSpots ? (
+                    <div className="flex justify-center items-center py-12">
+                      <div className="animate-pulse-gentle">Loading spots...</div>
+                    </div>
+                  ) : spotsError ? (
                     <div className="text-center py-8">
                       <p className="text-red-500">Error loading spots: {(spotsError as Error).message}</p>
                     </div>
@@ -271,7 +283,11 @@ const CityDetail = () => {
                 </TabsContent>
                 
                 <TabsContent value="routes" className="pt-4">
-                  {routesError ? (
+                  {shouldFetchRoutes && isLoadingRoutes ? (
+                    <div className="flex justify-center items-center py-12">
+                      <div className="animate-pulse-gentle">Loading routes...</div>
+                    </div>
+                  ) : routesError ? (
                     <div className="text-center py-8">
                       <p className="text-red-500">Error loading routes: {(routesError as Error).message}</p>
                     </div>
@@ -300,7 +316,11 @@ const CityDetail = () => {
                 </TabsContent>
                 
                 <TabsContent value="events" className="pt-4">
-                  {eventsError ? (
+                  {shouldFetchEvents && isLoadingEvents ? (
+                    <div className="flex justify-center items-center py-12">
+                      <div className="animate-pulse-gentle">Loading events...</div>
+                    </div>
+                  ) : eventsError ? (
                     <div className="text-center py-8">
                       <p className="text-red-500">Error loading events: {(eventsError as Error).message}</p>
                     </div>

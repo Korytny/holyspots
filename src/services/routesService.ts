@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase';
 import { Route } from '../types/models';
 
 export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
+  console.log('Fetching routes for city:', cityId);
+  
   const { data, error } = await supabase
     .from('routes')
     .select('*')
@@ -12,6 +14,8 @@ export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
     console.error('Error fetching routes:', error);
     throw error;
   }
+  
+  console.log(`Retrieved ${data.length} routes for city ${cityId}`);
   
   return data.map((routeData): Route => ({
     id: routeData.id,
@@ -32,15 +36,14 @@ export const fetchRouteById = async (routeId: string): Promise<Route | null> => 
     .from('routes')
     .select('*')
     .eq('id', routeId)
-    .single();
+    .maybeSingle();
   
   if (error) {
-    if (error.code === 'PGRST116') {
-      return null; // Route not found
-    }
     console.error('Error fetching route:', error);
     throw error;
   }
+  
+  if (!data) return null;
   
   return {
     id: data.id,

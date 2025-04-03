@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase';
 import { Event } from '../types/models';
 
 export const fetchEventsByCity = async (cityId: string): Promise<Event[]> => {
+  console.log('Fetching events for city:', cityId);
+  
   const { data, error } = await supabase
     .from('events')
     .select('*')
@@ -12,6 +14,8 @@ export const fetchEventsByCity = async (cityId: string): Promise<Event[]> => {
     console.error('Error fetching events:', error);
     throw error;
   }
+  
+  console.log(`Retrieved ${data.length} events for city ${cityId}`);
   
   return data.map((eventData): Event => ({
     id: eventData.id,
@@ -32,15 +36,14 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
     .from('events')
     .select('*')
     .eq('id', eventId)
-    .single();
+    .maybeSingle();
   
   if (error) {
-    if (error.code === 'PGRST116') {
-      return null; // Event not found
-    }
     console.error('Error fetching event:', error);
     throw error;
   }
+  
+  if (!data) return null;
   
   return {
     id: data.id,

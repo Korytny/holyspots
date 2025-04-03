@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase';
 import { Point } from '../types/models';
 
 export const fetchSpotsByCity = async (cityId: string): Promise<Point[]> => {
+  console.log('Fetching spots for city:', cityId);
+  
   const { data, error } = await supabase
     .from('spots')
     .select('*')
@@ -12,6 +14,8 @@ export const fetchSpotsByCity = async (cityId: string): Promise<Point[]> => {
     console.error('Error fetching spots:', error);
     throw error;
   }
+  
+  console.log(`Retrieved ${data.length} spots for city ${cityId}`);
   
   return data.map((spotData): Point => ({
     id: spotData.id,
@@ -35,15 +39,14 @@ export const fetchSpotById = async (spotId: string): Promise<Point | null> => {
     .from('spots')
     .select('*')
     .eq('id', spotId)
-    .single();
+    .maybeSingle();
   
   if (error) {
-    if (error.code === 'PGRST116') {
-      return null; // Spot not found
-    }
     console.error('Error fetching spot:', error);
     throw error;
   }
+  
+  if (!data) return null;
   
   return {
     id: data.id,
