@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -31,7 +30,6 @@ const CityDetail = () => {
   const [activeTab, setActiveTab] = useState('info');
   const [showMap, setShowMap] = useState(false);
   
-  // Fetch city data
   const { 
     data: city,
     isLoading: isLoadingCity,
@@ -42,7 +40,6 @@ const CityDetail = () => {
     enabled: !!cityId,
   });
   
-  // Fetch spots data
   const {
     data: spots = [],
     isLoading: isLoadingSpots,
@@ -53,7 +50,6 @@ const CityDetail = () => {
     enabled: !!cityId,
   });
   
-  // Fetch routes data
   const {
     data: routes = [],
     isLoading: isLoadingRoutes,
@@ -64,7 +60,6 @@ const CityDetail = () => {
     enabled: !!cityId,
   });
   
-  // Fetch events data
   const {
     data: events = [],
     isLoading: isLoadingEvents,
@@ -108,12 +103,10 @@ const CityDetail = () => {
     );
   }
   
-  // Process city data and handle multilingual content
   const cityName = city?.name?.[language] || city?.name?.en || 'Unknown City';
   const cityDescription = city?.description?.[language] || city?.description?.en || '';
   const cityInfo = city?.info?.[language] || city?.info?.en || '';
   
-  // Process media items 
   const mediaItems: MediaItem[] = Array.isArray(city.images) ? city.images.map((url: string, index: number) => {
     const isVideo = typeof url === 'string' && (url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.mov'));
     return {
@@ -140,7 +133,6 @@ const CityDetail = () => {
     setShowMap(!showMap);
   };
 
-  // Log data for debugging
   console.log('City data:', city);
   console.log('Spots data:', spots);
   console.log('Routes data:', routes);

@@ -65,7 +65,7 @@ export type Database = {
             foreignKeyName: "audios_route_fkey"
             columns: ["route"]
             isOneToOne: false
-            referencedRelation: "routes"
+            referencedRelation: "Routes"
             referencedColumns: ["id"]
           },
           {
@@ -264,7 +264,7 @@ export type Database = {
         }
         Relationships: []
       }
-      routes: {
+      Routes: {
         Row: {
           city: number | null
           created_at: string
