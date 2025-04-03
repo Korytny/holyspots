@@ -1,3 +1,4 @@
+
 import { Link, useLocation } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
 import { MapPin, User, Search, Menu } from "lucide-react";
@@ -5,15 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import LanguageSwitcher from "./LanguageSwitcher";
+
 const Navigation = () => {
   const {
     t
   } = useLanguage();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  
   const isActive = (path: string) => {
     return location.pathname === path;
   };
+  
   const routes = [{
     name: t('cities'),
     path: '/cities',
@@ -27,6 +31,7 @@ const Navigation = () => {
     path: '/profile',
     icon: <User className="h-5 w-5" />
   }];
+  
   const MobileNav = () => <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="md:hidden">
@@ -45,6 +50,7 @@ const Navigation = () => {
         </nav>
       </SheetContent>
     </Sheet>;
+    
   return <header className="bg-white border-b sticky top-0 z-10">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center">
@@ -65,4 +71,5 @@ const Navigation = () => {
       </div>
     </header>;
 };
+
 export default Navigation;

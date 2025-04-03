@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -6,6 +7,7 @@ import MediaGallery from '../components/MediaGallery';
 import ItemCard from '../components/ItemCard';
 import Map from '../components/Map';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   MapPin, 
@@ -223,6 +225,28 @@ const CityDetail = () => {
   
   // Find the selected spot object
   const selectedSpotObject = selectedSpot ? spots.find(spot => spot.id === selectedSpot) : null;
+
+  // Render city statistics badges
+  const renderCityStats = () => {
+    return (
+      <div className="flex flex-wrap gap-2 mt-1">
+        <div className="inline-flex items-center px-2 py-1 text-sm bg-secondary rounded-full">
+          <MapPin className="h-4 w-4 mr-1" />
+          {city.spots_count || spots.length || 0}
+        </div>
+        
+        <div className="inline-flex items-center px-2 py-1 text-sm bg-secondary rounded-full">
+          <NavigationIcon className="h-4 w-4 mr-1" />
+          {city.routes_count || routes.length || 0}
+        </div>
+        
+        <div className="inline-flex items-center px-2 py-1 text-sm bg-secondary rounded-full">
+          <Calendar className="h-4 w-4 mr-1" />
+          {city.events_count || events.length || 0}
+        </div>
+      </div>
+    );
+  };
   
   return (
     <div className="flex flex-col min-h-screen bg-muted">
@@ -236,7 +260,13 @@ const CityDetail = () => {
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="p-6">
-            <h1 className="text-3xl font-bold mb-2">{cityName}</h1>
+            <div className="flex flex-col md:flex-row md:items-start justify-between mb-4">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">{cityName}</h1>
+                {renderCityStats()}
+              </div>
+            </div>
+            
             <p className="text-muted-foreground mb-6">{cityDescription}</p>
             
             <MediaGallery media={mediaItems} />
@@ -386,7 +416,11 @@ const CityDetail = () => {
                             description={spot.description || { en: 'No description available' }}
                             thumbnail={spot.thumbnail || '/placeholder.svg'}
                             onClick={() => handleSpotClick(spot.id)}
-                            isActive={selectedSpot === spot.id}
+                            extraContent={selectedSpot === spot.id ? (
+                              <div className="mt-2 px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full inline-block">
+                                Selected
+                              </div>
+                            ) : null}
                           />
                         ))
                       ) : (

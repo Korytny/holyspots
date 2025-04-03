@@ -42,6 +42,10 @@ export interface City {
     latitude: number;
     longitude: number;
   };
+  // Added city statistics
+  spots_count?: number;
+  routes_count?: number;
+  events_count?: number;
 }
 
 export interface Point {

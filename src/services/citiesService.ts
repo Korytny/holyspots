@@ -36,6 +36,9 @@ export const fetchCities = async (): Promise<City[]> => {
       routeIds: cityData.routeIds || [],
       eventIds: cityData.eventIds || [],
       location: cityData.location || { latitude: 0, longitude: 0 },
+      spots_count: cityData.spots_count || 0,
+      routes_count: cityData.routes_count || 0,
+      events_count: cityData.events_count || 0,
     };
   });
 };
@@ -45,7 +48,7 @@ export const fetchCityById = async (cityId: string): Promise<City | null> => {
     .from('cities')
     .select('*')
     .eq('id', cityId)
-    .single();
+    .maybeSingle();
   
   if (error) {
     if (error.code === 'PGRST116') {
@@ -78,5 +81,8 @@ export const fetchCityById = async (cityId: string): Promise<City | null> => {
     routeIds: data.routeIds || [],
     eventIds: data.eventIds || [],
     location: data.location || { latitude: 0, longitude: 0 },
+    spots_count: data.spots_count || 0,
+    routes_count: data.routes_count || 0,
+    events_count: data.events_count || 0,
   };
 };
