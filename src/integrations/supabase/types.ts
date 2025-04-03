@@ -9,7 +9,7 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      Audios: {
+      audios: {
         Row: {
           audio: string | null
           city: number | null
@@ -51,7 +51,7 @@ export type Database = {
             foreignKeyName: "Audios_city_fkey"
             columns: ["city"]
             isOneToOne: false
-            referencedRelation: "Cities"
+            referencedRelation: "cities"
             referencedColumns: ["id"]
           },
           {
@@ -65,19 +65,19 @@ export type Database = {
             foreignKeyName: "audios_route_fkey"
             columns: ["route"]
             isOneToOne: false
-            referencedRelation: "Routes"
+            referencedRelation: "routes"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "Audios_spot_fkey"
             columns: ["spot"]
             isOneToOne: false
-            referencedRelation: "Spots"
+            referencedRelation: "spots"
             referencedColumns: ["id"]
           },
         ]
       }
-      Cities: {
+      cities: {
         Row: {
           cityorder: number | null
           coment: string | null
@@ -131,12 +131,12 @@ export type Database = {
             foreignKeyName: "cities_countryeng_fkey"
             columns: ["countryeng"]
             isOneToOne: false
-            referencedRelation: "Countries"
+            referencedRelation: "countries"
             referencedColumns: ["name_eng"]
           },
         ]
       }
-      Countries: {
+      countries: {
         Row: {
           created_at: string
           id: number
@@ -220,7 +220,7 @@ export type Database = {
             foreignKeyName: "events_city_fkey"
             columns: ["city"]
             isOneToOne: false
-            referencedRelation: "Cities"
+            referencedRelation: "cities"
             referencedColumns: ["id"]
           },
         ]
@@ -264,14 +264,13 @@ export type Database = {
         }
         Relationships: []
       }
-      Routes: {
+      routes: {
         Row: {
           city: number | null
           created_at: string
           id: number
           info: Json | null
           name: Json | null
-          spots: number[] | null
         }
         Insert: {
           city?: number | null
@@ -279,7 +278,6 @@ export type Database = {
           id?: number
           info?: Json | null
           name?: Json | null
-          spots?: number[] | null
         }
         Update: {
           city?: number | null
@@ -287,14 +285,13 @@ export type Database = {
           id?: number
           info?: Json | null
           name?: Json | null
-          spots?: number[] | null
         }
         Relationships: [
           {
             foreignKeyName: "Routes_city_fkey"
             columns: ["city"]
             isOneToOne: false
-            referencedRelation: "Cities"
+            referencedRelation: "cities"
             referencedColumns: ["id"]
           },
         ]
@@ -362,7 +359,7 @@ export type Database = {
         }
         Relationships: []
       }
-      Spots: {
+      spots: {
         Row: {
           city: number | null
           cityeng: string | null
@@ -376,6 +373,7 @@ export type Database = {
           longitude: number | null
           name: Json | null
           orderby: number | null
+          routes: number[] | null
           spotype: number | null
           spotypeng: string | null
         }
@@ -392,6 +390,7 @@ export type Database = {
           longitude?: number | null
           name?: Json | null
           orderby?: number | null
+          routes?: number[] | null
           spotype?: number | null
           spotypeng?: string | null
         }
@@ -408,6 +407,7 @@ export type Database = {
           longitude?: number | null
           name?: Json | null
           orderby?: number | null
+          routes?: number[] | null
           spotype?: number | null
           spotypeng?: string | null
         }
@@ -416,7 +416,7 @@ export type Database = {
             foreignKeyName: "Spots_city_fkey"
             columns: ["city"]
             isOneToOne: false
-            referencedRelation: "Cities"
+            referencedRelation: "cities"
             referencedColumns: ["id"]
           },
         ]
@@ -523,7 +523,7 @@ export type Database = {
             foreignKeyName: "Users_city_id_fkey"
             columns: ["city_id"]
             isOneToOne: false
-            referencedRelation: "Cities"
+            referencedRelation: "cities"
             referencedColumns: ["id"]
           },
         ]

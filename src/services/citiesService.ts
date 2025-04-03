@@ -1,10 +1,10 @@
 
-import { supabase } from '../integrations/supabase/client';
+import { supabase } from '../lib/supabase';
 import { City } from '../types/models';
 
 export const fetchCities = async (): Promise<City[]> => {
   const { data, error } = await supabase
-    .from('Cities')
+    .from('cities')
     .select('*');
   
   if (error) {
@@ -29,7 +29,7 @@ export const fetchCities = async (): Promise<City[]> => {
 
 export const fetchCityById = async (cityId: string): Promise<City | null> => {
   const { data, error } = await supabase
-    .from('Cities')
+    .from('cities')
     .select('*')
     .eq('id', cityId)
     .single();
