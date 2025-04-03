@@ -6,7 +6,7 @@ export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
   const { data, error } = await supabase
     .from('routes')
     .select('*')
-    .eq('cityId', cityId);
+    .eq('city', cityId);
   
   if (error) {
     console.error('Error fetching routes:', error);
@@ -14,14 +14,14 @@ export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
   }
   
   return data.map((routeData): Route => ({
-    id: routeData.id,
-    cityId: routeData.cityId,
+    id: routeData.id.toString(),
+    cityId: routeData.city?.toString() || '',
     name: routeData.name as Record<string, string>,
-    description: routeData.description as Record<string, string>,
-    media: routeData.media as any[],
-    thumbnail: routeData.thumbnail,
-    pointIds: routeData.pointIds || [],
-    eventIds: routeData.eventIds || [],
+    description: routeData.info as Record<string, string>,
+    media: routeData.media || [],
+    thumbnail: routeData.images && routeData.images.length > 0 ? routeData.images[0] : '/placeholder.svg',
+    pointIds: routeData.spots || [],
+    eventIds: [],
     distance: routeData.distance,
     duration: routeData.duration,
   }));
@@ -43,14 +43,14 @@ export const fetchRouteById = async (routeId: string): Promise<Route | null> => 
   }
   
   return {
-    id: data.id,
-    cityId: data.cityId,
+    id: data.id.toString(),
+    cityId: data.city?.toString() || '',
     name: data.name as Record<string, string>,
-    description: data.description as Record<string, string>,
-    media: data.media as any[],
-    thumbnail: data.thumbnail,
-    pointIds: data.pointIds || [],
-    eventIds: data.eventIds || [],
+    description: data.info as Record<string, string>,
+    media: data.media || [],
+    thumbnail: data.images && data.images.length > 0 ? data.images[0] : '/placeholder.svg',
+    pointIds: data.spots || [],
+    eventIds: [],
     distance: data.distance,
     duration: data.duration,
   };

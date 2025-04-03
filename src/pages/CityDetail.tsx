@@ -45,7 +45,8 @@ const CityDetail = () => {
   // Fetch spots data
   const {
     data: spots = [],
-    isLoading: isLoadingSpots
+    isLoading: isLoadingSpots,
+    error: spotsError
   } = useQuery({
     queryKey: ['spots', cityId],
     queryFn: () => fetchSpotsByCity(cityId as string),
@@ -55,7 +56,8 @@ const CityDetail = () => {
   // Fetch routes data
   const {
     data: routes = [],
-    isLoading: isLoadingRoutes
+    isLoading: isLoadingRoutes,
+    error: routesError
   } = useQuery({
     queryKey: ['routes', cityId],
     queryFn: () => fetchRoutesByCity(cityId as string),
@@ -65,7 +67,8 @@ const CityDetail = () => {
   // Fetch events data
   const {
     data: events = [],
-    isLoading: isLoadingEvents
+    isLoading: isLoadingEvents,
+    error: eventsError
   } = useQuery({
     queryKey: ['events', cityId],
     queryFn: () => fetchEventsByCity(cityId as string),
@@ -110,16 +113,14 @@ const CityDetail = () => {
   const cityDescription = city?.description?.[language] || city?.description?.en || '';
   const cityInfo = city?.info?.[language] || city?.info?.en || '';
   
-  // Process media items
+  // Process media items 
   const mediaItems: MediaItem[] = Array.isArray(city.images) ? city.images.map((url: string, index: number) => {
-    const isVideo = url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.mov');
+    const isVideo = typeof url === 'string' && (url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.mov'));
     return {
       id: `media-${index}`,
       type: isVideo ? 'video' as const : 'image' as const,
       url: url,
       thumbnailUrl: isVideo ? undefined : url,
-      title: undefined,
-      description: undefined
     };
   }) : (city.media || []);
   
@@ -138,6 +139,12 @@ const CityDetail = () => {
   const toggleMapView = () => {
     setShowMap(!showMap);
   };
+
+  // Log data for debugging
+  console.log('City data:', city);
+  console.log('Spots data:', spots);
+  console.log('Routes data:', routes);
+  console.log('Events data:', events);
   
   return (
     <div className="flex flex-col min-h-screen bg-muted">
@@ -210,71 +217,89 @@ const CityDetail = () => {
                 </TabsContent>
                 
                 <TabsContent value="spots" className="pt-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {spots.length > 0 ? (
-                      spots.map(spot => (
-                        <ItemCard
-                          key={spot.id}
-                          id={spot.id}
-                          type="point"
-                          name={spot.name || { en: 'Unnamed Spot' }}
-                          description={spot.description || { en: 'No description available' }}
-                          thumbnail={spot.thumbnail || '/placeholder.svg'}
-                          onClick={() => handleSpotClick(spot.id)}
-                        />
-                      ))
-                    ) : (
-                      <div className="col-span-full text-center py-8">
-                        <p className="text-muted-foreground">No spots available</p>
-                      </div>
-                    )}
-                  </div>
+                  {spotsError ? (
+                    <div className="text-center py-8">
+                      <p className="text-red-500">Error loading spots: {(spotsError as Error).message}</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {spots.length > 0 ? (
+                        spots.map(spot => (
+                          <ItemCard
+                            key={spot.id}
+                            id={spot.id}
+                            type="point"
+                            name={spot.name || { en: 'Unnamed Spot' }}
+                            description={spot.description || { en: 'No description available' }}
+                            thumbnail={spot.thumbnail || '/placeholder.svg'}
+                            onClick={() => handleSpotClick(spot.id)}
+                          />
+                        ))
+                      ) : (
+                        <div className="col-span-full text-center py-8">
+                          <p className="text-muted-foreground">No spots available</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </TabsContent>
                 
                 <TabsContent value="routes" className="pt-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {routes.length > 0 ? (
-                      routes.map(route => (
-                        <ItemCard
-                          key={route.id}
-                          id={route.id}
-                          type="route"
-                          name={route.name || { en: 'Unnamed Route' }}
-                          description={route.description || { en: 'No description available' }}
-                          thumbnail={route.thumbnail || '/placeholder.svg'}
-                          onClick={() => handleRouteClick(route.id)}
-                          pointCount={route.pointIds?.length || 0}
-                        />
-                      ))
-                    ) : (
-                      <div className="col-span-full text-center py-8">
-                        <p className="text-muted-foreground">No routes available</p>
-                      </div>
-                    )}
-                  </div>
+                  {routesError ? (
+                    <div className="text-center py-8">
+                      <p className="text-red-500">Error loading routes: {(routesError as Error).message}</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {routes.length > 0 ? (
+                        routes.map(route => (
+                          <ItemCard
+                            key={route.id}
+                            id={route.id}
+                            type="route"
+                            name={route.name || { en: 'Unnamed Route' }}
+                            description={route.description || { en: 'No description available' }}
+                            thumbnail={route.thumbnail || '/placeholder.svg'}
+                            onClick={() => handleRouteClick(route.id)}
+                            pointCount={route.pointIds?.length || 0}
+                          />
+                        ))
+                      ) : (
+                        <div className="col-span-full text-center py-8">
+                          <p className="text-muted-foreground">No routes available</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </TabsContent>
                 
                 <TabsContent value="events" className="pt-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {events.length > 0 ? (
-                      events.map(event => (
-                        <ItemCard
-                          key={event.id}
-                          id={event.id}
-                          type="event"
-                          name={event.name || { en: 'Unnamed Event' }}
-                          description={event.description || { en: 'No description available' }}
-                          thumbnail={event.thumbnail || '/placeholder.svg'}
-                          onClick={() => handleEventClick(event.id)}
-                          date={event.startDate ? new Date(event.startDate).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU') : undefined}
-                        />
-                      ))
-                    ) : (
-                      <div className="col-span-full text-center py-8">
-                        <p className="text-muted-foreground">No events available</p>
-                      </div>
-                    )}
-                  </div>
+                  {eventsError ? (
+                    <div className="text-center py-8">
+                      <p className="text-red-500">Error loading events: {(eventsError as Error).message}</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {events.length > 0 ? (
+                        events.map(event => (
+                          <ItemCard
+                            key={event.id}
+                            id={event.id}
+                            type="event"
+                            name={event.name || { en: 'Unnamed Event' }}
+                            description={event.description || { en: 'No description available' }}
+                            thumbnail={event.thumbnail || '/placeholder.svg'}
+                            onClick={() => handleEventClick(event.id)}
+                            date={event.startDate ? new Date(event.startDate).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU') : undefined}
+                          />
+                        ))
+                      ) : (
+                        <div className="col-span-full text-center py-8">
+                          <p className="text-muted-foreground">No events available</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
             </div>
