@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import Navigation from '../components/Navigation';
@@ -14,14 +13,15 @@ import {
   Calendar,
   ArrowLeft,
   Eye,
-  Info
+  Info,
+  ChevronLeft
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCityById } from '../services/citiesService';
 import { fetchSpotsByCity } from '../services/spotsService';
-import { fetchRoutesByCity } from '../services/routesService';
-import { fetchEventsByCity } from '../services/eventsService';
-import { MediaItem } from '../types/models';
+import { fetchRoutesByCity, fetchRoutesBySpot } from '../services/routesService';
+import { fetchEventsByCity, fetchEventsBySpot } from '../services/eventsService';
+import { MediaItem, Point } from '../types/models';
 
 const CityDetail = () => {
   const { cityId } = useParams<{ cityId: string }>();
@@ -30,6 +30,9 @@ const CityDetail = () => {
   
   const [activeTab, setActiveTab] = useState('info');
   const [showMap, setShowMap] = useState(false);
+  const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
+  const [spotRoutes, setSpotRoutes] = useState<any[]>([]);
+  const [spotEvents, setSpotEvents] = useState<any[]>([]);
   
   // Fetch city data
   const { 
@@ -79,6 +82,28 @@ const CityDetail = () => {
     queryFn: () => fetchEventsByCity(cityId as string),
     enabled: !!cityId && shouldFetchEvents,
   });
+  
+  // Fetch routes for a specific spot when spot is selected
+  useEffect(() => {
+    const fetchSpotRelatedData = async () => {
+      if (selectedSpot) {
+        try {
+          const spotRoutesData = await fetchRoutesBySpot(selectedSpot);
+          setSpotRoutes(spotRoutesData);
+          
+          const spotEventsData = await fetchEventsBySpot(selectedSpot);
+          setSpotEvents(spotEventsData);
+        } catch (error) {
+          console.error("Error fetching spot related data:", error);
+        }
+      } else {
+        setSpotRoutes([]);
+        setSpotEvents([]);
+      }
+    };
+    
+    fetchSpotRelatedData();
+  }, [selectedSpot]);
   
   const isLoading = isLoadingCity || 
     (shouldFetchSpots && isLoadingSpots) || 
@@ -165,7 +190,19 @@ const CityDetail = () => {
   }) : (city?.media || []);
 
   const handleSpotClick = (spotId: string) => {
-    navigate(`/points/${spotId}`);
+    // If clicking on an already selected spot, navigate to its detail
+    if (selectedSpot === spotId) {
+      navigate(`/points/${spotId}`);
+      return;
+    }
+    
+    // Otherwise just select the spot to show its routes and events
+    setSelectedSpot(spotId);
+    
+    // If we're not in the spots tab, switch to it
+    if (activeTab !== 'spots') {
+      setActiveTab('spots');
+    }
   };
   
   const handleRouteClick = (routeId: string) => {
@@ -179,6 +216,13 @@ const CityDetail = () => {
   const toggleMapView = () => {
     setShowMap(!showMap);
   };
+  
+  const clearSelectedSpot = () => {
+    setSelectedSpot(null);
+  };
+  
+  // Find the selected spot object
+  const selectedSpotObject = selectedSpot ? spots.find(spot => spot.id === selectedSpot) : null;
   
   return (
     <div className="flex flex-col min-h-screen bg-muted">
@@ -216,6 +260,77 @@ const CityDetail = () => {
             )}
             
             <div className="mt-6">
+              {selectedSpot && (
+                <div className="mb-6 bg-muted p-4 rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-xl font-semibold flex items-center">
+                      <MapPin className="mr-2 h-5 w-5" />
+                      {selectedSpotObject?.name?.[language] || selectedSpotObject?.name?.en || 'Selected Spot'}
+                    </h2>
+                    <Button variant="ghost" size="sm" onClick={clearSelectedSpot}>
+                      <ChevronLeft className="mr-1 h-4 w-4" />
+                      {t('back')}
+                    </Button>
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {selectedSpotObject?.description?.[language] || selectedSpotObject?.description?.en || 'No description available'}
+                  </p>
+                  
+                  {spotRoutes.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-lg font-medium mb-2 flex items-center">
+                        <NavigationIcon className="mr-2 h-4 w-4" />
+                        {t('relatedRoutes')}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {spotRoutes.map(route => (
+                          <ItemCard
+                            key={route.id}
+                            id={route.id}
+                            type="route"
+                            name={route.name || { en: 'Unnamed Route' }}
+                            description={route.description || { en: 'No description available' }}
+                            thumbnail={route.thumbnail || '/placeholder.svg'}
+                            onClick={() => handleRouteClick(route.id)}
+                            pointCount={route.pointIds?.length || 0}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {spotEvents.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-medium mb-2 flex items-center">
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {t('relatedEvents')}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {spotEvents.map(event => (
+                          <ItemCard
+                            key={event.id}
+                            id={event.id}
+                            type="event"
+                            name={event.name || { en: 'Unnamed Event' }}
+                            description={event.description || { en: 'No description available' }}
+                            thumbnail={event.thumbnail || '/placeholder.svg'}
+                            onClick={() => handleEventClick(event.id)}
+                            date={event.startDate ? new Date(event.startDate).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU') : undefined}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {spotRoutes.length === 0 && spotEvents.length === 0 && (
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground">No related routes or events found for this spot</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="w-full grid grid-cols-4">
                   <TabsTrigger value="info" className="flex items-center">
@@ -271,6 +386,7 @@ const CityDetail = () => {
                             description={spot.description || { en: 'No description available' }}
                             thumbnail={spot.thumbnail || '/placeholder.svg'}
                             onClick={() => handleSpotClick(spot.id)}
+                            isActive={selectedSpot === spot.id}
                           />
                         ))
                       ) : (

@@ -58,3 +58,33 @@ export const fetchRouteById = async (routeId: string): Promise<Route | null> => 
     duration: data.duration,
   };
 };
+
+// New function to fetch routes by spot ID
+export const fetchRoutesBySpot = async (spotId: string): Promise<Route[]> => {
+  console.log('Fetching routes for spot:', spotId);
+  
+  const { data, error } = await supabase
+    .from('routes')
+    .select('*')
+    .contains('spots', [spotId]);
+  
+  if (error) {
+    console.error('Error fetching routes for spot:', error);
+    throw error;
+  }
+  
+  console.log(`Retrieved ${data.length} routes for spot ${spotId}`);
+  
+  return data.map((routeData): Route => ({
+    id: routeData.id,
+    cityId: routeData.city || '',
+    name: routeData.name as Record<string, string>,
+    description: routeData.info as Record<string, string>,
+    media: routeData.media || [],
+    thumbnail: routeData.images && routeData.images.length > 0 ? routeData.images[0] : '/placeholder.svg',
+    pointIds: routeData.spots || [],
+    eventIds: [],
+    distance: routeData.distance,
+    duration: routeData.duration,
+  }));
+};
