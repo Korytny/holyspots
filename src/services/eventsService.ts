@@ -14,8 +14,8 @@ export const fetchEventsByCity = async (cityId: string): Promise<Event[]> => {
   }
   
   return data.map((eventData): Event => ({
-    id: eventData.id.toString(),
-    cityId: eventData.city?.toString() || '',
+    id: eventData.id,
+    cityId: eventData.city || '',
     name: eventData.name as Record<string, string>,
     description: eventData.info as Record<string, string>,
     media: eventData.media || [],
@@ -43,8 +43,8 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
   }
   
   return {
-    id: data.id.toString(),
-    cityId: data.city?.toString() || '',
+    id: data.id,
+    cityId: data.city || '',
     name: data.name as Record<string, string>,
     description: data.info as Record<string, string>,
     media: data.media || [],

@@ -9,221 +9,91 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      audios: {
-        Row: {
-          audio: string | null
-          city: number | null
-          created_at: string
-          event: number | null
-          id: number
-          info: Json | null
-          name: Json | null
-          route: number | null
-          spot: number | null
-          time: number | null
-        }
-        Insert: {
-          audio?: string | null
-          city?: number | null
-          created_at?: string
-          event?: number | null
-          id?: number
-          info?: Json | null
-          name?: Json | null
-          route?: number | null
-          spot?: number | null
-          time?: number | null
-        }
-        Update: {
-          audio?: string | null
-          city?: number | null
-          created_at?: string
-          event?: number | null
-          id?: number
-          info?: Json | null
-          name?: Json | null
-          route?: number | null
-          spot?: number | null
-          time?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "Audios_city_fkey"
-            columns: ["city"]
-            isOneToOne: false
-            referencedRelation: "cities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "audios_event_fkey"
-            columns: ["event"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "audios_route_fkey"
-            columns: ["route"]
-            isOneToOne: false
-            referencedRelation: "routes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "Audios_spot_fkey"
-            columns: ["spot"]
-            isOneToOne: false
-            referencedRelation: "spots"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       cities: {
         Row: {
-          cityorder: number | null
-          coment: string | null
-          countryeng: string | null
-          countryId: number | null
-          created_at: string
-          events: number | null
-          id: number
+          country: string | null
+          events_count: number | null
+          id: string
           images: string[] | null
           info: Json | null
-          latitude: number | null
-          longitude: number | null
-          name: Json | null
-          routes: number | null
-          spots: number | null
+          name: string
+          routes_count: number | null
+          spots_count: number | null
         }
         Insert: {
-          cityorder?: number | null
-          coment?: string | null
-          countryeng?: string | null
-          countryId?: number | null
-          created_at?: string
-          events?: number | null
-          id?: number
+          country?: string | null
+          events_count?: number | null
+          id?: string
           images?: string[] | null
           info?: Json | null
-          latitude?: number | null
-          longitude?: number | null
-          name?: Json | null
-          routes?: number | null
-          spots?: number | null
+          name: string
+          routes_count?: number | null
+          spots_count?: number | null
         }
         Update: {
-          cityorder?: number | null
-          coment?: string | null
-          countryeng?: string | null
-          countryId?: number | null
-          created_at?: string
-          events?: number | null
-          id?: number
+          country?: string | null
+          events_count?: number | null
+          id?: string
           images?: string[] | null
           info?: Json | null
-          latitude?: number | null
-          longitude?: number | null
-          name?: Json | null
-          routes?: number | null
-          spots?: number | null
+          name?: string
+          routes_count?: number | null
+          spots_count?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "cities_countryeng_fkey"
-            columns: ["countryeng"]
+            foreignKeyName: "new_cities_country_fkey"
+            columns: ["country"]
             isOneToOne: false
             referencedRelation: "countries"
-            referencedColumns: ["name_eng"]
+            referencedColumns: ["id"]
           },
         ]
       }
       countries: {
         Row: {
-          created_at: string
-          id: number
-          name: Json | null
-          name_eng: string | null
+          cities_count: number | null
+          code: string | null
+          id: string
+          images: string[] | null
+          info: Json | null
+          name: Json
         }
         Insert: {
-          created_at?: string
-          id?: number
-          name?: Json | null
-          name_eng?: string | null
+          cities_count?: number | null
+          code?: string | null
+          id?: string
+          images?: string[] | null
+          info?: Json | null
+          name: Json
         }
         Update: {
-          created_at?: string
-          id?: number
-          name?: Json | null
-          name_eng?: string | null
-        }
-        Relationships: []
-      }
-      documents: {
-        Row: {
-          content: string | null
-          embedding: string | null
-          id: number
-          metadata: Json | null
-        }
-        Insert: {
-          content?: string | null
-          embedding?: string | null
-          id?: number
-          metadata?: Json | null
-        }
-        Update: {
-          content?: string | null
-          embedding?: string | null
-          id?: number
-          metadata?: Json | null
+          cities_count?: number | null
+          code?: string | null
+          id?: string
+          images?: string[] | null
+          info?: Json | null
+          name?: Json
         }
         Relationships: []
       }
       events: {
         Row: {
-          city: number | null
-          create_at: string
-          id: number
-          images: string[] | null
+          id: string
           info: Json | null
-          kind: string | null
-          name: Json | null
-          spot: number[] | null
-          time: string | null
-          type: string | null
+          name: Json
         }
         Insert: {
-          city?: number | null
-          create_at?: string
-          id?: number
-          images?: string[] | null
+          id?: string
           info?: Json | null
-          kind?: string | null
-          name?: Json | null
-          spot?: number[] | null
-          time?: string | null
-          type?: string | null
+          name: Json
         }
         Update: {
-          city?: number | null
-          create_at?: string
-          id?: number
-          images?: string[] | null
+          id?: string
           info?: Json | null
-          kind?: string | null
-          name?: Json | null
-          spot?: number[] | null
-          time?: string | null
-          type?: string | null
+          name?: Json
         }
-        Relationships: [
-          {
-            foreignKeyName: "events_city_fkey"
-            columns: ["city"]
-            isOneToOne: false
-            referencedRelation: "cities"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       language: {
         Row: {
@@ -246,180 +116,224 @@ export type Database = {
         }
         Relationships: []
       }
-      n8n_chat_histories: {
+      route_event: {
         Row: {
-          id: number
-          message: Json
-          session_id: string
+          created_at: string | null
+          event_id: string
+          route_id: string
         }
         Insert: {
-          id?: number
-          message: Json
-          session_id: string
+          created_at?: string | null
+          event_id: string
+          route_id: string
         }
         Update: {
-          id?: number
-          message?: Json
-          session_id?: string
-        }
-        Relationships: []
-      }
-      routes: {
-        Row: {
-          city: number | null
-          created_at: string
-          id: number
-          info: Json | null
-          name: Json | null
-        }
-        Insert: {
-          city?: number | null
-          created_at?: string
-          id?: number
-          info?: Json | null
-          name?: Json | null
-        }
-        Update: {
-          city?: number | null
-          created_at?: string
-          id?: number
-          info?: Json | null
-          name?: Json | null
+          created_at?: string | null
+          event_id?: string
+          route_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "Routes_city_fkey"
-            columns: ["city"]
+            foreignKeyName: "route_event_event_id_fkey"
+            columns: ["event_id"]
             isOneToOne: false
-            referencedRelation: "cities"
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_event_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
             referencedColumns: ["id"]
           },
         ]
       }
-      sm_bot_users: {
+      routes: {
         Row: {
-          created_at: string
-          id: number
-          name: string | null
-          surname: string | null
-          telegram_ID: number | null
-          user: string | null
+          id: string
+          name: Json
         }
         Insert: {
-          created_at?: string
-          id?: number
-          name?: string | null
-          surname?: string | null
-          telegram_ID?: number | null
-          user?: string | null
+          id?: string
+          name: Json
         }
         Update: {
-          created_at?: string
-          id?: number
-          name?: string | null
-          surname?: string | null
-          telegram_ID?: number | null
-          user?: string | null
+          id?: string
+          name?: Json
         }
         Relationships: []
       }
-      sm_chat_history: {
+      spot_event: {
         Row: {
-          created_at: string
-          id: number
+          created_at: string | null
+          event_id: string
+          spot_id: string
         }
         Insert: {
-          created_at?: string
-          id?: number
+          created_at?: string | null
+          event_id: string
+          spot_id: string
         }
         Update: {
-          created_at?: string
-          id?: number
+          created_at?: string | null
+          event_id?: string
+          spot_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "spot_event_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spot_event_spot_id_fkey"
+            columns: ["spot_id"]
+            isOneToOne: false
+            referencedRelation: "spots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      sm_text: {
+      spot_route: {
         Row: {
-          content: string | null
-          created_at: string
-          id: number
-          metadata: Json | null
+          created_at: string | null
+          route_id: string
+          spot_id: string
         }
         Insert: {
-          content?: string | null
-          created_at?: string
-          id?: number
-          metadata?: Json | null
+          created_at?: string | null
+          route_id: string
+          spot_id: string
         }
         Update: {
-          content?: string | null
-          created_at?: string
-          id?: number
-          metadata?: Json | null
+          created_at?: string | null
+          route_id?: string
+          spot_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "spot_route_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spot_route_spot_id_fkey"
+            columns: ["spot_id"]
+            isOneToOne: false
+            referencedRelation: "spots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       spots: {
         Row: {
-          city: number | null
+          city: string | null
           cityeng: string | null
           coordinates: Json | null
-          created_at: string
-          id: number
+          created_at: string | null
+          id: string
+          id_old: number | null
+          images: string[] | null
+          info: Json | null
+          name: Json
+          point: unknown | null
+          type: number | null
+        }
+        Insert: {
+          city?: string | null
+          cityeng?: string | null
+          coordinates?: Json | null
+          created_at?: string | null
+          id?: string
+          id_old?: number | null
+          images?: string[] | null
+          info?: Json | null
+          name: Json
+          point?: unknown | null
+          type?: number | null
+        }
+        Update: {
+          city?: string | null
+          cityeng?: string | null
+          coordinates?: Json | null
+          created_at?: string | null
+          id?: string
+          id_old?: number | null
+          images?: string[] | null
+          info?: Json | null
+          name?: Json
+          point?: unknown | null
+          type?: number | null
+        }
+        Relationships: []
+      }
+      spots_backup: {
+        Row: {
+          city: number | null
+          city_uuid: string | null
+          cityeng: string | null
+          coordinates: Json | null
+          created_at: string | null
+          id: number | null
           images: string[] | null
           imagesdf: Json | null
           info: Json | null
           latitude: number | null
           longitude: number | null
           name: Json | null
+          new_id: string | null
           orderby: number | null
-          routes: number[] | null
+          routes: string[] | null
           spotype: number | null
           spotypeng: string | null
+          uuid: string | null
         }
         Insert: {
           city?: number | null
+          city_uuid?: string | null
           cityeng?: string | null
           coordinates?: Json | null
-          created_at?: string
-          id?: number
+          created_at?: string | null
+          id?: number | null
           images?: string[] | null
           imagesdf?: Json | null
           info?: Json | null
           latitude?: number | null
           longitude?: number | null
           name?: Json | null
+          new_id?: string | null
           orderby?: number | null
-          routes?: number[] | null
+          routes?: string[] | null
           spotype?: number | null
           spotypeng?: string | null
+          uuid?: string | null
         }
         Update: {
           city?: number | null
+          city_uuid?: string | null
           cityeng?: string | null
           coordinates?: Json | null
-          created_at?: string
-          id?: number
+          created_at?: string | null
+          id?: number | null
           images?: string[] | null
           imagesdf?: Json | null
           info?: Json | null
           latitude?: number | null
           longitude?: number | null
           name?: Json | null
+          new_id?: string | null
           orderby?: number | null
-          routes?: number[] | null
+          routes?: string[] | null
           spotype?: number | null
           spotypeng?: string | null
+          uuid?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "Spots_city_fkey"
-            columns: ["city"]
-            isOneToOne: false
-            referencedRelation: "cities"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       spots1: {
         Row: {
@@ -518,15 +432,109 @@ export type Database = {
           tg_id?: number | null
           timezone?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "Users_city_id_fkey"
-            columns: ["city_id"]
-            isOneToOne: false
-            referencedRelation: "cities"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      x_sm_bot_documents: {
+        Row: {
+          content: string | null
+          embedding: string | null
+          id: number
+          metadata: Json | null
+        }
+        Insert: {
+          content?: string | null
+          embedding?: string | null
+          id?: number
+          metadata?: Json | null
+        }
+        Update: {
+          content?: string | null
+          embedding?: string | null
+          id?: number
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
+      x_sm_bot_users: {
+        Row: {
+          created_at: string
+          id: number
+          name: string | null
+          surname: string | null
+          telegram_ID: number | null
+          user: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name?: string | null
+          surname?: string | null
+          telegram_ID?: number | null
+          user?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string | null
+          surname?: string | null
+          telegram_ID?: number | null
+          user?: string | null
+        }
+        Relationships: []
+      }
+      x_sm_chat_history: {
+        Row: {
+          created_at: string
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
+        }
+        Relationships: []
+      }
+      x_sm_text: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: number
+          metadata: Json | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: number
+          metadata?: Json | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: number
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
+      z_n8n_chat_histories: {
+        Row: {
+          id: number
+          message: Json
+          session_id: string
+        }
+        Insert: {
+          id?: number
+          message: Json
+          session_id: string
+        }
+        Update: {
+          id?: number
+          message?: Json
+          session_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

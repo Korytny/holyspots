@@ -14,8 +14,8 @@ export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
   }
   
   return data.map((routeData): Route => ({
-    id: routeData.id.toString(),
-    cityId: routeData.city?.toString() || '',
+    id: routeData.id,
+    cityId: routeData.city || '',
     name: routeData.name as Record<string, string>,
     description: routeData.info as Record<string, string>,
     media: routeData.media || [],
@@ -43,8 +43,8 @@ export const fetchRouteById = async (routeId: string): Promise<Route | null> => 
   }
   
   return {
-    id: data.id.toString(),
-    cityId: data.city?.toString() || '',
+    id: data.id,
+    cityId: data.city || '',
     name: data.name as Record<string, string>,
     description: data.info as Record<string, string>,
     media: data.media || [],
