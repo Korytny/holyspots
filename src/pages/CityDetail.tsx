@@ -103,11 +103,45 @@ const CityDetail = () => {
     );
   }
   
-  const cityName = city?.name?.[language] || city?.name?.en || 'Unknown City';
-  const cityDescription = city?.description?.[language] || city?.description?.en || '';
-  const cityInfo = city?.info?.[language] || city?.info?.en || '';
+  const getCityName = () => {
+    if (!city || !city.name) return 'Unknown City';
+    
+    if (typeof city.name === 'object') {
+      return city.name[language] || city.name.en || 'Unknown City';
+    }
+    
+    return typeof city.name === 'string' ? city.name : 'Unknown City';
+  };
   
-  const mediaItems: MediaItem[] = Array.isArray(city.images) ? city.images.map((url: string, index: number) => {
+  const getCityDescription = () => {
+    if (!city) return '';
+    
+    if (city.description && typeof city.description === 'object') {
+      return city.description[language] || city.description.en || '';
+    }
+    
+    if (!city.description && city.info && typeof city.info === 'object') {
+      return city.info[language] || city.info.en || '';
+    }
+    
+    return '';
+  };
+  
+  const getCityInfo = () => {
+    if (!city || !city.info) return '';
+    
+    if (typeof city.info === 'object') {
+      return city.info[language] || city.info.en || '';
+    }
+    
+    return typeof city.info === 'string' ? city.info : '';
+  };
+  
+  const cityName = getCityName();
+  const cityDescription = getCityDescription();
+  const cityInfo = getCityInfo();
+  
+  const mediaItems: MediaItem[] = Array.isArray(city?.images) ? city.images.map((url: string, index: number) => {
     const isVideo = typeof url === 'string' && (url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.mov'));
     return {
       id: `media-${index}`,
@@ -115,8 +149,8 @@ const CityDetail = () => {
       url: url,
       thumbnailUrl: isVideo ? undefined : url,
     };
-  }) : (city.media || []);
-  
+  }) : (city?.media || []);
+
   const handleSpotClick = (spotId: string) => {
     navigate(`/points/${spotId}`);
   };

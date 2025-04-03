@@ -25,12 +25,33 @@ const Cities = () => {
   
   // Filter cities based on search term
   const filteredCities = cities.filter(city => {
-    // Handle potential undefined values safely
-    const cityName = city.name?.[language] || city.name?.en || '';
-    const cityDesc = city.description?.[language] || city.description?.en || '';
+    // Get the city name safely
+    const getCityName = () => {
+      if (!city.name) return '';
+      
+      if (typeof city.name === 'object') {
+        return city.name[language] || city.name.en || '';
+      }
+      
+      return typeof city.name === 'string' ? city.name : '';
+    };
     
-    return cityName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-           cityDesc.toLowerCase().includes(searchTerm.toLowerCase());
+    // Get the city description safely
+    const getCityDescription = () => {
+      if (!city.description) return '';
+      
+      if (typeof city.description === 'object') {
+        return city.description[language] || city.description.en || '';
+      }
+      
+      return typeof city.description === 'string' ? city.description : '';
+    };
+    
+    const cityName = getCityName().toLowerCase();
+    const cityDesc = getCityDescription().toLowerCase();
+    const search = searchTerm.toLowerCase();
+    
+    return cityName.includes(search) || cityDesc.includes(search);
   });
   
   const handleCityClick = (cityId: string) => {
@@ -78,20 +99,35 @@ const Cities = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredCities.length > 0 ? (
-              filteredCities.map(city => (
-                <ItemCard
-                  key={city.id}
-                  id={city.id}
-                  type="city"
-                  name={city.name || { en: 'Unnamed City' }}
-                  description={city.description || { en: 'No description available' }}
-                  thumbnail={city.thumbnail || '/placeholder.svg'}
-                  onClick={() => handleCityClick(city.id)}
-                  isFavorite={favorites.has(city.id)}
-                  onToggleFavorite={() => toggleFavorite(city.id)}
-                  pointCount={city.pointIds?.length || 0}
-                />
-              ))
+              filteredCities.map(city => {
+                // Parse name if it's a JSON string
+                let cityName = city.name;
+                if (typeof city.name === 'string' && city.name.startsWith('{')) {
+                  try {
+                    cityName = JSON.parse(city.name);
+                  } catch (e) {
+                    cityName = { en: city.name };
+                  }
+                }
+                
+                // Get description from either description or info field
+                let cityDesc = city.description || city.info || { en: 'No description available' };
+                
+                return (
+                  <ItemCard
+                    key={city.id}
+                    id={city.id}
+                    type="city"
+                    name={cityName}
+                    description={cityDesc}
+                    thumbnail={city.thumbnail || '/placeholder.svg'}
+                    onClick={() => handleCityClick(city.id)}
+                    isFavorite={favorites.has(city.id)}
+                    onToggleFavorite={() => toggleFavorite(city.id)}
+                    pointCount={city.pointIds?.length || 0}
+                  />
+                );
+              })
             ) : (
               <div className="col-span-full text-center py-12">
                 <p className="text-muted-foreground">No cities found matching your search</p>
