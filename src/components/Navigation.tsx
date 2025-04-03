@@ -5,12 +5,12 @@ import {
   MapPin, 
   User, 
   Search, 
-  Menu, 
-  X 
+  Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const Navigation = () => {
   const { t } = useLanguage();
@@ -63,6 +63,9 @@ const Navigation = () => {
               <span className="ml-3">{route.name}</span>
             </Link>
           ))}
+          <div className="px-4 py-3">
+            <LanguageSwitcher />
+          </div>
         </nav>
       </SheetContent>
     </Sheet>
@@ -94,6 +97,7 @@ const Navigation = () => {
               <span className="ml-2">{route.name}</span>
             </Link>
           ))}
+          <LanguageSwitcher />
         </nav>
       </div>
     </header>
