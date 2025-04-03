@@ -13,7 +13,8 @@ import {
   Navigation as NavigationIcon, 
   Calendar,
   ArrowLeft,
-  Eye
+  Eye,
+  Info
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCityById } from '../services/citiesService';
@@ -26,7 +27,7 @@ const CityDetail = () => {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
   
-  const [activeTab, setActiveTab] = useState('points');
+  const [activeTab, setActiveTab] = useState('info');
   const [showMap, setShowMap] = useState(false);
   
   // Fetch city data
@@ -83,7 +84,7 @@ const CityDetail = () => {
     );
   }
   
-  if (!city) {
+  if (!city || cityError) {
     return (
       <div className="flex flex-col min-h-screen">
         <Navigation />
@@ -93,12 +94,31 @@ const CityDetail = () => {
             {t('cities')}
           </Button>
           <div className="mt-8 text-center">
-            <h2 className="text-2xl font-bold text-muted-foreground">City not found</h2>
+            <h2 className="text-2xl font-bold text-muted-foreground">
+              {cityError ? 'Error loading city data' : 'City not found'}
+            </h2>
+            {cityError && <p className="mt-2 text-red-500">{(cityError as Error).message}</p>}
           </div>
         </div>
       </div>
     );
   }
+  
+  // Process city data and handle multilingual content
+  const cityName = city?.name?.[language] || city?.name?.en || 'Unknown City';
+  const cityDescription = city?.description?.[language] || city?.description?.en || '';
+  const cityInfo = city?.info?.[language] || city?.info?.en || '';
+  
+  // Process media items
+  const mediaItems = Array.isArray(city.images) ? city.images.map((url: string, index: number) => {
+    const isVideo = url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.mov');
+    return {
+      id: `media-${index}`,
+      type: isVideo ? 'video' : 'image',
+      url: url,
+      thumbnailUrl: isVideo ? undefined : url
+    };
+  }) : (city.media || []);
   
   const handlePointClick = (pointId: string) => {
     navigate(`/points/${pointId}`);
@@ -116,10 +136,6 @@ const CityDetail = () => {
     setShowMap(!showMap);
   };
   
-  // Safely get the city name in the current language or fallback to English
-  const cityName = city?.name?.[language] || city?.name?.en || 'Unknown City';
-  const cityDescription = city?.description?.[language] || city?.description?.en || 'No description available';
-  
   return (
     <div className="flex flex-col min-h-screen bg-muted">
       <Navigation />
@@ -135,7 +151,7 @@ const CityDetail = () => {
             <h1 className="text-3xl font-bold mb-2">{cityName}</h1>
             <p className="text-muted-foreground mb-6">{cityDescription}</p>
             
-            <MediaGallery media={city.media || []} />
+            <MediaGallery media={mediaItems} />
             
             <div className="mt-6 flex justify-end">
               <Button variant="outline" onClick={toggleMapView}>
@@ -157,7 +173,11 @@ const CityDetail = () => {
             
             <div className="mt-6">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="w-full grid grid-cols-3">
+                <TabsList className="w-full grid grid-cols-4">
+                  <TabsTrigger value="info" className="flex items-center">
+                    <Info className="mr-1 h-4 w-4" />
+                    {t('info')}
+                  </TabsTrigger>
                   <TabsTrigger value="points" className="flex items-center">
                     <MapPin className="mr-1 h-4 w-4" />
                     {t('points')}
@@ -171,6 +191,20 @@ const CityDetail = () => {
                     {t('events')}
                   </TabsTrigger>
                 </TabsList>
+                
+                <TabsContent value="info" className="pt-4">
+                  {cityInfo ? (
+                    <div className="prose max-w-none">
+                      {cityInfo.split('\n').map((paragraph, index) => (
+                        <p key={index} className="mb-4">{paragraph}</p>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">No detailed information available</p>
+                    </div>
+                  )}
+                </TabsContent>
                 
                 <TabsContent value="points" className="pt-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

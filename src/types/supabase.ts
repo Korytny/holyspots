@@ -15,7 +15,9 @@ export interface Database {
           id: string;
           name: Json;
           description: Json;
-          media: Json;
+          info?: Json;
+          media?: Json;
+          images?: Json;
           thumbnail: string;
           pointIds: string[];
           routeIds: string[];
@@ -27,7 +29,9 @@ export interface Database {
           id?: string;
           name: Json;
           description: Json;
-          media: Json;
+          info?: Json;
+          media?: Json;
+          images?: Json;
           thumbnail: string;
           pointIds?: string[];
           routeIds?: string[];
@@ -39,7 +43,9 @@ export interface Database {
           id?: string;
           name?: Json;
           description?: Json;
+          info?: Json;
           media?: Json;
+          images?: Json;
           thumbnail?: string;
           pointIds?: string[];
           routeIds?: string[];

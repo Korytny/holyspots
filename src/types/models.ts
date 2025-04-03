@@ -1,7 +1,7 @@
 
 // Core entity types for the application
 
-export type Language = 'ru' | 'en';
+export type Language = 'ru' | 'en' | 'hi';
 
 export interface User {
   id: string;
@@ -31,7 +31,9 @@ export interface City {
   id: string;
   name: Record<Language, string>;
   description: Record<Language, string>;
-  media: MediaItem[];
+  info?: Record<Language, string>;
+  media?: MediaItem[];
+  images?: string[];
   thumbnail: string;
   pointIds: string[];
   routeIds: string[];

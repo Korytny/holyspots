@@ -17,6 +17,7 @@ const translations: Record<Language, Record<string, string>> = {
     selectLanguage: 'Select Language',
     english: 'English',
     russian: 'Russian',
+    hindi: 'Hindi',
     signIn: 'Sign In',
     signUp: 'Sign Up',
     email: 'Email',
@@ -36,13 +37,17 @@ const translations: Record<Language, Record<string, string>> = {
     routes: 'Routes',
     events: 'Events',
     viewOnMap: 'View on Map',
+    hideMap: 'Hide Map',
     details: 'Details',
+    points: 'Points',
+    info: 'Info',
   },
   ru: {
     welcome: 'Добро пожаловать в Holy Wanderer',
     selectLanguage: 'Выберите язык',
     english: 'Английский',
     russian: 'Русский',
+    hindi: 'Хинди',
     signIn: 'Вход',
     signUp: 'Регистрация',
     email: 'Электронная почта',
@@ -62,7 +67,40 @@ const translations: Record<Language, Record<string, string>> = {
     routes: 'Маршруты',
     events: 'Мероприятия',
     viewOnMap: 'Посмотреть на карте',
+    hideMap: 'Скрыть карту',
     details: 'Подробнее',
+    points: 'Точки',
+    info: 'Информация',
+  },
+  hi: {
+    welcome: 'Holy Wanderer में आपका स्वागत है',
+    selectLanguage: 'भाषा चुनें',
+    english: 'अंग्रेज़ी',
+    russian: 'रूसी',
+    hindi: 'हिंदी',
+    signIn: 'साइन इन',
+    signUp: 'साइन अप',
+    email: 'ईमेल',
+    password: 'पासवर्ड',
+    name: 'नाम',
+    continueWithGoogle: 'Google के साथ जारी रखें',
+    continueWithApple: 'Apple के साथ जारी रखें',
+    cities: 'शहर',
+    search: 'खोज',
+    profile: 'प्रोफ़ाइल',
+    favorites: 'पसंदीदा',
+    settings: 'सेटिंग्स',
+    signOut: 'साइन आउट',
+    temples: 'मंदिर',
+    ashrams: 'आश्रम',
+    kunds: 'कुंड',
+    routes: 'मार्ग',
+    events: 'कार्यक्रम',
+    viewOnMap: 'नक्शे पर देखें',
+    hideMap: 'नक्शा छिपाएं',
+    details: 'विवरण',
+    points: 'स्थान',
+    info: 'जानकारी',
   }
 };
 
@@ -71,8 +109,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     const savedLanguage = localStorage.getItem('holyWandererLanguage');
-    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ru')) {
-      setLanguageState(savedLanguage);
+    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ru' || savedLanguage === 'hi')) {
+      setLanguageState(savedLanguage as Language);
     }
   }, []);
 
