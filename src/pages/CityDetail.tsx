@@ -16,202 +16,62 @@ import {
   Eye
 } from 'lucide-react';
 import { City, Point, Route, Event } from '../types/models';
-
-// Mock data for city details
-const mockCity: City = {
-  id: '1',
-  name: {
-    en: 'Varanasi',
-    ru: 'Варанаси'
-  },
-  description: {
-    en: 'Varanasi, also known as Benares or Kashi, is one of the oldest continuously inhabited cities in the world and a major religious hub in India. It is situated on the banks of the holy river Ganges and is considered sacred by Hindus, Buddhists, and Jains. The city is famous for its ghats, ancient temples, and spiritual atmosphere.',
-    ru: 'Варанаси, также известный как Бенарес или Каши, является одним из старейших непрерывно населенных городов в мире и главным религиозным центром в Индии. Он расположен на берегу священной реки Ганг и считается священным местом для индуистов, буддистов и джайнов. Город известен своими гхатами, древними храмами и духовной атмосферой.'
-  },
-  media: [
-    {
-      id: 'v1',
-      type: 'image',
-      url: 'https://images.unsplash.com/photo-1561361058-c24e01238a46',
-      title: 'Varanasi Ghats',
-      description: 'View of the holy ghats along the Ganges river'
-    },
-    {
-      id: 'v2',
-      type: 'image',
-      url: 'https://images.unsplash.com/photo-1571536802807-30451e3955d8',
-      title: 'Evening Ceremony',
-      description: 'The famous Ganga Aarti ceremony at Dashashwamedh Ghat'
-    },
-    {
-      id: 'v3',
-      type: 'image',
-      url: 'https://images.unsplash.com/photo-1567942295400-8888228468be',
-      title: 'Morning Rituals',
-      description: 'Devotees performing morning rituals at the Ganges'
-    }
-  ],
-  thumbnail: 'https://images.unsplash.com/photo-1561361058-c24e01238a46?auto=format&fit=crop&w=600&h=400',
-  pointIds: ['1', '2'],
-  routeIds: ['1'],
-  eventIds: ['1'],
-  location: {
-    latitude: 25.3176,
-    longitude: 82.9739
-  }
-};
-
-// Mock points data
-const mockPoints: Point[] = [
-  {
-    id: '1',
-    cityId: '1',
-    type: 'temple',
-    name: {
-      en: 'Kashi Vishwanath Temple',
-      ru: 'Храм Каши Вишванатх'
-    },
-    description: {
-      en: 'One of the most famous Hindu temples dedicated to Lord Shiva. It is one of the twelve Jyotirlingas, the holiest of Shiva temples.',
-      ru: 'Один из самых известных индуистских храмов, посвященных Господу Шиве. Это один из двенадцати Джйотирлингамов, наиболее священных храмов Шивы.'
-    },
-    media: [
-      {
-        id: 'p1-1',
-        type: 'image',
-        url: 'https://images.unsplash.com/photo-1625125976244-8a1f64b12c43',
-        title: 'Kashi Vishwanath Temple',
-        description: 'Main entrance to the temple'
-      }
-    ],
-    thumbnail: 'https://images.unsplash.com/photo-1625125976244-8a1f64b12c43?auto=format&fit=crop&w=600&h=400',
-    location: {
-      latitude: 25.3109,
-      longitude: 83.0107
-    },
-    routeIds: ['1'],
-    eventIds: ['1']
-  },
-  {
-    id: '2',
-    cityId: '1',
-    type: 'kund',
-    name: {
-      en: 'Dashashwamedh Ghat',
-      ru: 'Гхат Дашашвамедх'
-    },
-    description: {
-      en: 'The main and probably the most spectacular ghat in Varanasi. It is located close to Vishwanath Temple and is probably the most spectacular ghat.',
-      ru: 'Главный и, вероятно, самый впечатляющий гхат в Варанаси. Он расположен недалеко от храма Вишванатх и является, вероятно, самым впечатляющим гхатом.'
-    },
-    media: [
-      {
-        id: 'p2-1',
-        type: 'image',
-        url: 'https://images.unsplash.com/photo-1627894006066-b9323481beb9',
-        title: 'Dashashwamedh Ghat',
-        description: 'Evening ceremony at the ghat'
-      }
-    ],
-    thumbnail: 'https://images.unsplash.com/photo-1627894006066-b9323481beb9?auto=format&fit=crop&w=600&h=400',
-    location: {
-      latitude: 25.3052,
-      longitude: 83.0173
-    },
-    routeIds: ['1'],
-    eventIds: []
-  }
-];
-
-// Mock routes data
-const mockRoutes: Route[] = [
-  {
-    id: '1',
-    cityId: '1',
-    name: {
-      en: 'Varanasi Temple Tour',
-      ru: 'Тур по храмам Варанаси'
-    },
-    description: {
-      en: 'A guided tour to the most significant temples in Varanasi, including Kashi Vishwanath and nearby ghats.',
-      ru: 'Экскурсия по самым значимым храмам Варанаси, включая Каши Вишванатх и близлежащие гхаты.'
-    },
-    media: [
-      {
-        id: 'r1-1',
-        type: 'image',
-        url: 'https://images.unsplash.com/photo-1577644923446-a636be1d1d4d',
-        title: 'Temple Route',
-        description: 'Path through the old city'
-      }
-    ],
-    thumbnail: 'https://images.unsplash.com/photo-1577644923446-a636be1d1d4d?auto=format&fit=crop&w=600&h=400',
-    pointIds: ['1', '2'],
-    eventIds: [],
-    distance: 3.5,
-    duration: 180
-  }
-];
-
-// Mock events data
-const mockEvents: Event[] = [
-  {
-    id: '1',
-    cityId: '1',
-    name: {
-      en: 'Ganga Aarti Ceremony',
-      ru: 'Церемония Ганга Аарти'
-    },
-    description: {
-      en: 'The spectacular Ganga Aarti is performed every evening at Dashashwamedh Ghat. It is an elaborate ritual using fire as an offering to Goddess Ganga.',
-      ru: 'Впечатляющая церемония Ганга Аарти проводится каждый вечер на гхате Дашашвамедх. Это сложный ритуал с использованием огня в качестве подношения богине Ганге.'
-    },
-    media: [
-      {
-        id: 'e1-1',
-        type: 'image',
-        url: 'https://images.unsplash.com/photo-1627894005990-9e32d9009759',
-        title: 'Ganga Aarti',
-        description: 'Priests performing the ceremony'
-      }
-    ],
-    thumbnail: 'https://images.unsplash.com/photo-1627894005990-9e32d9009759?auto=format&fit=crop&w=600&h=400',
-    pointIds: ['2'],
-    startDate: '2023-06-01T18:30:00',
-    endDate: '2023-06-01T19:30:00',
-    ownerId: 'user123'
-  }
-];
+import { useQuery } from '@tanstack/react-query';
+import { fetchCityById } from '../services/citiesService';
+import { fetchSpotsByCity } from '../services/spotsService';
+import { fetchRoutesByCity } from '../services/routesService';
+import { fetchEventsByCity } from '../services/eventsService';
 
 const CityDetail = () => {
   const { cityId } = useParams<{ cityId: string }>();
   const { language, t } = useLanguage();
   const navigate = useNavigate();
   
-  const [city, setCity] = useState<City | null>(null);
-  const [points, setPoints] = useState<Point[]>([]);
-  const [routes, setRoutes] = useState<Route[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('points');
   const [showMap, setShowMap] = useState(false);
   
   // Fetch city data
-  useEffect(() => {
-    // In a real app, this would be an API call
-    setIsLoading(true);
-    
-    setTimeout(() => {
-      // Mock API response with city details
-      if (cityId === '1') {
-        setCity(mockCity);
-        setPoints(mockPoints);
-        setRoutes(mockRoutes);
-        setEvents(mockEvents);
-      }
-      setIsLoading(false);
-    }, 500);
-  }, [cityId]);
+  const { 
+    data: city,
+    isLoading: isLoadingCity,
+    error: cityError
+  } = useQuery({
+    queryKey: ['city', cityId],
+    queryFn: () => fetchCityById(cityId as string),
+    enabled: !!cityId,
+  });
+  
+  // Fetch points data
+  const {
+    data: points = [],
+    isLoading: isLoadingPoints
+  } = useQuery({
+    queryKey: ['points', cityId],
+    queryFn: () => fetchSpotsByCity(cityId as string),
+    enabled: !!cityId,
+  });
+  
+  // Fetch routes data
+  const {
+    data: routes = [],
+    isLoading: isLoadingRoutes
+  } = useQuery({
+    queryKey: ['routes', cityId],
+    queryFn: () => fetchRoutesByCity(cityId as string),
+    enabled: !!cityId,
+  });
+  
+  // Fetch events data
+  const {
+    data: events = [],
+    isLoading: isLoadingEvents
+  } = useQuery({
+    queryKey: ['events', cityId],
+    queryFn: () => fetchEventsByCity(cityId as string),
+    enabled: !!cityId,
+  });
+  
+  const isLoading = isLoadingCity || isLoadingPoints || isLoadingRoutes || isLoadingEvents;
   
   if (isLoading) {
     return (
@@ -281,9 +141,14 @@ const CityDetail = () => {
               </Button>
             </div>
             
-            {showMap && (
+            {showMap && points.length > 0 && (
               <div className="mt-4">
-                <Map points={points} center={[city.location.longitude, city.location.latitude]} zoom={12} onPointSelect={handlePointClick} />
+                <Map 
+                  points={points} 
+                  center={[city.location.longitude, city.location.latitude]} 
+                  zoom={12} 
+                  onPointSelect={handlePointClick} 
+                />
               </div>
             )}
             
