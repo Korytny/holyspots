@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -7,7 +6,7 @@ import MediaGallery from '../components/MediaGallery';
 import ItemCard from '../components/ItemCard';
 import Map from '../components/Map';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   MapPin, 
@@ -36,7 +35,6 @@ const CityDetail = () => {
   const [spotRoutes, setSpotRoutes] = useState<any[]>([]);
   const [spotEvents, setSpotEvents] = useState<any[]>([]);
   
-  // Fetch city data
   const { 
     data: city,
     isLoading: isLoadingCity,
@@ -47,12 +45,10 @@ const CityDetail = () => {
     enabled: !!cityId,
   });
   
-  // Only fetch spots, routes and events data when the respective tab is active to improve performance
   const shouldFetchSpots = activeTab === 'spots' || showMap;
   const shouldFetchRoutes = activeTab === 'routes';
   const shouldFetchEvents = activeTab === 'events';
   
-  // Fetch spots data only when needed
   const {
     data: spots = [],
     isLoading: isLoadingSpots,
@@ -63,7 +59,6 @@ const CityDetail = () => {
     enabled: !!cityId && shouldFetchSpots,
   });
   
-  // Fetch routes data only when needed
   const {
     data: routes = [],
     isLoading: isLoadingRoutes,
@@ -74,7 +69,6 @@ const CityDetail = () => {
     enabled: !!cityId && shouldFetchRoutes,
   });
   
-  // Fetch events data only when needed
   const {
     data: events = [],
     isLoading: isLoadingEvents,
@@ -85,7 +79,6 @@ const CityDetail = () => {
     enabled: !!cityId && shouldFetchEvents,
   });
   
-  // Fetch routes for a specific spot when spot is selected
   useEffect(() => {
     const fetchSpotRelatedData = async () => {
       if (selectedSpot) {
@@ -192,16 +185,13 @@ const CityDetail = () => {
   }) : (city?.media || []);
 
   const handleSpotClick = (spotId: string) => {
-    // If clicking on an already selected spot, navigate to its detail
     if (selectedSpot === spotId) {
       navigate(`/points/${spotId}`);
       return;
     }
     
-    // Otherwise just select the spot to show its routes and events
     setSelectedSpot(spotId);
     
-    // If we're not in the spots tab, switch to it
     if (activeTab !== 'spots') {
       setActiveTab('spots');
     }
@@ -223,10 +213,8 @@ const CityDetail = () => {
     setSelectedSpot(null);
   };
   
-  // Find the selected spot object
   const selectedSpotObject = selectedSpot ? spots.find(spot => spot.id === selectedSpot) : null;
 
-  // Render city statistics badges
   const renderCityStats = () => {
     return (
       <div className="flex flex-wrap gap-2 mt-1">

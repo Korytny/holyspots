@@ -24,6 +24,7 @@ export interface ItemCardProps {
   location?: string;
   date?: string;
   pointCount?: number;
+  extraContent?: React.ReactNode;
 }
 
 const ItemCard: React.FC<ItemCardProps> = ({
@@ -37,7 +38,8 @@ const ItemCard: React.FC<ItemCardProps> = ({
   onToggleFavorite,
   location,
   date,
-  pointCount
+  pointCount,
+  extraContent
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const { language, t } = useLanguage();
@@ -129,6 +131,9 @@ const ItemCard: React.FC<ItemCardProps> = ({
               <span>{pointCount} {pointCount === 1 ? 'point' : 'points'}</span>
             </div>
           )}
+          
+          {/* Render the extra content if provided */}
+          {extraContent}
         </div>
         
         <Button 

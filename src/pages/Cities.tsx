@@ -143,7 +143,6 @@ const Cities = () => {
                     onClick={() => handleCityClick(city.id)}
                     isFavorite={favorites.has(city.id)}
                     onToggleFavorite={() => toggleFavorite(city.id)}
-                    pointCount={city.pointIds?.length || 0}
                     extraContent={renderCityStats(city)}
                   />
                 );
