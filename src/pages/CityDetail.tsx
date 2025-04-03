@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import Navigation from '../components/Navigation';
@@ -15,7 +15,6 @@ import {
   ArrowLeft,
   Eye
 } from 'lucide-react';
-import { City, Point, Route, Event } from '../types/models';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCityById } from '../services/citiesService';
 import { fetchSpotsByCity } from '../services/spotsService';
@@ -117,6 +116,10 @@ const CityDetail = () => {
     setShowMap(!showMap);
   };
   
+  // Safely get the city name in the current language or fallback to English
+  const cityName = city?.name?.[language] || city?.name?.en || 'Unknown City';
+  const cityDescription = city?.description?.[language] || city?.description?.en || 'No description available';
+  
   return (
     <div className="flex flex-col min-h-screen bg-muted">
       <Navigation />
@@ -129,10 +132,10 @@ const CityDetail = () => {
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="p-6">
-            <h1 className="text-3xl font-bold mb-2">{city.name[language]}</h1>
-            <p className="text-muted-foreground mb-6">{city.description[language]}</p>
+            <h1 className="text-3xl font-bold mb-2">{cityName}</h1>
+            <p className="text-muted-foreground mb-6">{cityDescription}</p>
             
-            <MediaGallery media={city.media} />
+            <MediaGallery media={city.media || []} />
             
             <div className="mt-6 flex justify-end">
               <Button variant="outline" onClick={toggleMapView}>
@@ -145,7 +148,7 @@ const CityDetail = () => {
               <div className="mt-4">
                 <Map 
                   points={points} 
-                  center={[city.location.longitude, city.location.latitude]} 
+                  center={city.location ? [city.location.longitude, city.location.latitude] : [0, 0]} 
                   zoom={12} 
                   onPointSelect={handlePointClick} 
                 />
@@ -177,9 +180,9 @@ const CityDetail = () => {
                           key={point.id}
                           id={point.id}
                           type="point"
-                          name={point.name}
-                          description={point.description}
-                          thumbnail={point.thumbnail}
+                          name={point.name || { en: 'Unnamed Point' }}
+                          description={point.description || { en: 'No description available' }}
+                          thumbnail={point.thumbnail || '/placeholder.svg'}
                           onClick={() => handlePointClick(point.id)}
                         />
                       ))
@@ -199,11 +202,11 @@ const CityDetail = () => {
                           key={route.id}
                           id={route.id}
                           type="route"
-                          name={route.name}
-                          description={route.description}
-                          thumbnail={route.thumbnail}
+                          name={route.name || { en: 'Unnamed Route' }}
+                          description={route.description || { en: 'No description available' }}
+                          thumbnail={route.thumbnail || '/placeholder.svg'}
                           onClick={() => handleRouteClick(route.id)}
-                          pointCount={route.pointIds.length}
+                          pointCount={route.pointIds?.length || 0}
                         />
                       ))
                     ) : (
@@ -222,11 +225,11 @@ const CityDetail = () => {
                           key={event.id}
                           id={event.id}
                           type="event"
-                          name={event.name}
-                          description={event.description}
-                          thumbnail={event.thumbnail}
+                          name={event.name || { en: 'Unnamed Event' }}
+                          description={event.description || { en: 'No description available' }}
+                          thumbnail={event.thumbnail || '/placeholder.svg'}
                           onClick={() => handleEventClick(event.id)}
-                          date={new Date(event.startDate).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU')}
+                          date={event.startDate ? new Date(event.startDate).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU') : undefined}
                         />
                       ))
                     ) : (

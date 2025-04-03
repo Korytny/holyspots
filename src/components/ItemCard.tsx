@@ -43,6 +43,15 @@ const ItemCard: React.FC<ItemCardProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const { language, t } = useLanguage();
 
+  // Safety check to ensure name and description are valid objects
+  const displayName = name && typeof name === 'object' && name[language] 
+    ? name[language] 
+    : (name?.en || 'Unnamed Item');
+    
+  const displayDescription = description && typeof description === 'object' && description[language]
+    ? description[language]
+    : (description?.en || 'No description available');
+
   // Determine icon based on type
   const getIcon = () => {
     switch (type) {
@@ -63,7 +72,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
       <div className="relative overflow-hidden h-48">
         <img 
           src={thumbnail} 
-          alt={name[language]} 
+          alt={displayName} 
           className="w-full h-full object-cover transition-transform duration-500 ease-in-out"
           style={{ transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}
         />
@@ -94,10 +103,10 @@ const ItemCard: React.FC<ItemCardProps> = ({
       </div>
       
       <div className="p-4">
-        <h3 className="font-medium text-lg mb-1 line-clamp-1">{name[language]}</h3>
+        <h3 className="font-medium text-lg mb-1 line-clamp-1">{displayName}</h3>
         
         <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-          {description[language]}
+          {displayDescription}
         </p>
         
         <div className="flex flex-col gap-2">

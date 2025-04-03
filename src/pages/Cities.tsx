@@ -1,11 +1,10 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import Navigation from '../components/Navigation';
 import ItemCard from '../components/ItemCard';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Search } from 'lucide-react';
 import { City } from '../types/models';
 import { fetchCities } from '../services/citiesService';
@@ -25,10 +24,14 @@ const Cities = () => {
   });
   
   // Filter cities based on search term
-  const filteredCities = cities.filter(city => 
-    city.name[language]?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    city.description[language]?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCities = cities.filter(city => {
+    // Handle potential undefined values safely
+    const cityName = city.name?.[language] || city.name?.en || '';
+    const cityDesc = city.description?.[language] || city.description?.en || '';
+    
+    return cityName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           cityDesc.toLowerCase().includes(searchTerm.toLowerCase());
+  });
   
   const handleCityClick = (cityId: string) => {
     navigate(`/cities/${cityId}`);
@@ -70,6 +73,7 @@ const Cities = () => {
         ) : error ? (
           <div className="text-center py-12 text-red-500">
             <p>Error loading cities. Please try again.</p>
+            <p className="text-sm mt-2">{(error as Error).message}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -79,18 +83,18 @@ const Cities = () => {
                   key={city.id}
                   id={city.id}
                   type="city"
-                  name={city.name}
-                  description={city.description}
-                  thumbnail={city.thumbnail}
+                  name={city.name || { en: 'Unnamed City' }}
+                  description={city.description || { en: 'No description available' }}
+                  thumbnail={city.thumbnail || '/placeholder.svg'}
                   onClick={() => handleCityClick(city.id)}
                   isFavorite={favorites.has(city.id)}
                   onToggleFavorite={() => toggleFavorite(city.id)}
-                  pointCount={city.pointIds.length}
+                  pointCount={city.pointIds?.length || 0}
                 />
               ))
             ) : (
               <div className="col-span-full text-center py-12">
-                <p className="text-muted-foreground">{t('No cities found matching your search')}</p>
+                <p className="text-muted-foreground">No cities found matching your search</p>
               </div>
             )}
           </div>
