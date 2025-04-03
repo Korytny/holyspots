@@ -42,12 +42,12 @@ const CityDetail = () => {
     enabled: !!cityId,
   });
   
-  // Fetch points data
+  // Fetch spots data
   const {
-    data: points = [],
-    isLoading: isLoadingPoints
+    data: spots = [],
+    isLoading: isLoadingSpots
   } = useQuery({
-    queryKey: ['points', cityId],
+    queryKey: ['spots', cityId],
     queryFn: () => fetchSpotsByCity(cityId as string),
     enabled: !!cityId,
   });
@@ -72,7 +72,7 @@ const CityDetail = () => {
     enabled: !!cityId,
   });
   
-  const isLoading = isLoadingCity || isLoadingPoints || isLoadingRoutes || isLoadingEvents;
+  const isLoading = isLoadingCity || isLoadingSpots || isLoadingRoutes || isLoadingEvents;
   
   if (isLoading) {
     return (
@@ -110,7 +110,7 @@ const CityDetail = () => {
   const cityDescription = city?.description?.[language] || city?.description?.en || '';
   const cityInfo = city?.info?.[language] || city?.info?.en || '';
   
-  // Process media items - fix the type issue by explicitly mapping to MediaItem type
+  // Process media items
   const mediaItems: MediaItem[] = Array.isArray(city.images) ? city.images.map((url: string, index: number) => {
     const isVideo = url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.mov');
     return {
@@ -123,8 +123,8 @@ const CityDetail = () => {
     };
   }) : (city.media || []);
   
-  const handlePointClick = (pointId: string) => {
-    navigate(`/points/${pointId}`);
+  const handleSpotClick = (spotId: string) => {
+    navigate(`/points/${spotId}`);
   };
   
   const handleRouteClick = (routeId: string) => {
@@ -163,13 +163,13 @@ const CityDetail = () => {
               </Button>
             </div>
             
-            {showMap && points.length > 0 && (
+            {showMap && spots.length > 0 && (
               <div className="mt-4">
                 <Map 
-                  points={points} 
+                  points={spots} 
                   center={city.location ? [city.location.longitude, city.location.latitude] : [0, 0]} 
                   zoom={12} 
-                  onPointSelect={handlePointClick} 
+                  onPointSelect={handleSpotClick} 
                 />
               </div>
             )}
@@ -181,9 +181,9 @@ const CityDetail = () => {
                     <Info className="mr-1 h-4 w-4" />
                     {t('info')}
                   </TabsTrigger>
-                  <TabsTrigger value="points" className="flex items-center">
+                  <TabsTrigger value="spots" className="flex items-center">
                     <MapPin className="mr-1 h-4 w-4" />
-                    {t('points')}
+                    {t('spots')}
                   </TabsTrigger>
                   <TabsTrigger value="routes" className="flex items-center">
                     <NavigationIcon className="mr-1 h-4 w-4" />
@@ -209,23 +209,23 @@ const CityDetail = () => {
                   )}
                 </TabsContent>
                 
-                <TabsContent value="points" className="pt-4">
+                <TabsContent value="spots" className="pt-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {points.length > 0 ? (
-                      points.map(point => (
+                    {spots.length > 0 ? (
+                      spots.map(spot => (
                         <ItemCard
-                          key={point.id}
-                          id={point.id}
+                          key={spot.id}
+                          id={spot.id}
                           type="point"
-                          name={point.name || { en: 'Unnamed Point' }}
-                          description={point.description || { en: 'No description available' }}
-                          thumbnail={point.thumbnail || '/placeholder.svg'}
-                          onClick={() => handlePointClick(point.id)}
+                          name={spot.name || { en: 'Unnamed Spot' }}
+                          description={spot.description || { en: 'No description available' }}
+                          thumbnail={spot.thumbnail || '/placeholder.svg'}
+                          onClick={() => handleSpotClick(spot.id)}
                         />
                       ))
                     ) : (
                       <div className="col-span-full text-center py-8">
-                        <p className="text-muted-foreground">No points available</p>
+                        <p className="text-muted-foreground">No spots available</p>
                       </div>
                     )}
                   </div>
