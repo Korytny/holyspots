@@ -21,6 +21,7 @@ import { fetchCityById } from '../services/citiesService';
 import { fetchSpotsByCity } from '../services/spotsService';
 import { fetchRoutesByCity } from '../services/routesService';
 import { fetchEventsByCity } from '../services/eventsService';
+import { MediaItem } from '../types/models';
 
 const CityDetail = () => {
   const { cityId } = useParams<{ cityId: string }>();
@@ -109,14 +110,16 @@ const CityDetail = () => {
   const cityDescription = city?.description?.[language] || city?.description?.en || '';
   const cityInfo = city?.info?.[language] || city?.info?.en || '';
   
-  // Process media items
-  const mediaItems = Array.isArray(city.images) ? city.images.map((url: string, index: number) => {
+  // Process media items - fix the type issue by explicitly mapping to MediaItem type
+  const mediaItems: MediaItem[] = Array.isArray(city.images) ? city.images.map((url: string, index: number) => {
     const isVideo = url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.mov');
     return {
       id: `media-${index}`,
-      type: isVideo ? 'video' : 'image',
+      type: isVideo ? 'video' as const : 'image' as const,
       url: url,
-      thumbnailUrl: isVideo ? undefined : url
+      thumbnailUrl: isVideo ? undefined : url,
+      title: undefined,
+      description: undefined
     };
   }) : (city.media || []);
   

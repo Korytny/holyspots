@@ -1,4 +1,6 @@
+
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import Navigation from '../components/Navigation';
 import { Button } from '@/components/ui/button';
@@ -10,6 +12,7 @@ import ItemCard from '../components/ItemCard';
 const Profile = () => {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('cities');
+  const navigate = useNavigate();
   
   // Mock user data
   const user = {
@@ -99,6 +102,23 @@ const Profile = () => {
     console.log('User logged out');
     // In real app, would call auth context logout method and redirect to auth page
   };
+
+  // Add navigation handlers for items
+  const handleCityClick = (cityId: string) => {
+    navigate(`/cities/${cityId}`);
+  };
+  
+  const handlePointClick = (pointId: string) => {
+    navigate(`/points/${pointId}`);
+  };
+  
+  const handleRouteClick = (routeId: string) => {
+    navigate(`/routes/${routeId}`);
+  };
+  
+  const handleEventClick = (eventId: string) => {
+    navigate(`/events/${eventId}`);
+  };
   
   const getCounts = () => {
     return {
@@ -173,6 +193,7 @@ const Profile = () => {
                       description={city.description}
                       thumbnail={city.thumbnail}
                       location={city.location}
+                      onClick={() => handleCityClick(city.id)}
                     />
                   ))
                 ) : (
@@ -195,6 +216,7 @@ const Profile = () => {
                       description={point.description}
                       thumbnail={point.thumbnail}
                       location={point.location}
+                      onClick={() => handlePointClick(point.id)}
                     />
                   ))
                 ) : (
@@ -218,6 +240,7 @@ const Profile = () => {
                       thumbnail={route.thumbnail}
                       location={route.location}
                       pointCount={route.pointCount}
+                      onClick={() => handleRouteClick(route.id)}
                     />
                   ))
                 ) : (
@@ -241,6 +264,7 @@ const Profile = () => {
                       thumbnail={event.thumbnail}
                       location={event.location}
                       date={event.date}
+                      onClick={() => handleEventClick(event.id)}
                     />
                   ))
                 ) : (

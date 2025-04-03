@@ -5,7 +5,6 @@ import {
   Calendar,
   Navigation,
   ArrowRight,
-  Star,
   Heart
 } from 'lucide-react';
 import { useState } from 'react';
@@ -13,7 +12,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 type ItemType = 'city' | 'point' | 'route' | 'event';
 
-interface ItemCardProps {
+export interface ItemCardProps {
   id: string;
   type: ItemType;
   name: Record<string, string>;
