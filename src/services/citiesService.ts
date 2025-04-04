@@ -62,6 +62,9 @@ export const fetchCities = async (): Promise<City[]> => {
   });
 };
 
+// Adding the missing function that Search.tsx is looking for
+export const fetchAllCities = fetchCities; // Simply alias fetchCities for backward compatibility
+
 export const fetchCityById = async (cityId: string): Promise<City | null> => {
   const { data, error } = await supabase
     .from('cities')

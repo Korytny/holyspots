@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { fetchAllPoints } from '../services/pointsService';
 import { fetchAllRoutes } from "../services/routesService";
 import { fetchEvents } from "../services/eventsService";
-import { fetchAllCities } from "../services/citiesService";
+import { fetchCities } from "../services/citiesService"; // Fixed import
 import { Point, Route, Event, City } from '../types/models';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,7 +47,7 @@ const Search = () => {
       setIsLoading(true);
       try {
         const [citiesData, spotsData, routesData, eventsData] = await Promise.all([
-          fetchAllCities(),
+          fetchCities(), // Using the correct import
           fetchAllPoints(),
           fetchAllRoutes(),
           fetchEvents()
