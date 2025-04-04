@@ -133,11 +133,11 @@ export const fetchRoutesByPoint = async (pointId: string): Promise<Route[]> => {
   }
   
   try {
-    // This query might need to be updated based on your DB structure
+    // Check if the spot_route table exists in our database
     const { data, error } = await supabase
-      .from('route_point')
+      .from('spot_route')
       .select('route_id')
-      .eq('point_id', pointId);
+      .eq('spot_id', pointId);
     
     if (error) {
       console.error(`Error fetching route IDs for point ${pointId}:`, error);
@@ -174,7 +174,7 @@ export const fetchRoutesByEvent = async (eventId: string): Promise<Route[]> => {
   }
   
   try {
-    // This query might need to be updated based on your DB structure
+    // Using the correct table name from the database
     const { data, error } = await supabase
       .from('route_event')
       .select('route_id')

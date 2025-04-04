@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
 import { MapPin, User, Search, Menu } from "lucide-react";
@@ -12,7 +11,24 @@ const Navigation = () => {
   const { t } = useLanguage();
   const location = useLocation();
   const [open, setOpen] = useState(false);
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, checkAuthStatus } = useAuth();
+  const [authChecked, setAuthChecked] = useState(false);
+  
+  useEffect(() => {
+    const verifyAuth = async () => {
+      await checkAuthStatus();
+      setAuthChecked(true);
+    };
+    
+    verifyAuth();
+    
+    // Poll auth status every 10 seconds to ensure it stays current
+    const intervalId = setInterval(verifyAuth, 10000);
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [checkAuthStatus]);
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -35,8 +51,8 @@ const Navigation = () => {
   // Function to determine profile button color based on auth status
   const getProfileButtonStyle = (path: string) => {
     if (path === '/profile') {
-      if (isLoading) {
-        return "bg-gray-400 text-white"; // Loading state
+      if (isLoading || !authChecked) {
+        return "bg-gray-400 text-white"; // Loading state - gray
       }
       
       if (isAuthenticated) {
@@ -49,6 +65,7 @@ const Navigation = () => {
     return isActive(path) ? "bg-primary text-primary-foreground" : "hover:bg-secondary";
   };
   
+  // Mobile navigation component
   const MobileNav = () => <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="md:hidden">

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -20,7 +21,7 @@ interface FavoritesData {
 }
 
 const Profile = () => {
-  const { user, signOut, isLoading: authLoading, isAuthenticated } = useAuth();
+  const { user, signOut, isLoading: authLoading, isAuthenticated, checkAuthStatus } = useAuth();
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { toast } = useToast();
@@ -33,22 +34,25 @@ const Profile = () => {
     routes: [],
     events: [],
   });
-  
+
   useEffect(() => {
-    console.log("Profile component mounted");
-    console.log("Auth loading:", authLoading);
-    console.log("Is authenticated:", isAuthenticated);
-    console.log("User:", user);
+    const verifyAuthentication = async () => {
+      console.log("Profile: Verifying authentication...");
+      const isAuth = await checkAuthStatus();
+      console.log("Profile: Authentication check result:", isAuth);
+      
+      if (!isAuth) {
+        console.log("Profile: User not authenticated, redirecting to auth page");
+        navigate('/auth');
+      }
+    };
     
-    if (!authLoading && !isAuthenticated) {
-      console.log("User not authenticated, redirecting to auth page");
-      navigate('/auth');
-    }
-  }, [isAuthenticated, navigate, authLoading, user]);
+    verifyAuthentication();
+  }, [checkAuthStatus, navigate]);
   
   useEffect(() => {
     if (user && isAuthenticated && !authLoading) {
-      console.log("User is authenticated, fetching favorites");
+      console.log("Profile: User is authenticated, fetching favorites");
       fetchFavorites();
     }
   }, [user, isAuthenticated, authLoading]);

@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '../types/models';
@@ -16,6 +15,7 @@ interface AuthContextType {
   addFavorite: (itemId: string, itemType: 'city' | 'point' | 'route' | 'event') => Promise<void>;
   removeFavorite: (itemId: string, itemType: 'city' | 'point' | 'route' | 'event') => Promise<void>;
   isFavorite: (itemId: string, itemType: 'city' | 'point' | 'route' | 'event') => boolean;
+  checkAuthStatus: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,7 +26,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const { toast } = useToast();
 
-  // Function to fetch user favorites
   const fetchUserFavorites = async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -71,18 +70,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Исправленная инициализация аутентификации
   useEffect(() => {
     const initAuth = async () => {
       try {
         setIsLoading(true);
+        console.log("Initializing auth context...");
         
-        // Сначала настраиваем слушатель изменений состояния аутентификации
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, currentSession) => {
             console.log("Auth state changed:", event, currentSession ? "Session exists" : "No session");
             
             if (currentSession?.user) {
+              console.log("User authenticated:", currentSession.user.id);
               setSession(currentSession);
               const appUser: User = {
                 id: currentSession.user.id,
@@ -104,13 +103,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               
               setUser(appUser);
               
-              // Загружаем избранное с помощью setTimeout для предотвращения блокировки
               if (event !== 'INITIAL_SESSION') {
                 setTimeout(() => {
                   fetchUserFavorites(appUser.id);
                 }, 0);
               }
             } else {
+              console.log("No user in session, clearing state");
               setUser(null);
               setSession(null);
             }
@@ -119,7 +118,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         );
         
-        // Затем проверяем текущую сессию
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -151,8 +149,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           setUser(appUser);
           
-          // Загружаем избранное
           await fetchUserFavorites(appUser.id);
+        } else {
+          console.log("No session found on initialization");
         }
         
         setIsLoading(false);
@@ -169,7 +168,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  // Handle OAuth redirects
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash;
@@ -186,7 +184,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Function to add to favorites
   const addFavorite = async (itemId: string, itemType: 'city' | 'point' | 'route' | 'event') => {
     if (!user) {
       toast({
@@ -198,7 +195,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      // Convert point to spot for database consistency
       const dbItemType = itemType === 'point' ? 'spot' : itemType;
       
       const { error } = await supabase
@@ -260,7 +256,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Function to remove from favorites
   const removeFavorite = async (itemId: string, itemType: 'city' | 'point' | 'route' | 'event') => {
     if (!user) return;
     
@@ -316,7 +311,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Function to check if an item is in favorites
   const isFavorite = (itemId: string, itemType: 'city' | 'point' | 'route' | 'event'): boolean => {
     if (!user || !user.favorites) return false;
     
@@ -334,7 +328,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Function to sign in
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
@@ -357,7 +350,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Function to sign up
   const signUp = async (email: string, password: string, name?: string) => {
     setIsLoading(true);
     try {
@@ -385,7 +377,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Function to sign out
   const signOut = async () => {
     setIsLoading(true);
     try {
@@ -404,7 +395,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Function for Google sign-in
   const googleSignIn = async () => {
     setIsLoading(true);
     try {
@@ -435,6 +425,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const checkAuthStatus = async (): Promise<boolean> => {
+    try {
+      const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error("Error checking auth status:", error);
+        return false;
+      }
+      
+      if (currentSession && currentSession.user) {
+        console.log("Auth status check: User is authenticated");
+        
+        if (!session || session.user.id !== currentSession.user.id) {
+          setSession(currentSession);
+          
+          const appUser: User = {
+            id: currentSession.user.id,
+            email: currentSession.user.email || '',
+            name: currentSession.user.user_metadata?.name || 
+                  currentSession.user.user_metadata?.full_name || 
+                  'User',
+            avatarUrl: currentSession.user.user_metadata?.avatar_url || 
+                      currentSession.user.user_metadata?.picture,
+            favorites: {
+              cities: [],
+              points: [],
+              routes: [],
+              events: []
+            },
+            ownedPoints: [],
+            ownedEvents: []
+          };
+          
+          setUser(appUser);
+          
+          if (!user || user.id !== appUser.id) {
+            setTimeout(() => {
+              fetchUserFavorites(appUser.id);
+            }, 0);
+          }
+        }
+        
+        return true;
+      } else {
+        console.log("Auth status check: User is not authenticated");
+        
+        if (session || user) {
+          setSession(null);
+          setUser(null);
+        }
+        
+        return false;
+      }
+    } catch (error) {
+      console.error("Exception in checkAuthStatus:", error);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -447,7 +496,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         googleSignIn,
         addFavorite,
         removeFavorite,
-        isFavorite
+        isFavorite,
+        checkAuthStatus
       }}
     >
       {children}
