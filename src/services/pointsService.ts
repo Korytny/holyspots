@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Point, Language, MediaItem, GeoPoint } from '../types/models';
 
@@ -242,3 +241,16 @@ export const fetchPointsByEventId = async (eventId: string): Promise<Point[]> =>
 
 // For backward compatibility
 export const fetchPointsByCityId = fetchPointsByCity;
+
+// Add this helper function to fetch points by IDs
+export const fetchPointsByIds = async (pointIds: string[]) => {
+  if (!pointIds.length) return [];
+  
+  const points = [];
+  for (const id of pointIds) {
+    const point = await fetchPointById(id);
+    if (point) points.push(point);
+  }
+  
+  return points;
+};

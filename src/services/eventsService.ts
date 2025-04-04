@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Event, Language, MediaItem, Json } from '../types/models';
 
@@ -383,4 +382,16 @@ export const fetchEventsByRoute = async (routeId: string): Promise<Event[]> => {
     console.error(`Error fetching events for route ID ${routeId}:`, error);
     return [];
   }
+};
+
+export const fetchEventsByIds = async (eventIds: string[]) => {
+  if (!eventIds.length) return [];
+  
+  const events = [];
+  for (const id of eventIds) {
+    const event = await fetchEventById(id);
+    if (event) events.push(event);
+  }
+  
+  return events;
 };
