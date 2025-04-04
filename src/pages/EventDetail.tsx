@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Event, Route, Point } from '../types/models';
 import { fetchEventById } from '../services/eventsService';
-import { fetchRoutesByEventId } from '../services/routesService';
+import { fetchRoutesByEvent } from '../services/routesService';
 import { fetchPointsByEventId } from '../services/pointsService';
 import { Button } from '@/components/ui/button';
 import ItemCardWrapper from '../components/ItemCardWrapper';

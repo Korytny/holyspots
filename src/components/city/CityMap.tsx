@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -185,7 +184,7 @@ const CityMap = ({
             .addTo(map.current);
           
           markerEl.addEventListener('click', () => {
-            navigate(`/points/${point.id}`);
+            handleMarkerClick(point.id);
           });
         });
 
@@ -234,6 +233,14 @@ const CityMap = ({
       map.current?.remove();
     };
   }, [mapToken, points, cityLocation, navigate]);
+
+  const handleMarkerClick = (pointId: string) => {
+    if (onPointSelect) {
+      onPointSelect(pointId);
+    } else {
+      navigate(`/points/${pointId}`);
+    }
+  };
 
   if (!mapToken) {
     return (

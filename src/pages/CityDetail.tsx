@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchCityById } from '../services/citiesService';
-import { fetchPointsByCity } from '../services/pointsService';
+import { fetchPointsByCityId } from '../services/pointsService';
 import { fetchRoutesByCity } from '../services/routesService';
 import { fetchEventsByCity } from '../services/eventsService';
 import { City, Point, Route, Event, GeoPoint } from '../types/models';
@@ -29,6 +29,7 @@ const CityDetail = () => {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingError, setLoadingError] = useState<Error | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<Point | null>(null);
   const [selectedSpotRoutes, setSelectedSpotRoutes] = useState<Route[]>([]);
   const [selectedSpotEvents, setSelectedSpotEvents] = useState<Event[]>([]);
@@ -48,6 +49,7 @@ const CityDetail = () => {
     
     const loadCityData = async () => {
       setIsLoading(true);
+      setLoadingError(null);
       try {
         // Fetch city details
         const cityData = await fetchCityById(cityId);
@@ -66,7 +68,7 @@ const CityDetail = () => {
         
         // Fetch spots, routes, and events for this city
         const [spotsData, routesData, eventsData] = await Promise.all([
-          fetchPointsByCity(cityId),
+          fetchPointsByCityId(cityId),
           fetchRoutesByCity(cityId),
           fetchEventsByCity(cityId)
         ]);
@@ -77,10 +79,19 @@ const CityDetail = () => {
         
         // If there are spots, set the center point to the first spot's location
         if (spotsData.length > 0 && spotsData[0].location) {
-          setCenterPoint(spotsData[0].location);
+          const firstPoint = spotsData[0].location;
+          
+          // Create a GeoPoint from the location
+          const geoPoint: GeoPoint = {
+            type: "Point",
+            coordinates: [firstPoint.longitude, firstPoint.latitude]
+          };
+          
+          setCenterPoint(geoPoint);
         }
       } catch (error) {
         console.error('Error loading city data:', error);
+        setLoadingError(error instanceof Error ? error : new Error('Failed to load city data'));
         toast({
           title: "Error",
           description: "Failed to load city data",
@@ -94,9 +105,20 @@ const CityDetail = () => {
     loadCityData();
   }, [cityId, navigate, toast]);
   
-  const handleSpotClick = async (spot: Point) => {
+  const handleSpotClick = async (spotId: string) => {
+    const spot = points.find(p => p.id === spotId);
+    if (!spot) return;
+    
     setSelectedSpot(spot);
-    setCenterPoint(spot.location);
+    
+    if (spot.location) {
+      const geoPoint: GeoPoint = {
+        type: "Point",
+        coordinates: [spot.location.longitude, spot.location.latitude]
+      };
+      setCenterPoint(geoPoint);
+    }
+    
     setIsSpotDetailsOpen(true);
     
     try {
@@ -115,6 +137,14 @@ const CityDetail = () => {
         variant: "destructive"
       });
     }
+  };
+  
+  const handleRouteClick = (routeId: string) => {
+    navigate(`/routes/${routeId}`);
+  };
+  
+  const handleEventClick = (eventId: string) => {
+    navigate(`/events/${eventId}`);
   };
   
   const handleCloseSpotDetails = () => {
@@ -185,31 +215,38 @@ const CityDetail = () => {
           
           <TabsContent value="map" className="p-0">
             <CityMap 
-              spots={points}
-              selectedSpot={selectedSpot}
-              onSpotClick={handleSpotClick}
-              centerPoint={centerPoint}
-              onCenterPointChange={setCenterPoint}
-              isSpotDetailsOpen={isSpotDetailsOpen}
-              onCloseSpotDetails={handleCloseSpotDetails}
-              selectedSpotRoutes={selectedSpotRoutes}
-              selectedSpotEvents={selectedSpotEvents}
+              points={points}
+              cityLocation={city.location}
+              onPointSelect={handleSpotClick}
             />
           </TabsContent>
           
           <TabsContent value="spots">
             <CitySpots 
               spots={points} 
+              isLoading={false}
+              error={loadingError}
+              selectedSpot={selectedSpot ? selectedSpot.id : null}
               onSpotClick={handleSpotClick} 
             />
           </TabsContent>
           
           <TabsContent value="routes">
-            <CityRoutes routes={routes} />
+            <CityRoutes 
+              routes={routes}
+              isLoading={false}
+              error={loadingError}
+              onRouteClick={handleRouteClick}
+            />
           </TabsContent>
           
           <TabsContent value="events">
-            <CityEvents events={events} />
+            <CityEvents 
+              events={events}
+              isLoading={false}
+              error={loadingError}
+              onEventClick={handleEventClick}
+            />
           </TabsContent>
         </Tabs>
       </div>
