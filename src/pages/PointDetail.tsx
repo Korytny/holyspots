@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -42,7 +43,7 @@ const PointDetail = () => {
   } = useQuery({
     queryKey: ['spot-routes', pointId],
     queryFn: () => fetchRoutesBySpot(pointId as string),
-    enabled: !!pointId && activeTab === 'routes',
+    enabled: !!pointId,
   });
   
   const {
@@ -52,7 +53,7 @@ const PointDetail = () => {
   } = useQuery({
     queryKey: ['spot-events', pointId],
     queryFn: () => fetchEventsBySpot(pointId as string),
-    enabled: !!pointId && activeTab === 'events',
+    enabled: !!pointId,
   });
 
   if (isLoadingSpot) {

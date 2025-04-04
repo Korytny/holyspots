@@ -62,17 +62,34 @@ export const fetchRouteById = async (routeId: string): Promise<Route | null> => 
 export const fetchRoutesBySpot = async (spotId: string): Promise<Route[]> => {
   console.log('Fetching routes for spot:', spotId);
   
+  // Use the spot_route relationship table
+  const { data: relationData, error: relationError } = await supabase
+    .from('spot_route')
+    .select('route_id')
+    .eq('spot_id', spotId);
+  
+  if (relationError) {
+    console.error('Error fetching spot-route relations:', relationError);
+    throw relationError;
+  }
+  
+  if (!relationData || relationData.length === 0) {
+    return [];
+  }
+  
+  const routeIds = relationData.map(relation => relation.route_id);
+  
   const { data, error } = await supabase
     .from('routes')
     .select('*')
-    .contains('spots', [spotId]);
+    .in('id', routeIds);
   
   if (error) {
     console.error('Error fetching routes for spot:', error);
     throw error;
   }
   
-  console.log(`Retrieved ${data.length} routes for spot ${spotId}`);
+  console.log(`Retrieved ${data?.length || 0} routes for spot ${spotId}`);
   
   return data.map((routeData): Route => ({
     id: routeData.id,
@@ -91,9 +108,10 @@ export const fetchRoutesBySpot = async (spotId: string): Promise<Route[]> => {
 export const fetchRoutesByEvent = async (eventId: string): Promise<Route[]> => {
   console.log('Fetching routes for event:', eventId);
   
+  // Use the route_event relationship table
   const { data: relationData, error: relationError } = await supabase
     .from('route_event')
-    .select('*')
+    .select('route_id')
     .eq('event_id', eventId);
   
   if (relationError) {

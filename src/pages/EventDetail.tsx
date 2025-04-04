@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import Navigation from '../components/Navigation';
@@ -13,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchEventById } from '../services/eventsService';
-import { fetchSpotsByIds } from '../services/spotsService';
+import { fetchSpotsByEvent } from '../services/spotsService';
 import { fetchRoutesByEvent } from '../services/routesService';
 import { MediaItem } from '../types/models';
 
@@ -37,9 +38,9 @@ const EventDetail = () => {
     data: spots = [],
     isLoading: isLoadingSpots,
   } = useQuery({
-    queryKey: ['event-spots', eventId, event?.pointIds],
-    queryFn: () => fetchSpotsByIds(event?.pointIds || []),
-    enabled: !!event?.pointIds && event.pointIds.length > 0,
+    queryKey: ['event-spots', eventId],
+    queryFn: () => fetchSpotsByEvent(eventId as string),
+    enabled: !!eventId,
   });
   
   const {

@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 import { Event } from '../types/models';
 
@@ -61,17 +62,34 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
 export const fetchEventsBySpot = async (spotId: string): Promise<Event[]> => {
   console.log('Fetching events for spot:', spotId);
   
+  // Use the spot_event relationship table
+  const { data: relationData, error: relationError } = await supabase
+    .from('spot_event')
+    .select('event_id')
+    .eq('spot_id', spotId);
+  
+  if (relationError) {
+    console.error('Error fetching spot-event relations:', relationError);
+    throw relationError;
+  }
+  
+  if (!relationData || relationData.length === 0) {
+    return [];
+  }
+  
+  const eventIds = relationData.map(relation => relation.event_id);
+  
   const { data, error } = await supabase
     .from('events')
     .select('*')
-    .contains('spot', [spotId]);
+    .in('id', eventIds);
   
   if (error) {
     console.error('Error fetching events for spot:', error);
     throw error;
   }
   
-  console.log(`Retrieved ${data.length} events for spot ${spotId}`);
+  console.log(`Retrieved ${data?.length || 0} events for spot ${spotId}`);
   
   return data.map((eventData): Event => ({
     id: eventData.id,
@@ -90,17 +108,34 @@ export const fetchEventsBySpot = async (spotId: string): Promise<Event[]> => {
 export const fetchEventsByRoute = async (routeId: string): Promise<Event[]> => {
   console.log('Fetching events for route:', routeId);
   
+  // Use the route_event relationship table
+  const { data: relationData, error: relationError } = await supabase
+    .from('route_event')
+    .select('event_id')
+    .eq('route_id', routeId);
+  
+  if (relationError) {
+    console.error('Error fetching route-event relations:', relationError);
+    throw relationError;
+  }
+  
+  if (!relationData || relationData.length === 0) {
+    return [];
+  }
+  
+  const eventIds = relationData.map(relation => relation.event_id);
+  
   const { data, error } = await supabase
     .from('events')
     .select('*')
-    .contains('routes', [routeId]);
+    .in('id', eventIds);
   
   if (error) {
     console.error('Error fetching events for route:', error);
     throw error;
   }
   
-  console.log(`Retrieved ${data.length} events for route ${routeId}`);
+  console.log(`Retrieved ${data?.length || 0} events for route ${routeId}`);
   
   return data.map((eventData): Event => ({
     id: eventData.id,

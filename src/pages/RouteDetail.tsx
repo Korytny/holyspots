@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -14,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchRouteById } from '../services/routesService';
-import { fetchSpotsByIds } from '../services/spotsService';
+import { fetchSpotsByRoute } from '../services/spotsService';
 import { fetchEventsByRoute } from '../services/eventsService';
 import { MediaItem } from '../types/models';
 import CitySpots from '../components/city/CitySpots';
@@ -41,9 +42,9 @@ const RouteDetail = () => {
     isLoading: isLoadingSpots,
     error: spotsError
   } = useQuery({
-    queryKey: ['route-spots', routeId, route?.pointIds],
-    queryFn: () => fetchSpotsByIds(route?.pointIds || []),
-    enabled: !!route?.pointIds && route.pointIds.length > 0 && activeTab === 'spots',
+    queryKey: ['route-spots', routeId],
+    queryFn: () => fetchSpotsByRoute(routeId as string),
+    enabled: !!routeId && activeTab === 'spots',
   });
   
   const {
@@ -125,7 +126,7 @@ const RouteDetail = () => {
       <div className="flex flex-wrap gap-2 mt-1">
         <div className="inline-flex items-center px-2 py-1 text-sm bg-secondary rounded-full">
           <MapPin className="h-4 w-4 mr-1" />
-          {route.pointIds?.length || 0}
+          {spots.length || 0}
         </div>
         
         <div className="inline-flex items-center px-2 py-1 text-sm bg-secondary rounded-full">
