@@ -30,14 +30,13 @@ const ItemCardWrapper: React.FC<ItemCardWrapperProps> = (props) => {
     description: typeof props.description === 'string'
       ? { en: props.description, ru: props.description, hi: props.description } as Record<Language, string>
       : (props.description || { en: '', ru: '', hi: '' }) as Record<Language, string>,
+    // Make sure onClick is never undefined by providing a no-op function as fallback
+    onClick: onClick || (() => {})
   };
-  
-  // Make sure onClick is never undefined
-  const handleClick = onClick || (() => {});
-  
+
   return (
     <div className="relative group" onClick={onClick}>
-      <ItemCard {...normalizedProps} onClick={handleClick} />
+      <ItemCard {...normalizedProps} />
       <div className="absolute top-2 right-2 opacity-80 group-hover:opacity-100 transition-opacity">
         <FavoriteButton itemId={id} itemType={type} />
       </div>

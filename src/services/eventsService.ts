@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Event, Language, MediaItem } from '../types/models';
+import { Event, Language, MediaItem, Json } from '../types/models';
 
 export const fetchAllEvents = async (): Promise<Event[]> => {
   try {
@@ -57,7 +57,7 @@ export const fetchAllEvents = async (): Promise<Event[]> => {
 
       return {
         id: item.id,
-        cityId: item.city || '',
+        cityId: '', // Default empty string as city may not be present
         name: item.name as Record<Language, string>,
         description: item.info as Record<Language, string>,
         media: mediaItems,
@@ -138,7 +138,7 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
     // Transform database record to Event object
     const event: Event = {
       id: data.id,
-      cityId: data.city || '',
+      cityId: '', // Default empty string as city may not be present
       name: data.name as Record<Language, string>,
       description: data.info as Record<Language, string>,
       media: mediaItems,
@@ -212,7 +212,7 @@ export const fetchEventsByCityId = async (cityId: string): Promise<Event[]> => {
 
       return {
         id: item.id,
-        cityId: item.city || '',
+        cityId: cityId,
         name: item.name as Record<Language, string>,
         description: item.info as Record<Language, string>,
         media: mediaItems,
@@ -304,7 +304,7 @@ export const fetchEventsByRouteId = async (routeId: string): Promise<Event[]> =>
 
       return {
         id: item.id,
-        cityId: item.city || '',
+        cityId: '', // Default empty string as city may not be present
         name: item.name as Record<Language, string>,
         description: item.info as Record<Language, string>,
         media: mediaItems,
@@ -396,12 +396,12 @@ export const fetchEventsByPointId = async (pointId: string): Promise<Event[]> =>
 
       return {
         id: item.id,
-        cityId: item.city || '',
+        cityId: '',  // Default empty string as city may not be present
         name: item.name as Record<Language, string>,
         description: item.info as Record<Language, string>,
         media: mediaItems,
         thumbnail,
-        pointIds: [],
+        pointIds: [pointId], // Include the point ID
         startDate: item.time || new Date().toISOString(),
         endDate: item.time || new Date().toISOString(),
         type: item.type
@@ -417,3 +417,4 @@ export const fetchEventsByPointId = async (pointId: string): Promise<Event[]> =>
 
 // Alias for backward compatibility
 export const fetchEventsBySpot = fetchEventsByPointId;
+

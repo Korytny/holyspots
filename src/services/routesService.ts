@@ -132,6 +132,63 @@ export const fetchRoutesByCityId = async (cityId: string): Promise<Route[]> => {
 // Aliases to maintain backward compatibility
 export const fetchRoutesByCity = fetchRoutesByCityId;
 
+export const fetchRoutesByEventId = async (eventId: string): Promise<Route[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('route_event')
+      .select('route_id')
+      .eq('event_id', eventId);
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log(`No routes found for event ID ${eventId}`);
+      return [];
+    }
+    
+    const routeIds = data.map(item => item.route_id);
+    
+    const { data: routesData, error: routesError } = await supabase
+      .from('routes')
+      .select('*')
+      .in('id', routeIds);
+    
+    if (routesError) throw routesError;
+    
+    if (!routesData || routesData.length === 0) {
+      console.log(`No routes found with IDs ${routeIds.join(', ')}`);
+      return [];
+    }
+    
+    // Transform database records to Route objects
+    const routes: Route[] = routesData.map(item => ({
+      id: item.id,
+      cityId: '', // Will need to be populated if routes are associated with cities
+      name: item.name as Record<Language, string>,
+      description: {
+        en: '',
+        ru: '',
+        hi: '',
+        ...((item.name as any)?.description || {})
+      },
+      media: [],
+      thumbnail: '/placeholder.svg', // Default placeholder
+      pointIds: [],
+      eventIds: [eventId], // Include the event ID
+      distance: 0,
+      duration: 0
+    }));
+    
+    return routes;
+  } catch (error) {
+    console.error(`Error fetching routes for event ID ${eventId}:`, error);
+    return [];
+  }
+};
+
+// Aliases to maintain backward compatibility
+export const fetchRoutesByEvent = fetchRoutesByEventId;
+
 export const fetchRoutesByPointId = async (pointId: string): Promise<Route[]> => {
   try {
     const { data, error } = await supabase
@@ -173,7 +230,7 @@ export const fetchRoutesByPointId = async (pointId: string): Promise<Route[]> =>
       },
       media: [],
       thumbnail: '/placeholder.svg', // Default placeholder
-      pointIds: [],
+      pointIds: [pointId], // Include the point ID
       eventIds: [], // Empty array for event IDs
       distance: 0,
       duration: 0
@@ -188,3 +245,4 @@ export const fetchRoutesByPointId = async (pointId: string): Promise<Route[]> =>
 
 // Aliases to maintain backward compatibility
 export const fetchRoutesBySpot = fetchRoutesByPointId;
+
