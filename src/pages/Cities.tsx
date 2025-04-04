@@ -70,26 +70,26 @@ const Cities = () => {
     });
   };
 
-  // Generate stats badge for city
+  // Generate stats badge for city with white background and black text
   const renderCityStats = (city: City) => {
     return (
-      <div className="flex flex-wrap gap-2 mt-2">
+      <div className="flex flex-wrap gap-1">
         {city.pointIds?.length > 0 || city.spots_count ? (
-          <div className="inline-flex items-center px-2 py-1 text-xs bg-secondary rounded-full">
+          <div className="inline-flex items-center px-2 py-1 text-xs bg-white/90 text-black rounded-full shadow-sm">
             <MapPin className="h-3 w-3 mr-1" />
             {city.spots_count || city.pointIds?.length || 0}
           </div>
         ) : null}
         
         {city.routeIds?.length > 0 || city.routes_count ? (
-          <div className="inline-flex items-center px-2 py-1 text-xs bg-secondary rounded-full">
+          <div className="inline-flex items-center px-2 py-1 text-xs bg-white/90 text-black rounded-full shadow-sm">
             <NavigationIcon className="h-3 w-3 mr-1" />
             {city.routes_count || city.routeIds?.length || 0}
           </div>
         ) : null}
         
         {city.eventIds?.length > 0 || city.events_count ? (
-          <div className="inline-flex items-center px-2 py-1 text-xs bg-secondary rounded-full">
+          <div className="inline-flex items-center px-2 py-1 text-xs bg-white/90 text-black rounded-full shadow-sm">
             <Calendar className="h-3 w-3 mr-1" />
             {city.events_count || city.eventIds?.length || 0}
           </div>

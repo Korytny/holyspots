@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -195,7 +196,7 @@ const CityDetail = () => {
 
   const renderCityStats = () => {
     return (
-      <div className="flex flex-wrap gap-2 mt-1">
+      <div className="flex flex-wrap gap-2">
         <div className="inline-flex items-center px-2 py-1 text-sm bg-secondary rounded-full">
           <MapPin className="h-4 w-4 mr-1" />
           {city.spots_count || spots.length || 0}
@@ -226,28 +227,18 @@ const CityDetail = () => {
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="bg-secondary/20 p-6">
-            <div className="flex flex-col md:flex-row md:items-start justify-between mb-6">
-              <div>
-                <div className="flex items-center">
+            <div className="flex flex-col md:flex-row md:items-start justify-between">
+              <div className="flex-grow">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <h1 className="text-3xl font-bold">{cityName}</h1>
-                </div>
-                
-                <div className="mt-3 flex flex-col gap-2">
-                  {renderCityStats()}
-                  
-                  {city.location && (
-                    <div className="flex items-center text-sm">
-                      <span className="font-medium mr-2">{t('location')}:</span>
-                      <span>
-                        {t('latitude')}: {city.location.latitude.toFixed(6)}, {t('longitude')}: {city.location.longitude.toFixed(6)}
-                      </span>
-                    </div>
-                  )}
+                  <div className="md:ml-auto mt-3 md:mt-0">
+                    {renderCityStats()}
+                  </div>
                 </div>
               </div>
             </div>
             
-            <p className="text-muted-foreground mb-2">{cityDescription}</p>
+            <p className="text-muted-foreground mb-2 mt-3">{cityDescription}</p>
           </div>
             
           <div className="p-6">

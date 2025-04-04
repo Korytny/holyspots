@@ -49,6 +49,7 @@ const CitySpots: React.FC<CitySpotProps> = ({
             description={spot.description || { en: 'No description available' }}
             thumbnail={spot.thumbnail || '/placeholder.svg'}
             onClick={() => onSpotClick(spot.id)}
+            spotType={spot.type}
             extraContent={selectedSpot === spot.id ? (
               <div className="mt-2 px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full inline-block">
                 Selected

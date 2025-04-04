@@ -136,15 +136,24 @@ const ItemCard: React.FC<ItemCardProps> = ({
           </button>
         )}
         
-        {/* Type indicator */}
-        <div className="absolute top-2 left-2 bg-white/80 px-2 py-1 rounded-full flex items-center gap-1 text-xs font-medium">
-          {getIcon()}
-          <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
-        </div>
+        {/* Type indicator - only show for routes and events, not for cities and points */}
+        {(type === 'route' || type === 'event') && (
+          <div className="absolute top-2 left-2 bg-white/80 px-2 py-1 rounded-full flex items-center gap-1 text-xs font-medium">
+            {getIcon()}
+            <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+          </div>
+        )}
+
+        {/* Display stats for cities in the top left */}
+        {type === 'city' && extraContent && (
+          <div className="absolute top-2 left-2 flex gap-1 z-10">
+            {extraContent}
+          </div>
+        )}
 
         {/* Spot type badge for point items */}
         {type === 'point' && spotType && (
-          <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-white text-xs font-medium flex items-center gap-1 ${getSpotTypeColor(spotType)}`}>
+          <div className={`absolute top-2 left-2 px-2 py-1 rounded-full text-white text-xs font-medium flex items-center gap-1 ${getSpotTypeColor(spotType)}`}>
             <span>{getSpotTypeEmoji(spotType)}</span>
             <span>{getSpotTypeName(spotType)}</span>
           </div>
@@ -154,9 +163,9 @@ const ItemCard: React.FC<ItemCardProps> = ({
       <div className="p-4">
         <h3 className="font-medium text-lg mb-2 line-clamp-1">{displayName}</h3>
         
-        {/* Show description for city and point cards */}
+        {/* Show description for city and point cards with 3 lines */}
         {(type === 'city' || type === 'point') && (
-          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{truncatedDescription}</p>
+          <p className="text-sm text-muted-foreground mb-3 line-clamp-3">{truncatedDescription}</p>
         )}
         
         <div className="flex flex-col gap-2">
@@ -181,8 +190,8 @@ const ItemCard: React.FC<ItemCardProps> = ({
             </div>
           )}
           
-          {/* Render the extra content if provided */}
-          {extraContent}
+          {/* Don't render extra content here for cities - it's now displayed on the image */}
+          {type !== 'city' && extraContent}
         </div>
       </div>
     </div>

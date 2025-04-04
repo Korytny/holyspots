@@ -89,8 +89,8 @@ const Auth = () => {
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted">
-      <div className="max-w-md w-full mx-4 bg-white rounded-lg shadow-xl overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="max-w-md w-full mx-4 bg-card rounded-lg shadow-xl overflow-hidden">
         <div className="sacred-header text-center p-6">
           <h1 className="text-3xl font-bold">{t('welcome')}</h1>
         </div>
@@ -144,7 +144,7 @@ const Auth = () => {
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-muted-foreground">
+                  <span className="bg-card px-2 text-muted-foreground">
                     or
                   </span>
                 </div>
@@ -231,7 +231,7 @@ const Auth = () => {
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-muted-foreground">
+                  <span className="bg-card px-2 text-muted-foreground">
                     or
                   </span>
                 </div>
