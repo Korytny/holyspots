@@ -17,21 +17,29 @@ export const fetchSpotsByCity = async (cityId: string): Promise<Point[]> => {
   
   console.log(`Retrieved ${data.length} spots for city ${cityId}`);
   
-  return data.map((spotData): Point => ({
-    id: spotData.id,
-    cityId: spotData.city || '',
-    type: spotData.type ? mapSpotType(spotData.type) : 'other',
-    name: spotData.name as Record<string, string>,
-    description: spotData.info as Record<string, string>,
-    media: spotData.media || [],
-    thumbnail: spotData.images && spotData.images.length > 0 ? spotData.images[0] : '/placeholder.svg',
-    location: {
-      latitude: spotData.coordinates?.latitude || 0,
-      longitude: spotData.coordinates?.longitude || 0
-    },
-    routeIds: [],
-    eventIds: [],
-  }));
+  return data.map((spotData): Point => {
+    // Process images array - might be a JSON array or already an array of strings
+    const images = spotData.images || [];
+    const imageUrls = Array.isArray(images) ? images : [];
+    const thumbnailUrl = imageUrls.length > 0 ? imageUrls[0] : '/placeholder.svg';
+    
+    return {
+      id: spotData.id,
+      cityId: spotData.city || '',
+      type: spotData.type ? mapSpotType(spotData.type) : 'other',
+      name: spotData.name as Record<string, string>,
+      description: spotData.info as Record<string, string>,
+      media: spotData.media || [],
+      images: imageUrls,
+      thumbnail: thumbnailUrl,
+      location: {
+        latitude: spotData.coordinates?.latitude || 0,
+        longitude: spotData.coordinates?.longitude || 0
+      },
+      routeIds: [],
+      eventIds: [],
+    };
+  });
 };
 
 export const fetchSpotById = async (spotId: string): Promise<Point | null> => {
@@ -48,6 +56,11 @@ export const fetchSpotById = async (spotId: string): Promise<Point | null> => {
   
   if (!data) return null;
   
+  // Process images array - might be a JSON array or already an array of strings
+  const images = data.images || [];
+  const imageUrls = Array.isArray(images) ? images : [];
+  const thumbnailUrl = imageUrls.length > 0 ? imageUrls[0] : '/placeholder.svg';
+  
   return {
     id: data.id,
     cityId: data.city || '',
@@ -55,7 +68,8 @@ export const fetchSpotById = async (spotId: string): Promise<Point | null> => {
     name: data.name as Record<string, string>,
     description: data.info as Record<string, string>,
     media: data.media || [],
-    thumbnail: data.images && data.images.length > 0 ? data.images[0] : '/placeholder.svg',
+    images: imageUrls,
+    thumbnail: thumbnailUrl,
     location: {
       latitude: data.coordinates?.latitude || 0,
       longitude: data.coordinates?.longitude || 0
@@ -84,21 +98,29 @@ export const fetchSpotsByIds = async (spotIds: string[]): Promise<Point[]> => {
   
   console.log(`Retrieved ${data.length} spots by IDs`);
   
-  return data.map((spotData): Point => ({
-    id: spotData.id,
-    cityId: spotData.city || '',
-    type: spotData.type ? mapSpotType(spotData.type) : 'other',
-    name: spotData.name as Record<string, string>,
-    description: spotData.info as Record<string, string>,
-    media: spotData.media || [],
-    thumbnail: spotData.images && spotData.images.length > 0 ? spotData.images[0] : '/placeholder.svg',
-    location: {
-      latitude: spotData.coordinates?.latitude || 0,
-      longitude: spotData.coordinates?.longitude || 0
-    },
-    routeIds: [],
-    eventIds: [],
-  }));
+  return data.map((spotData): Point => {
+    // Process images array - might be a JSON array or already an array of strings
+    const images = spotData.images || [];
+    const imageUrls = Array.isArray(images) ? images : [];
+    const thumbnailUrl = imageUrls.length > 0 ? imageUrls[0] : '/placeholder.svg';
+    
+    return {
+      id: spotData.id,
+      cityId: spotData.city || '',
+      type: spotData.type ? mapSpotType(spotData.type) : 'other',
+      name: spotData.name as Record<string, string>,
+      description: spotData.info as Record<string, string>,
+      media: spotData.media || [],
+      images: imageUrls,
+      thumbnail: thumbnailUrl,
+      location: {
+        latitude: spotData.coordinates?.latitude || 0,
+        longitude: spotData.coordinates?.longitude || 0
+      },
+      routeIds: [],
+      eventIds: [],
+    };
+  });
 };
 
 export const fetchSpotsByRoute = async (routeId: string): Promise<Point[]> => {
@@ -133,21 +155,29 @@ export const fetchSpotsByRoute = async (routeId: string): Promise<Point[]> => {
   
   console.log(`Retrieved ${data?.length || 0} spots for route ${routeId}`);
   
-  return data.map((spotData): Point => ({
-    id: spotData.id,
-    cityId: spotData.city || '',
-    type: spotData.type ? mapSpotType(spotData.type) : 'other',
-    name: spotData.name as Record<string, string>,
-    description: spotData.info as Record<string, string>,
-    media: spotData.media || [],
-    thumbnail: spotData.images && spotData.images.length > 0 ? spotData.images[0] : '/placeholder.svg',
-    location: {
-      latitude: spotData.coordinates?.latitude || 0,
-      longitude: spotData.coordinates?.longitude || 0
-    },
-    routeIds: [],
-    eventIds: [],
-  }));
+  return data.map((spotData): Point => {
+    // Process images array - might be a JSON array or already an array of strings
+    const images = spotData.images || [];
+    const imageUrls = Array.isArray(images) ? images : [];
+    const thumbnailUrl = imageUrls.length > 0 ? imageUrls[0] : '/placeholder.svg';
+    
+    return {
+      id: spotData.id,
+      cityId: spotData.city || '',
+      type: spotData.type ? mapSpotType(spotData.type) : 'other',
+      name: spotData.name as Record<string, string>,
+      description: spotData.info as Record<string, string>,
+      media: spotData.media || [],
+      images: imageUrls,
+      thumbnail: thumbnailUrl,
+      location: {
+        latitude: spotData.coordinates?.latitude || 0,
+        longitude: spotData.coordinates?.longitude || 0
+      },
+      routeIds: [],
+      eventIds: [],
+    };
+  });
 };
 
 export const fetchSpotsByEvent = async (eventId: string): Promise<Point[]> => {
@@ -182,21 +212,29 @@ export const fetchSpotsByEvent = async (eventId: string): Promise<Point[]> => {
   
   console.log(`Retrieved ${data?.length || 0} spots for event ${eventId}`);
   
-  return data.map((spotData): Point => ({
-    id: spotData.id,
-    cityId: spotData.city || '',
-    type: spotData.type ? mapSpotType(spotData.type) : 'other',
-    name: spotData.name as Record<string, string>,
-    description: spotData.info as Record<string, string>,
-    media: spotData.media || [],
-    thumbnail: spotData.images && spotData.images.length > 0 ? spotData.images[0] : '/placeholder.svg',
-    location: {
-      latitude: spotData.coordinates?.latitude || 0,
-      longitude: spotData.coordinates?.longitude || 0
-    },
-    routeIds: [],
-    eventIds: [],
-  }));
+  return data.map((spotData): Point => {
+    // Process images array - might be a JSON array or already an array of strings
+    const images = spotData.images || [];
+    const imageUrls = Array.isArray(images) ? images : [];
+    const thumbnailUrl = imageUrls.length > 0 ? imageUrls[0] : '/placeholder.svg';
+    
+    return {
+      id: spotData.id,
+      cityId: spotData.city || '',
+      type: spotData.type ? mapSpotType(spotData.type) : 'other',
+      name: spotData.name as Record<string, string>,
+      description: spotData.info as Record<string, string>,
+      media: spotData.media || [],
+      images: imageUrls,
+      thumbnail: thumbnailUrl,
+      location: {
+        latitude: spotData.coordinates?.latitude || 0,
+        longitude: spotData.coordinates?.longitude || 0
+      },
+      routeIds: [],
+      eventIds: [],
+    };
+  });
 };
 
 // Helper function to map numeric spot types to string types

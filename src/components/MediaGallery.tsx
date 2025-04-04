@@ -108,7 +108,7 @@ const MediaGallery: React.FC<MediaGalleryProps> = ({ media }) => {
         <div className="flex p-2 gap-2 overflow-x-auto bg-white/90">
           {media.map((item, idx) => (
             <div 
-              key={item.id} 
+              key={item.id || idx} 
               className={`flex-shrink-0 w-16 h-16 rounded cursor-pointer border-2 ${activeIndex === idx ? 'border-primary' : 'border-transparent'}`}
               onClick={() => setActiveIndex(idx)}
             >

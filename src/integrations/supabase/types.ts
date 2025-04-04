@@ -238,7 +238,7 @@ export type Database = {
           created_at: string | null
           id: string
           id_old: number | null
-          images: string[] | null
+          images: Json | null
           info: Json | null
           name: Json
           point: unknown | null
@@ -251,7 +251,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           id_old?: number | null
-          images?: string[] | null
+          images?: Json | null
           info?: Json | null
           name: Json
           point?: unknown | null
@@ -264,7 +264,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           id_old?: number | null
-          images?: string[] | null
+          images?: Json | null
           info?: Json | null
           name?: Json
           point?: unknown | null
@@ -332,48 +332,6 @@ export type Database = {
           spotype?: number | null
           spotypeng?: string | null
           uuid?: string | null
-        }
-        Relationships: []
-      }
-      spots1: {
-        Row: {
-          city: number | null
-          coordinates: Json | null
-          created_at: string
-          id: number
-          images: string[] | null
-          info: Json | null
-          latitude: string | null
-          longitude: string | null
-          name: Json | null
-          order: number | null
-          type: number | null
-        }
-        Insert: {
-          city?: number | null
-          coordinates?: Json | null
-          created_at?: string
-          id?: number
-          images?: string[] | null
-          info?: Json | null
-          latitude?: string | null
-          longitude?: string | null
-          name?: Json | null
-          order?: number | null
-          type?: number | null
-        }
-        Update: {
-          city?: number | null
-          coordinates?: Json | null
-          created_at?: string
-          id?: number
-          images?: string[] | null
-          info?: Json | null
-          latitude?: string | null
-          longitude?: string | null
-          name?: Json | null
-          order?: number | null
-          type?: number | null
         }
         Relationships: []
       }

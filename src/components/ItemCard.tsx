@@ -40,6 +40,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
   extraContent
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const { language } = useLanguage();
 
   // Safety check to ensure name and description are valid objects
@@ -66,6 +67,9 @@ const ItemCard: React.FC<ItemCardProps> = ({
       default: return <MapPin className="h-5 w-5" />;
     }
   };
+
+  // Fallback image if the thumbnail URL is invalid
+  const defaultThumbnail = '/placeholder.svg';
   
   return (
     <div 
@@ -76,10 +80,11 @@ const ItemCard: React.FC<ItemCardProps> = ({
     >
       <div className="relative overflow-hidden h-48">
         <img 
-          src={thumbnail} 
+          src={imageError ? defaultThumbnail : thumbnail} 
           alt={displayName} 
           className="w-full h-full object-cover transition-transform duration-500 ease-in-out"
           style={{ transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}
+          onError={() => setImageError(true)}
         />
         <div className={`absolute inset-0 bg-black transition-opacity duration-300 ${isHovered ? 'opacity-30' : 'opacity-0'}`}></div>
         

@@ -110,7 +110,34 @@ const PointDetail = () => {
   const spotName = getSpotName();
   const spotDescription = getSpotDescription();
 
-  const mediaItems: MediaItem[] = spot?.media || [];
+  // Convert image URLs to MediaItem objects
+  const mediaItems: MediaItem[] = [];
+  
+  // Check if spot has media array already formatted
+  if (Array.isArray(spot.media) && spot.media.length > 0) {
+    spot.media.forEach((item, index) => {
+      if (typeof item === 'object' && item.type && item.url) {
+        mediaItems.push(item as MediaItem);
+      }
+    });
+  }
+  
+  // If no media items were processed, check for images array
+  if (mediaItems.length === 0 && spot.images) {
+    const imageUrls = Array.isArray(spot.images) ? spot.images : 
+      (typeof spot.images === 'object' ? Object.values(spot.images) : []);
+    
+    imageUrls.forEach((url, index) => {
+      if (typeof url === 'string') {
+        mediaItems.push({
+          id: `image-${index}`,
+          type: 'image',
+          url: url,
+          thumbnailUrl: url,
+        });
+      }
+    });
+  }
   
   const handleRouteClick = (routeId: string) => {
     navigate(`/routes/${routeId}`);
