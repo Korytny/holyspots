@@ -59,7 +59,7 @@ export const fetchEventsByCity = async (cityId: string): Promise<Event[]> => {
     description: eventData.info as Record<string, string>,
     media: eventData.media || [],
     thumbnail: eventData.images && eventData.images.length > 0 ? eventData.images[0] : '/placeholder.svg',
-    pointIds: eventData.spot || [],
+    pointIds: eventData.spots || [],
     startDate: eventData.time || '',
     endDate: eventData.time || '',
     ownerId: eventData.ownerId,
@@ -87,7 +87,7 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
     description: data.info as Record<string, string>,
     media: data.media || [],
     thumbnail: data.images && data.images.length > 0 ? data.images[0] : '/placeholder.svg',
-    pointIds: data.spot || [],
+    pointIds: data.spots || [],
     startDate: data.time || '',
     endDate: data.time || '',
     ownerId: data.ownerId,
@@ -133,44 +133,26 @@ export const fetchEventsBySpot = async (spotId: string): Promise<Event[]> => {
     description: eventData.info as Record<string, string>,
     media: eventData.media || [],
     thumbnail: eventData.images && eventData.images.length > 0 ? eventData.images[0] : '/placeholder.svg',
-    pointIds: eventData.spot || [],
+    pointIds: eventData.spots || [],
     startDate: eventData.time || '',
     endDate: eventData.time || '',
     ownerId: eventData.ownerId,
   }));
 };
 
-export const fetchEventsByRoute = async (routeId: string): Promise<Event[]> => {
-  console.log('Fetching events for route:', routeId);
-  
-  // Use the route_event relationship table
-  const { data: relationData, error: relationError } = await supabase
-    .from('route_event')
-    .select('event_id')
-    .eq('route_id', routeId);
-  
-  if (relationError) {
-    console.error('Error fetching route-event relations:', relationError);
-    throw relationError;
-  }
-  
-  if (!relationData || relationData.length === 0) {
-    return [];
-  }
-  
-  const eventIds = relationData.map(relation => relation.event_id);
+export const fetchAllEvents = async (): Promise<Event[]> => {
+  console.log('Fetching all events');
   
   const { data, error } = await supabase
     .from('events')
-    .select('*')
-    .in('id', eventIds);
+    .select('*');
   
   if (error) {
-    console.error('Error fetching events for route:', error);
+    console.error('Error fetching all events:', error);
     throw error;
   }
   
-  console.log(`Retrieved ${data?.length || 0} events for route ${routeId}`);
+  console.log(`Retrieved ${data?.length || 0} total events`);
   
   return data.map((eventData): Event => ({
     id: eventData.id,
@@ -179,7 +161,7 @@ export const fetchEventsByRoute = async (routeId: string): Promise<Event[]> => {
     description: eventData.info as Record<string, string>,
     media: eventData.media || [],
     thumbnail: eventData.images && eventData.images.length > 0 ? eventData.images[0] : '/placeholder.svg',
-    pointIds: eventData.spot || [],
+    pointIds: eventData.spots || [],
     startDate: eventData.time || '',
     endDate: eventData.time || '',
     ownerId: eventData.ownerId,

@@ -140,37 +140,19 @@ export const fetchRoutesBySpot = async (spotId: string): Promise<Route[]> => {
   }));
 };
 
-export const fetchRoutesByEvent = async (eventId: string): Promise<Route[]> => {
-  console.log('Fetching routes for event:', eventId);
-  
-  // Use the route_event relationship table
-  const { data: relationData, error: relationError } = await supabase
-    .from('route_event')
-    .select('route_id')
-    .eq('event_id', eventId);
-  
-  if (relationError) {
-    console.error('Error fetching route-event relations:', relationError);
-    throw relationError;
-  }
-  
-  if (!relationData || relationData.length === 0) {
-    return [];
-  }
-  
-  const routeIds = relationData.map(relation => relation.route_id);
+export const fetchAllRoutes = async (): Promise<Route[]> => {
+  console.log('Fetching all routes');
   
   const { data, error } = await supabase
     .from('routes')
-    .select('*')
-    .in('id', routeIds);
+    .select('*');
   
   if (error) {
-    console.error('Error fetching routes for event:', error);
+    console.error('Error fetching all routes:', error);
     throw error;
   }
   
-  console.log(`Retrieved ${data?.length || 0} routes for event ${eventId}`);
+  console.log(`Retrieved ${data?.length || 0} total routes`);
   
   return data.map((routeData): Route => ({
     id: routeData.id,
