@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -10,6 +11,17 @@ import { MapPin, Heart, LogOut } from 'lucide-react';
 import ItemCard from '../components/ItemCard';
 import { useToast } from '@/components/ui/use-toast';
 
+// Define proper types for the favorites to avoid type errors
+interface FavoriteItem {
+  id: string;
+  name: string;
+  description: string;
+  thumbnail: string;
+  location: string;
+  pointCount?: number;
+  date?: string;
+}
+
 const Profile = () => {
   const { t } = useLanguage();
   const { user, signOut, isLoading: authLoading } = useAuth();
@@ -17,9 +29,33 @@ const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
+  // Temporary mock data for favorites (replace with real data from API later)
+  const [favorites, setFavorites] = useState<{
+    cities: FavoriteItem[];
+    points: FavoriteItem[];
+    routes: FavoriteItem[];
+    events: FavoriteItem[];
+  }>({
+    cities: [],
+    points: [],
+    routes: [],
+    events: []
+  });
+  
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
+    }
+    
+    // For now, just set mock data
+    // In a real app, you would fetch this from an API
+    if (user) {
+      setFavorites({
+        cities: user.favorites.cities as unknown as FavoriteItem[] || [],
+        points: user.favorites.points as unknown as FavoriteItem[] || [],
+        routes: user.favorites.routes as unknown as FavoriteItem[] || [],
+        events: user.favorites.events as unknown as FavoriteItem[] || []
+      });
     }
   }, [user, authLoading, navigate]);
   
@@ -59,10 +95,10 @@ const Profile = () => {
   
   const getCounts = () => {
     return {
-      cities: user?.favorites.cities.length || 0,
-      points: user?.favorites.points.length || 0,
-      routes: user?.favorites.routes.length || 0,
-      events: user?.favorites.events.length || 0
+      cities: favorites.cities.length || 0,
+      points: favorites.points.length || 0,
+      routes: favorites.routes.length || 0,
+      events: favorites.events.length || 0
     };
   };
   
@@ -135,8 +171,8 @@ const Profile = () => {
             
             <TabsContent value="cities" className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {user.favorites.cities.length > 0 ? (
-                  user.favorites.cities.map(city => (
+                {favorites.cities.length > 0 ? (
+                  favorites.cities.map(city => (
                     <ItemCard
                       key={city.id}
                       id={city.id}
@@ -158,8 +194,8 @@ const Profile = () => {
             
             <TabsContent value="points" className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {user.favorites.points.length > 0 ? (
-                  user.favorites.points.map(point => (
+                {favorites.points.length > 0 ? (
+                  favorites.points.map(point => (
                     <ItemCard
                       key={point.id}
                       id={point.id}
@@ -181,8 +217,8 @@ const Profile = () => {
             
             <TabsContent value="routes" className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {user.favorites.routes.length > 0 ? (
-                  user.favorites.routes.map(route => (
+                {favorites.routes.length > 0 ? (
+                  favorites.routes.map(route => (
                     <ItemCard
                       key={route.id}
                       id={route.id}
@@ -205,8 +241,8 @@ const Profile = () => {
             
             <TabsContent value="events" className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {user.favorites.events.length > 0 ? (
-                  user.favorites.events.map(event => (
+                {favorites.events.length > 0 ? (
+                  favorites.events.map(event => (
                     <ItemCard
                       key={event.id}
                       id={event.id}

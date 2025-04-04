@@ -28,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
+        console.log("Auth state changed:", event, currentSession);
         setSession(currentSession);
         
         if (currentSession?.user) {
@@ -35,8 +36,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const appUser: User = {
             id: currentSession.user.id,
             email: currentSession.user.email || '',
-            name: currentSession.user.user_metadata?.name || currentSession.user.user_metadata?.full_name || 'User',
-            avatarUrl: currentSession.user.user_metadata?.avatar_url,
+            name: currentSession.user.user_metadata?.name || 
+                  currentSession.user.user_metadata?.full_name || 
+                  'User',
+            avatarUrl: currentSession.user.user_metadata?.avatar_url || 
+                       currentSession.user.user_metadata?.picture,
             favorites: {
               cities: [],
               points: [],
@@ -71,8 +75,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const appUser: User = {
           id: initialSession.user.id,
           email: initialSession.user.email || '',
-          name: initialSession.user.user_metadata?.name || initialSession.user.user_metadata?.full_name || 'User',
-          avatarUrl: initialSession.user.user_metadata?.avatar_url,
+          name: initialSession.user.user_metadata?.name || 
+                initialSession.user.user_metadata?.full_name || 
+                'User',
+          avatarUrl: initialSession.user.user_metadata?.avatar_url || 
+                     initialSession.user.user_metadata?.picture,
           favorites: {
             cities: [],
             points: [],
@@ -88,6 +95,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setIsLoading(false);
     });
+
+    // Check for hash fragment in URL (for OAuth redirects)
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token')) {
+        // Clear the hash from the URL without reloading
+        window.history.replaceState(null, document.title, window.location.pathname);
+      }
+    };
+
+    // Handle hash on initial load
+    handleHashChange();
 
     return () => {
       subscription.unsubscribe();
