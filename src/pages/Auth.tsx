@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FcGoogle } from 'react-icons/fc';
 import { useToast } from '@/components/ui/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Auth = () => {
   const { t } = useLanguage();
-  const { signIn, signUp, googleSignIn, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { signIn, signUp, googleSignIn, isAuthenticated, isLoading: authLoading, checkAuthStatus } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -25,11 +26,24 @@ const Auth = () => {
   
   // Check if user is authenticated
   useEffect(() => {
-    console.log('Auth page - Authentication state:', isAuthenticated);
-    if (isAuthenticated) {
-      navigate('/cities');
-    }
-  }, [isAuthenticated, navigate]);
+    const checkAuth = async () => {
+      const isAuth = await checkAuthStatus();
+      console.log('Auth page - Authentication state:', isAuth);
+      if (isAuth) {
+        navigate('/cities');
+      }
+    };
+    
+    checkAuth();
+    
+    const interval = setInterval(checkAuth, 2000);
+    return () => clearInterval(interval);
+  }, [checkAuthStatus, navigate]);
+  
+  // Display debug alert for authentication state
+  useEffect(() => {
+    console.log('Auth component render - isAuthenticated:', isAuthenticated);
+  }, [isAuthenticated]);
   
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +52,12 @@ const Auth = () => {
     
     try {
       await signIn(email, password);
-      // Navigation will be handled automatically by useEffect when isAuthenticated changes
+      toast({
+        title: "Sign in successful",
+        description: "You have been signed in successfully",
+      });
+      // Check auth status immediately after sign in
+      await checkAuthStatus();
     } catch (err: any) {
       setError(err.message || 'Failed to sign in. Please check your credentials.');
       console.error(err);
@@ -94,13 +113,18 @@ const Auth = () => {
     );
   }
   
-  // If user is authenticated, they will be redirected by useEffect
-  
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="max-w-md w-full mx-4 bg-card rounded-lg shadow-xl overflow-hidden">
         <div className="sacred-header text-center p-6">
           <h1 className="text-3xl font-bold">{t('welcome')}</h1>
+          {isAuthenticated && (
+            <Alert className="mt-4 bg-emerald-50 text-emerald-700 border-emerald-200">
+              <AlertDescription>
+                You are already authenticated! Redirecting...
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
         
         <Tabs defaultValue="signin" className="p-6">

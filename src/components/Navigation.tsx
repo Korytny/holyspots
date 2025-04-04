@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const Navigation = () => {
   const { t } = useLanguage();
@@ -13,17 +14,23 @@ const Navigation = () => {
   const [open, setOpen] = useState(false);
   const { isAuthenticated, isLoading, checkAuthStatus } = useAuth();
   const [authChecked, setAuthChecked] = useState(false);
+  const { toast } = useToast();
   
   useEffect(() => {
     const verifyAuth = async () => {
-      await checkAuthStatus();
-      setAuthChecked(true);
+      try {
+        const authenticated = await checkAuthStatus();
+        console.log("Auth check result:", authenticated);
+        setAuthChecked(true);
+      } catch (err) {
+        console.error("Error verifying auth:", err);
+      }
     };
     
     verifyAuth();
     
-    // Poll auth status every 10 seconds to ensure it stays current
-    const intervalId = setInterval(verifyAuth, 10000);
+    // Poll auth status every 5 seconds instead of 10 for quicker updates
+    const intervalId = setInterval(verifyAuth, 5000);
     
     return () => {
       clearInterval(intervalId);
@@ -56,9 +63,16 @@ const Navigation = () => {
       }
       
       if (isAuthenticated) {
+        toast({
+          title: "Authenticated",
+          description: "User is authenticated", 
+          duration: 3000
+        });
+        console.log("User is authenticated, button should be green");
         return "bg-emerald-500 text-white"; // Authenticated - green
       }
       
+      console.log("User is NOT authenticated, button should be red");
       return "bg-red-500 text-white"; // Not authenticated - explicitly red
     }
     

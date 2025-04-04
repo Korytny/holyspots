@@ -68,12 +68,12 @@ export const fetchRouteById = async (routeId: string): Promise<Route | null> => 
     // Format the route data
     const formattedRoute = await formatRoute(data);
     
-    // Fetch related points and events
-    if (formattedRoute.pointIds.length > 0) {
+    // Fetch related points and events - but avoid infinite recursion
+    if (formattedRoute.pointIds && formattedRoute.pointIds.length > 0) {
       formattedRoute.points = await fetchPointsByIds(formattedRoute.pointIds);
     }
     
-    if (formattedRoute.eventIds.length > 0) {
+    if (formattedRoute.eventIds && formattedRoute.eventIds.length > 0) {
       formattedRoute.events = await fetchEventsByIds(formattedRoute.eventIds);
     }
     
