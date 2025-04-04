@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Event, Route, Point } from '../types/models';
 import { fetchEventById } from '../services/eventsService';
@@ -13,7 +13,6 @@ import Navigation from '../components/Navigation';
 import MediaGallery from '../components/MediaGallery';
 import FavoriteDetailButton from '../components/FavoriteDetailButton';
 import { useToast } from '@/components/ui/use-toast';
-import { useNavigate } from 'react-router-dom';
 
 const EventDetail = () => {
   const { eventId } = useParams<{ eventId: string }>();

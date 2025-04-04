@@ -16,8 +16,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { fetchCityById } from '../services/citiesService';
 import { fetchSpotsByCity } from '../services/spotsService';
-import { fetchRoutesByCity, fetchRoutesBySpot } from '../services/routesService';
-import { fetchEventsByCity, fetchEventsBySpot } from '../services/eventsService';
+import { fetchRoutesByCity } from '../services/routesService';
+import { fetchEventsByCity } from '../services/eventsService';
 import { MediaItem, Point } from '../types/models';
 import CitySpots from '../components/city/CitySpots';
 import CityRoutes from '../components/city/CityRoutes';
@@ -82,10 +82,10 @@ const CityDetail = () => {
     const fetchSpotRelatedData = async () => {
       if (selectedSpot) {
         try {
-          const spotRoutesData = await fetchRoutesBySpot(selectedSpot);
+          const spotRoutesData = await fetchRoutesByPoint(selectedSpot);
           setSpotRoutes(spotRoutesData);
           
-          const spotEventsData = await fetchEventsBySpot(selectedSpot);
+          const spotEventsData = await fetchEventsByPoint(selectedSpot);
           setSpotEvents(spotEventsData);
         } catch (error) {
           console.error("Error fetching spot related data:", error);

@@ -1,14 +1,7 @@
 
 import { supabase } from '../integrations/supabase/client';
-import { Event } from '../types/models';
+import { Event, MediaItem } from '../types/models';
 import { Json } from '../types/supabase';
-
-// Define MediaItem type
-interface MediaItem {
-  url: string;
-  type: 'image' | 'video';
-  thumbnail?: string;
-}
 
 // Function to fetch all events
 export const fetchEvents = async (): Promise<Event[]> => {
@@ -23,20 +16,42 @@ export const fetchEvents = async (): Promise<Event[]> => {
     }
     
     // Transform the raw data into Event objects
-    const events: Event[] = data.map(event => ({
-      id: event.id,
-      cityId: event.city || null,
-      name: event.name as Record<string, string> || { en: 'Unnamed Event' },
-      description: event.info as Record<string, string> || {},
-      startDate: event.time || null,
-      endDate: event.end_time || null,
-      media: event.images || [],
-      thumbnail: Array.isArray(event.images) && event.images.length > 0 
-        ? event.images[0] as string 
-        : 'placeholder.svg',
-      pointIds: event.points as string[] || [],
-      type: event.type || false
-    }));
+    const events: Event[] = data.map(event => {
+      // Create media items from images
+      let mediaItems: MediaItem[] = [];
+      let imageArray: string[] = [];
+      
+      if (event.images) {
+        if (Array.isArray(event.images)) {
+          imageArray = event.images.filter(img => typeof img === 'string') as string[];
+        } else if (typeof event.images === 'object' && event.images !== null) {
+          imageArray = Object.values(event.images)
+            .filter(img => typeof img === 'string') as string[];
+        }
+        
+        mediaItems = imageArray.map((url, index) => ({
+          id: `image-${index}`,
+          type: 'image',
+          url,
+          thumbnailUrl: url,
+        }));
+      }
+      
+      return {
+        id: event.id,
+        cityId: event.city || null,
+        name: event.name as Record<string, string> || { en: 'Unnamed Event' },
+        description: event.info as Record<string, string> || {},
+        startDate: event.time || null,
+        endDate: event.end_time || null,
+        media: mediaItems,
+        thumbnail: Array.isArray(imageArray) && imageArray.length > 0 
+          ? imageArray[0] 
+          : 'placeholder.svg',
+        pointIds: event.points as string[] || [],
+        type: event.type || false
+      };
+    });
     
     return events;
   } catch (error) {
@@ -63,12 +78,23 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
       return null;
     }
     
-    let media: MediaItem[] = [];
+    // Create media items from images
+    let mediaItems: MediaItem[] = [];
+    let imageArray: string[] = [];
     
-    if (Array.isArray(data.images)) {
-      media = data.images.map((url: string) => ({
+    if (data.images) {
+      if (Array.isArray(data.images)) {
+        imageArray = data.images.filter(img => typeof img === 'string') as string[];
+      } else if (typeof data.images === 'object' && data.images !== null) {
+        imageArray = Object.values(data.images)
+          .filter(img => typeof img === 'string') as string[];
+      }
+      
+      mediaItems = imageArray.map((url, index) => ({
+        id: `image-${index}`,
+        type: 'image',
         url,
-        type: 'image'
+        thumbnailUrl: url,
       }));
     }
     
@@ -80,9 +106,9 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
       description: data.info as Record<string, string> || {},
       startDate: data.time || null,
       endDate: data.end_time || null,
-      media: data.images || [],
-      thumbnail: Array.isArray(data.images) && data.images.length > 0 
-        ? data.images[0] as string 
+      media: mediaItems,
+      thumbnail: Array.isArray(imageArray) && imageArray.length > 0 
+        ? imageArray[0] 
         : 'placeholder.svg',
       pointIds: data.points as string[] || [],
       type: data.type || false
@@ -109,20 +135,42 @@ export const fetchEventsByCity = async (cityId: string): Promise<Event[]> => {
     }
     
     // Transform the raw data into Event objects
-    const events: Event[] = data.map(event => ({
-      id: event.id,
-      cityId: event.city || null,
-      name: event.name as Record<string, string> || { en: 'Unnamed Event' },
-      description: event.info as Record<string, string> || {},
-      startDate: event.time || null,
-      endDate: event.end_time || null,
-      media: event.images || [],
-      thumbnail: Array.isArray(event.images) && event.images.length > 0 
-        ? event.images[0] as string 
-        : 'placeholder.svg',
-      pointIds: event.points as string[] || [],
-      type: event.type || false
-    }));
+    const events: Event[] = data.map(event => {
+      // Create media items from images
+      let mediaItems: MediaItem[] = [];
+      let imageArray: string[] = [];
+      
+      if (event.images) {
+        if (Array.isArray(event.images)) {
+          imageArray = event.images.filter(img => typeof img === 'string') as string[];
+        } else if (typeof event.images === 'object' && event.images !== null) {
+          imageArray = Object.values(event.images)
+            .filter(img => typeof img === 'string') as string[];
+        }
+        
+        mediaItems = imageArray.map((url, index) => ({
+          id: `image-${index}`,
+          type: 'image',
+          url,
+          thumbnailUrl: url,
+        }));
+      }
+      
+      return {
+        id: event.id,
+        cityId: event.city || null,
+        name: event.name as Record<string, string> || { en: 'Unnamed Event' },
+        description: event.info as Record<string, string> || {},
+        startDate: event.time || null,
+        endDate: event.end_time || null,
+        media: mediaItems,
+        thumbnail: Array.isArray(imageArray) && imageArray.length > 0 
+          ? imageArray[0] 
+          : 'placeholder.svg',
+        pointIds: event.points as string[] || [],
+        type: event.type || false
+      };
+    });
     
     return events;
   } catch (error) {
@@ -146,12 +194,23 @@ export const fetchEventsByPoint = async (pointId: string): Promise<Event[]> => {
     
     // Transform the raw data into Event objects
     const events: Event[] = data.map(event => {
-      let media: MediaItem[] = [];
+      // Create media items from images
+      let mediaItems: MediaItem[] = [];
+      let imageArray: string[] = [];
       
-      if (Array.isArray(event.images)) {
-        media = event.images.map((url: string) => ({
+      if (event.images) {
+        if (Array.isArray(event.images)) {
+          imageArray = event.images.filter(img => typeof img === 'string') as string[];
+        } else if (typeof event.images === 'object' && event.images !== null) {
+          imageArray = Object.values(event.images)
+            .filter(img => typeof img === 'string') as string[];
+        }
+        
+        mediaItems = imageArray.map((url, index) => ({
+          id: `image-${index}`,
+          type: 'image',
           url,
-          type: 'image'
+          thumbnailUrl: url,
         }));
       }
       
@@ -162,9 +221,9 @@ export const fetchEventsByPoint = async (pointId: string): Promise<Event[]> => {
         description: event.info as Record<string, string> || {},
         startDate: event.time || null,
         endDate: event.end_time || null,
-        media: event.images || [],
-        thumbnail: Array.isArray(event.images) && event.images.length > 0 
-          ? event.images[0] as string 
+        media: mediaItems,
+        thumbnail: Array.isArray(imageArray) && imageArray.length > 0 
+          ? imageArray[0] 
           : 'placeholder.svg',
         pointIds: event.points as string[] || [],
         type: event.type || false
@@ -181,24 +240,49 @@ export const fetchEventsByPoint = async (pointId: string): Promise<Event[]> => {
 // Function to fetch events by route ID
 export const fetchEventsByRoute = async (routeId: string): Promise<Event[]> => {
   try {
+    // Query for events related to a specific route
+    const { data: routeEventData, error: routeEventError } = await supabase
+      .from('route_event')
+      .select('event_id')
+      .eq('route_id', routeId);
+    
+    if (routeEventError || !routeEventData || routeEventData.length === 0) {
+      console.error(`Error fetching events for route ${routeId}:`, routeEventError);
+      return [];
+    }
+    
+    const eventIds = routeEventData.map(item => item.event_id);
+    
+    // Fetch the events with those IDs
     const { data, error } = await supabase
       .from('events')
       .select('*')
-      .contains('routes', [routeId]);
+      .in('id', eventIds);
     
     if (error) {
-      console.error(`Error fetching events for route ${routeId}:`, error);
-      throw error;
+      console.error(`Error fetching events with IDs ${eventIds.join(', ')}:`, error);
+      return [];
     }
     
     // Transform the raw data into Event objects
     const events: Event[] = data.map(event => {
-      let media: MediaItem[] = [];
+      // Create media items from images
+      let mediaItems: MediaItem[] = [];
+      let imageArray: string[] = [];
       
-      if (Array.isArray(event.images)) {
-        media = event.images.map((url: string) => ({
+      if (event.images) {
+        if (Array.isArray(event.images)) {
+          imageArray = event.images.filter(img => typeof img === 'string') as string[];
+        } else if (typeof event.images === 'object' && event.images !== null) {
+          imageArray = Object.values(event.images)
+            .filter(img => typeof img === 'string') as string[];
+        }
+        
+        mediaItems = imageArray.map((url, index) => ({
+          id: `image-${index}`,
+          type: 'image',
           url,
-          type: 'image'
+          thumbnailUrl: url,
         }));
       }
       
@@ -209,9 +293,9 @@ export const fetchEventsByRoute = async (routeId: string): Promise<Event[]> => {
         description: event.info as Record<string, string> || {},
         startDate: event.time || null,
         endDate: event.end_time || null,
-        media: event.images || [],
-        thumbnail: Array.isArray(event.images) && event.images.length > 0 
-          ? event.images[0] as string 
+        media: mediaItems,
+        thumbnail: Array.isArray(imageArray) && imageArray.length > 0 
+          ? imageArray[0] 
           : 'placeholder.svg',
         pointIds: event.points as string[] || [],
         type: event.type || false
@@ -229,17 +313,16 @@ export const fetchEventsByRoute = async (routeId: string): Promise<Event[]> => {
 export const fetchPointsByEventId = async (eventId: string): Promise<string[]> => {
   try {
     const { data, error } = await supabase
-      .from('events')
-      .select('points')
-      .eq('id', eventId)
-      .single();
+      .from('spot_event')
+      .select('spot_id')
+      .eq('event_id', eventId);
     
     if (error || !data) {
       console.error(`Error fetching points for event ${eventId}:`, error);
       return [];
     }
     
-    return data.points as string[] || [];
+    return data.map(item => item.spot_id);
   } catch (error) {
     console.error(`Failed to fetch points for event ${eventId}:`, error);
     return [];

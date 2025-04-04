@@ -1,5 +1,5 @@
 
-import { supabase } from '../lib/supabase';
+import { supabase } from '../integrations/supabase/client';
 
 export interface DatabaseLanguage {
   id: number;
@@ -20,4 +20,15 @@ export const fetchAvailableLanguages = async (): Promise<DatabaseLanguage[]> => 
   }
   
   return data || [];
+};
+
+// Helper function to get supported languages (used by LanguageContext)
+export const getSupportedLanguages = (): string[] => {
+  return ['en', 'ru', 'hi'];
+};
+
+// Helper function to get translations (placeholder for future use)
+export const getTranslations = async (languageCode: string): Promise<Record<string, string>> => {
+  // In a real implementation, this might fetch translations from a database or API
+  return {};
 };

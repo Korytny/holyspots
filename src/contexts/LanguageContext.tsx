@@ -1,8 +1,8 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { getSupportedLanguages, getTranslations } from '../services/languageService';
+import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import { fetchAvailableLanguages, DatabaseLanguage } from '../services/languageService';
 
 // Types
-type Language = 'en' | 'ru' | 'fr' | 'es' | 'de' | 'it';
+type Language = 'en' | 'ru' | 'hi';
 
 interface Translations {
   [key: string]: string;
@@ -11,8 +11,12 @@ interface Translations {
 export interface LanguageContextType {
   language: Language;
   t: (key: string) => string;
-  changeLanguage: (lang: Language) => void;
+  setLanguage: (lang: Language) => void;
   supportedLanguages: Language[];
+}
+
+interface LanguageProviderProps {
+  children: ReactNode;
 }
 
 const defaultTranslations: {[key in Language]: Translations} = {
@@ -73,7 +77,14 @@ const defaultTranslations: {[key in Language]: Translations} = {
     youHaveBeenSignedOut: 'You have been signed out successfully',
     failedToSignOut: 'Failed to sign out. Please try again',
     startDate: 'Start Date',
-    endDate: 'End Date'
+    endDate: 'End Date',
+    dailyEvents: 'Daily Events',
+    upcomingEvents: 'Upcoming Events',
+    noEvents: 'No events available',
+    selectDate: 'Select a date',
+    noEventsForDate: 'No events for selected date',
+    selectDateToViewEvents: 'Select a date to view events',
+    back: 'Back'
   },
   ru: {
     welcome: 'Добро пожаловать',
@@ -132,252 +143,97 @@ const defaultTranslations: {[key in Language]: Translations} = {
     youHaveBeenSignedOut: 'Вы успешно вышли из системы',
     failedToSignOut: 'Не удалось выйти. Пожалуйста, попробуйте еще раз',
     startDate: 'Дата начала',
-    endDate: 'Дата окончания'
+    endDate: 'Дата окончания',
+    dailyEvents: 'Ежедневные События',
+    upcomingEvents: 'Предстоящие События',
+    noEvents: 'Нет событий',
+    selectDate: 'Выберите дату',
+    noEventsForDate: 'Нет событий на выбранную дату',
+    selectDateToViewEvents: 'Выберите дату для просмотра событий',
+    back: 'Назад'
   },
-  fr: {
-    welcome: 'Bienvenue',
-    signIn: 'Se connecter',
-    signUp: 'S\'inscrire',
-    signOut: 'Se déconnecter',
-    email: 'Courriel',
-    password: 'Mot de passe',
-    name: 'Nom',
-    loading: 'Chargement...',
-    cities: 'Villes',
-    search: 'Rechercher',
-    profile: 'Profil',
-    city: 'Ville',
-    pointsOfInterest: 'Points d\'intérêt',
-    routes: 'Routes',
-    events: 'Événements',
-    favorites: 'Favoris',
-    loggedInAs: 'Connecté en tant que',
-    noFavorites: 'Vous n\'avez pas encore de favoris',
-    cityDetails: 'Détails de la ville',
-    pointDetails: 'Détails du point d\'intérêt',
-    routeDetails: 'Détails du trajet',
-    eventDetails: 'Détails de l\'événement',
-    noDateAvailable: 'Aucune date disponible',
-    relatedPoints: 'Points d\'intérêt liés',
-    relatedRoutes: 'Routes liées',
-    relatedEvents: 'Événements liés',
-    noRelatedItems: 'Aucun élément lié trouvé',
-    error: 'Erreur',
-    cityNotFound: 'Ville non trouvée',
-    pointNotFound: 'Point d\'intérêt non trouvé',
-    routeNotFound: 'Trajet non trouvé',
-    eventNotFound: 'Événement non trouvé',
-    errorFetchingCityData: 'Erreur lors de la récupération des données de la ville',
-    errorFetchingPointData: 'Erreur lors de la récupération des données du point d\'intérêt',
-    errorFetchingRouteData: 'Erreur lors de la récupération des données du trajet',
-    errorFetchingEventData: 'Erreur lors de la récupération des données de l\'événement',
-    unexpectedError: 'Une erreur inattendue s\'est produite',
-    home: 'Accueil',
-    language: 'Langue',
-    selectLanguage: 'Sélectionner la langue',
-    or: 'ou',
-    continueWithGoogle: 'Continuer avec Google',
-    goToSignIn: 'Déjà un compte ? Se connecter',
-    goToSignUp: 'Pas de compte ? S\'inscrire',
-    notFound: 'Page non trouvée',
-    viewAllCities: 'Voir toutes les villes',
-    seeAllPoints: 'Voir tous les points d\'intérêt',
-    seeAllRoutes: 'Voir tous les trajets',
-    seeAllEvents: 'Voir tous les événements',
-    location: 'Localisation',
-    duration: 'Durée',
-    difficulty: 'Difficulté',
-    signedOut: 'Déconnecté',
-    youHaveBeenSignedOut: 'Vous avez été déconnecté avec succès',
-    failedToSignOut: 'Échec de la déconnexion. Veuillez réessayer',
-    startDate: 'Date de début',
-    endDate: 'Date de fin'
-  },
-  es: {
-    welcome: 'Bienvenido',
-    signIn: 'Iniciar Sesión',
-    signUp: 'Registrarse',
-    signOut: 'Cerrar Sesión',
-    email: 'Correo Electrónico',
-    password: 'Contraseña',
-    name: 'Nombre',
-    loading: 'Cargando...',
-    cities: 'Ciudades',
-    search: 'Buscar',
-    profile: 'Perfil',
-    city: 'Ciudad',
-    pointsOfInterest: 'Puntos de Interés',
-    routes: 'Rutas',
-    events: 'Eventos',
-    favorites: 'Favoritos',
-    loggedInAs: 'Inició sesión como',
-    noFavorites: 'Aún no tiene favoritos',
-    cityDetails: 'Detalles de la Ciudad',
-    pointDetails: 'Detalles del Punto de Interés',
-    routeDetails: 'Detalles de la Ruta',
-    eventDetails: 'Detalles del Evento',
-    noDateAvailable: 'No hay fecha disponible',
-    relatedPoints: 'Puntos de Interés Relacionados',
-    relatedRoutes: 'Rutas Relacionadas',
-    relatedEvents: 'Eventos Relacionados',
-    noRelatedItems: 'No se encontraron elementos relacionados',
-    error: 'Error',
-    cityNotFound: 'Ciudad no encontrada',
-    pointNotFound: 'Punto de Interés no encontrado',
-    routeNotFound: 'Ruta no encontrada',
-    eventNotFound: 'Evento no encontrado',
-    errorFetchingCityData: 'Error al obtener datos de la ciudad',
-    errorFetchingPointData: 'Error al obtener datos del punto de interés',
-    errorFetchingRouteData: 'Error al obtener datos de la ruta',
-    errorFetchingEventData: 'Error al obtener datos del evento',
-    unexpectedError: 'Se produjo un error inesperado',
-    home: 'Inicio',
-    language: 'Idioma',
-    selectLanguage: 'Seleccionar Idioma',
-    or: 'o',
-    continueWithGoogle: 'Continuar con Google',
-    goToSignIn: 'Ya tienes una cuenta? Iniciar Sesión',
-    goToSignUp: 'No tienes una cuenta? Registrarse',
-    notFound: 'Página no encontrada',
-    viewAllCities: 'Ver Todas las Ciudades',
-    seeAllPoints: 'Ver Todos los Puntos de Interés',
-    seeAllRoutes: 'Ver Todas las Rutas',
-    seeAllEvents: 'Ver Todos los Eventos',
-    location: 'Ubicación',
-    duration: 'Duración',
-    difficulty: 'Dificultad',
-    signedOut: 'Desconectado',
-    youHaveBeenSignedOut: 'Se ha desconectado con éxito',
-    failedToSignOut: 'No se pudo desconectar. Por favor, inténtalo de nuevo',
-    startDate: 'Fecha de Inicio',
-    endDate: 'Fecha de Fin'
-  },
-  de: {
-    welcome: 'Willkommen',
-    signIn: 'Anmelden',
-    signUp: 'Registrieren',
-    signOut: 'Abmelden',
-    email: 'E-Mail',
-    password: 'Passwort',
-    name: 'Name',
-    loading: 'Laden...',
-    cities: 'Städte',
-    search: 'Suchen',
-    profile: 'Profil',
-    city: 'Stadt',
-    pointsOfInterest: 'Interessentengruppen',
-    routes: 'Routen',
-    events: 'Veranstaltungen',
-    favorites: 'Favoriten',
-    loggedInAs: 'Angemeldet als',
-    noFavorites: 'Sie haben noch keine Favoriten',
-    cityDetails: 'Stadtdetails',
-    pointDetails: 'Punktdetails',
-    routeDetails: 'Routendetails',
-    eventDetails: 'Veranstaltungsdetails',
-    noDateAvailable: 'Keine Daten verfügbar',
-    relatedPoints: 'Verwandte Punkte',
-    relatedRoutes: 'Verwandte Routen',
-    relatedEvents: 'Verwandte Veranstaltungen',
-    noRelatedItems: 'Keine verknüpften Elemente gefunden',
-    error: 'Fehler',
-    cityNotFound: 'Stadt nicht gefunden',
-    pointNotFound: 'Punkt nicht gefunden',
-    routeNotFound: 'Rute nicht gefunden',
-    eventNotFound: 'Veranstaltung nicht gefunden',
-    errorFetchingCityData: 'Fehler beim Abrufen der Stadt-Daten',
-    errorFetchingPointData: 'Fehler beim Abrufen der Punkt-Daten',
-    errorFetchingRouteData: 'Fehler beim Abrufen der Rute-Daten',
-    errorFetchingEventData: 'Fehler beim Abrufen der Veranstaltungs-Daten',
-    unexpectedError: 'Ein unerwarteter Fehler ist aufgetreten',
-    home: 'Startseite',
-    language: 'Sprache',
-    selectLanguage: 'Sprache auswählen',
-    or: 'oder',
-    continueWithGoogle: 'Mit Google fortfahren',
-    goToSignIn: 'Bereits ein Konto? Anmelden',
-    goToSignUp: 'Kein Konto? Registrieren',
-    notFound: 'Seite nicht gefunden',
-    viewAllCities: 'Alle Städte anzeigen',
-    seeAllPoints: 'Alle Punkte anzeigen',
-    seeAllRoutes: 'Alle Routen anzeigen',
-    seeAllEvents: 'Alle Veranstaltungen anzeigen',
-    location: 'Ort',
-    duration: 'Dauer',
-    difficulty: 'Schwierigkeit',
-    signedOut: 'Abgemeldet',
-    youHaveBeenSignedOut: 'Sie wurden erfolgreich abgemeldet',
-    failedToSignOut: 'Abmeldung fehlgeschlagen. Bitte versuchen Sie es erneut',
-    startDate: 'Startdatum',
-    endDate: 'Enddatum'
-  },
-  it: {
-    welcome: 'Benvenuto',
-    signIn: 'Accedi',
-    signUp: 'Registrati',
-    signOut: 'Esci',
-    email: 'Email',
-    password: 'Password',
-    name: 'Nome',
-    loading: 'Caricamento...',
-    cities: 'Città',
-    search: 'Cerca',
-    profile: 'Profilo',
-    city: 'Città',
-    pointsOfInterest: 'Punti d\'interesse',
-    routes: 'Route',
-    events: 'Eventi',
-    favorites: 'Preferiti',
-    loggedInAs: 'Connesso come',
-    noFavorites: 'Non hai ancora preferiti',
-    cityDetails: 'Dettagli della città',
-    pointDetails: 'Dettagli del punto d\'interesse',
-    routeDetails: 'Dettagli della route',
-    eventDetails: 'Dettagli dell\'evento',
-    noDateAvailable: 'Nessuna data disponibile',
-    relatedPoints: 'Punti d\'interesse correlati',
-    relatedRoutes: 'Route correlate',
-    relatedEvents: 'Eventi correlati',
-    noRelatedItems: 'Nessun elemento correlato trovato',
-    error: 'Errore',
-    cityNotFound: 'Città non trovata',
-    pointNotFound: 'Punto d\'interesse non trovato',
-    routeNotFound: 'Route non trovata',
-    eventNotFound: 'Evento non trovato',
-    errorFetchingCityData: 'Errore durante il recupero dei dati della città',
-    errorFetchingPointData: 'Errore durante il recupero dei dati del punto d\'interesse',
-    errorFetchingRouteData: 'Errore durante il recupero dei dati della route',
-    errorFetchingEventData: 'Errore durante il recupero dei dati dell\'evento',
-    unexpectedError: 'Si è verificato un errore inaspettato',
-    home: 'Home',
-    language: 'Lingua',
-    selectLanguage: 'Seleziona Lingua',
-    or: 'o',
-    continueWithGoogle: 'Continua con Google',
-    goToSignIn: 'Hai già un account? Accedi',
-    goToSignUp: 'Non hai un account? Registrati',
-    notFound: 'Pagina non trovata',
-    viewAllCities: 'Visualizza tutte le città',
-    seeAllPoints: 'Visualizza tutti i punti d\'interesse',
-    seeAllRoutes: 'Visualizza tutte le route',
-    seeAllEvents: 'Visualizza tutti gli eventi',
-    location: 'Posizione',
-    duration: 'Durata',
-    difficulty: 'Difficoltà',
-    signedOut: 'Disconnesso',
-    youHaveBeenSignedOut: 'Sei stato disconnesso con successo',
-    failedToSignOut: 'Impossibile disconnettersi. Riprova',
-    startDate: 'Data di inizio',
-    endDate: 'Data di fine'
+  hi: {
+    welcome: 'स्वागत',
+    signIn: 'साइन इन',
+    signUp: 'साइन अप',
+    signOut: 'साइन आउट',
+    email: 'ईमेल',
+    password: 'पासवर्ड',
+    name: 'नाम',
+    loading: 'लोड हो रहा है...',
+    cities: 'शहर',
+    search: 'खोज',
+    profile: 'प्रोफ़ाइल',
+    city: 'शहर',
+    pointsOfInterest: 'रुचि के स्थान',
+    routes: 'मार्ग',
+    events: 'आयोजन',
+    favorites: 'पसंदीदा',
+    loggedInAs: 'के रूप में लॉग इन किया गया',
+    noFavorites: 'आपके पास अभी तक कोई पसंदीदा नहीं है',
+    cityDetails: 'शहर विवरण',
+    pointDetails: 'रुचि के स्थान का विवरण',
+    routeDetails: 'मार्ग विवरण',
+    eventDetails: 'आयोजन विवरण',
+    noDateAvailable: 'कोई तारीख उपलब्ध नहीं',
+    relatedPoints: 'संबंधित रुचि के स्थान',
+    relatedRoutes: 'संबंधित मार्ग',
+    relatedEvents: 'संबंधित आयोजन',
+    noRelatedItems: 'कोई संबंधित आइटम नहीं मिला',
+    error: 'त्रुटि',
+    cityNotFound: 'शहर नहीं मिला',
+    pointNotFound: 'रुचि का स्थान नहीं मिला',
+    routeNotFound: 'मार्ग नहीं मिला',
+    eventNotFound: 'आयोजन नहीं मिला',
+    errorFetchingCityData: 'शहर डेटा प्राप्त करने में त्रुटि',
+    errorFetchingPointData: 'रुचि के स्थान का डेटा प्राप्त करने में त्रुटि',
+    errorFetchingRouteData: 'मार्ग डेटा प्राप्त करने में त्रुटि',
+    errorFetchingEventData: 'आयोजन डेटा प्राप्त करने में त्रुटि',
+    unexpectedError: 'एक अप्रत्याशित त्रुटि हुई',
+    home: 'होम',
+    language: 'भाषा',
+    selectLanguage: 'भाषा का चयन करें',
+    or: 'या',
+    continueWithGoogle: 'गूगल के साथ जारी रखें',
+    goToSignIn: 'पहले से ही एक खाता है? साइन इन करें',
+    goToSignUp: 'खाता नहीं है? साइन अप करें',
+    notFound: 'पृष्ठ नहीं मिला',
+    viewAllCities: 'सभी शहरों को देखें',
+    seeAllPoints: 'सभी रुचि के स्थानों को देखें',
+    seeAllRoutes: 'सभी मार्गों को देखें',
+    seeAllEvents: 'सभी आयोजनों को देखें',
+    location: 'स्थान',
+    duration: 'अवधि',
+    difficulty: 'कठिनाई',
+    signedOut: 'साइन आउट',
+    youHaveBeenSignedOut: 'आप सफलतापूर्वक साइन आउट हो गए हैं',
+    failedToSignOut: 'साइन आउट करने में विफल। कृपया पुन: प्रयास करें',
+    startDate: 'शुरू करने की तारीख',
+    endDate: 'अंतिम तिथि',
+    dailyEvents: 'दैनिक घटनाएँ',
+    upcomingEvents: 'आगामी घटनाएँ',
+    noEvents: 'कोई घटनाएँ उपलब्ध नहीं हैं',
+    selectDate: 'एक तिथि का चयन करें',
+    noEventsForDate: 'चयनित तिथि के लिए कोई घटनाएँ नहीं हैं',
+    selectDateToViewEvents: 'घटनाओं को देखने के लिए एक तिथि का चयन करें',
+    back: 'वापस'
   }
 };
 
-export const LanguageProvider = ({ children }: LanguageProviderProps) => {
+// Create the context with default values
+const LanguageContext = createContext<LanguageContextType>({
+  language: 'en',
+  t: (key: string) => key,
+  setLanguage: () => {},
+  supportedLanguages: ['en', 'ru', 'hi']
+});
+
+export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>('en');
 
   useEffect(() => {
     const savedLanguage = localStorage.getItem('holyWandererLanguage');
-    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ru' || savedLanguage === 'fr' || savedLanguage === 'es' || savedLanguage === 'de' || savedLanguage === 'it')) {
+    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ru' || savedLanguage === 'hi')) {
       setLanguageState(savedLanguage as Language);
     }
   }, []);
@@ -391,8 +247,18 @@ export const LanguageProvider = ({ children }: LanguageProviderProps) => {
     return defaultTranslations[language][key] || key;
   };
 
+  // Get supported languages
+  const getSupportedLanguages = (): Language[] => {
+    return ['en', 'ru', 'hi'];
+  };
+
   return (
-    <LanguageContext.Provider value={{ language, t, changeLanguage: setLanguage, supportedLanguages: getSupportedLanguages() }}>
+    <LanguageContext.Provider value={{ 
+      language, 
+      t, 
+      setLanguage, 
+      supportedLanguages: getSupportedLanguages() 
+    }}>
       {children}
     </LanguageContext.Provider>
   );

@@ -28,7 +28,8 @@ export const fetchRoutes = async (): Promise<Route[]> => {
         ? route.images[0] as string 
         : 'placeholder.svg',
       media: route.images || [],
-      pointIds: route.points as string[] || []
+      pointIds: route.points as string[] || [],
+      eventIds: [] // Add empty eventIds array
     }));
     
     return routes;
@@ -69,7 +70,8 @@ export const fetchRouteById = async (routeId: string): Promise<Route | null> => 
         ? data.images[0] as string 
         : 'placeholder.svg',
       media: data.images || [],
-      pointIds: data.points as string[] || []
+      pointIds: data.points as string[] || [],
+      eventIds: [] // Add empty eventIds array
     };
     
     return route;
@@ -105,7 +107,8 @@ export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
         ? route.images[0] as string 
         : 'placeholder.svg',
       media: route.images || [],
-      pointIds: route.points as string[] || []
+      pointIds: route.points as string[] || [],
+      eventIds: [] // Add empty eventIds array
     }));
     
     return routes;
@@ -115,35 +118,28 @@ export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
   }
 };
 
-// Function to fetch routes by event ID
-export const fetchRoutesByEventId = async (eventId: string): Promise<Route[]> => {
+// Function to fetch routes by point ID
+export const fetchRoutesByPoint = async (pointId: string): Promise<Route[]> => {
   try {
-    // First, get the event to find its associated routes
-    const { data: eventData, error: eventError } = await supabase
-      .from('events')
-      .select('routes')
-      .eq('id', eventId)
-      .single();
+    const { data: spotRouteData, error: spotRouteError } = await supabase
+      .from('spot_route')
+      .select('route_id')
+      .eq('spot_id', pointId);
     
-    if (eventError || !eventData || !eventData.routes || !Array.isArray(eventData.routes)) {
-      console.error(`Error fetching routes for event ${eventId}:`, eventError);
+    if (spotRouteError || !spotRouteData || spotRouteData.length === 0) {
+      console.error(`Error fetching routes for point ${pointId}:`, spotRouteError);
       return [];
     }
     
-    const routeIds = eventData.routes as string[];
+    const routeIds = spotRouteData.map(item => item.route_id);
     
-    if (routeIds.length === 0) {
-      return [];
-    }
-    
-    // Then, fetch all those routes
     const { data, error } = await supabase
       .from('routes')
       .select('*')
       .in('id', routeIds);
     
     if (error) {
-      console.error(`Error fetching routes for event ${eventId}:`, error);
+      console.error(`Error fetching routes with IDs ${routeIds.join(', ')}:`, error);
       return [];
     }
     
@@ -160,7 +156,57 @@ export const fetchRoutesByEventId = async (eventId: string): Promise<Route[]> =>
         ? route.images[0] as string 
         : 'placeholder.svg',
       media: route.images || [],
-      pointIds: route.points as string[] || []
+      pointIds: route.points as string[] || [],
+      eventIds: [] // Add empty eventIds array
+    }));
+    
+    return routes;
+  } catch (error) {
+    console.error(`Failed to fetch routes for point ${pointId}:`, error);
+    return [];
+  }
+};
+
+// Function to fetch routes by event ID
+export const fetchRoutesByEventId = async (eventId: string): Promise<Route[]> => {
+  try {
+    const { data: routeEventData, error: routeEventError } = await supabase
+      .from('route_event')
+      .select('route_id')
+      .eq('event_id', eventId);
+    
+    if (routeEventError || !routeEventData || routeEventData.length === 0) {
+      console.error(`Error fetching routes for event ${eventId}:`, routeEventError);
+      return [];
+    }
+    
+    const routeIds = routeEventData.map(item => item.route_id);
+    
+    const { data, error } = await supabase
+      .from('routes')
+      .select('*')
+      .in('id', routeIds);
+    
+    if (error) {
+      console.error(`Error fetching routes with IDs ${routeIds.join(', ')}:`, error);
+      return [];
+    }
+    
+    // Transform the raw data into Route objects
+    const routes: Route[] = data.map(route => ({
+      id: route.id,
+      name: route.name as Record<string, string>,
+      description: route.info as Record<string, string> || {},
+      cityId: route.city || null,
+      duration: route.duration || null,
+      difficulty: route.difficulty as string || null,
+      distance: route.distance || null,
+      thumbnail: Array.isArray(route.images) && route.images.length > 0 
+        ? route.images[0] as string 
+        : 'placeholder.svg',
+      media: route.images || [],
+      pointIds: route.points as string[] || [],
+      eventIds: [eventId] // Include the event ID
     }));
     
     return routes;

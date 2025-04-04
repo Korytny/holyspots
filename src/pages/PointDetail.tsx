@@ -15,8 +15,8 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchSpotById } from '../services/spotsService';
-import { fetchRoutesBySpot } from '../services/routesService';
-import { fetchEventsBySpot } from '../services/eventsService';
+import { fetchRoutesByPoint } from "../services/routesService";
+import { fetchEventsByPoint } from "../services/eventsService";
 import { MediaItem } from '../types/models';
 import CityRoutes from '../components/city/CityRoutes';
 import CityEvents from '../components/city/CityEvents';
@@ -44,7 +44,7 @@ const PointDetail = () => {
     error: routesError
   } = useQuery({
     queryKey: ['spot-routes', pointId],
-    queryFn: () => fetchRoutesBySpot(pointId as string),
+    queryFn: () => fetchRoutesByPoint(pointId as string),
     enabled: !!pointId,
   });
   
@@ -54,7 +54,7 @@ const PointDetail = () => {
     error: eventsError
   } = useQuery({
     queryKey: ['spot-events', pointId],
-    queryFn: () => fetchEventsBySpot(pointId as string),
+    queryFn: () => fetchEventsByPoint(pointId as string),
     enabled: !!pointId,
   });
 
