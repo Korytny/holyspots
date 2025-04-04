@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -172,6 +171,7 @@ const Search = () => {
   
   const spotTypes = ['temple', 'ashram', 'kund', 'other'];
 
+  // Обработчики кликов для перехода на соответствующие страницы
   const handlePointClick = (pointId: string) => {
     navigate(`/points/${pointId}`);
   };

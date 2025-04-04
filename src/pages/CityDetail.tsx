@@ -120,6 +120,11 @@ const CityDetail = () => {
   }, [cityId, navigate, toast]);
   
   const handleSpotClick = async (spotId: string) => {
+    // При клике на достопримечательность переходим на страницу этой достопримечательности
+    navigate(`/points/${spotId}`);
+  };
+  
+  const handleMapSpotClick = async (spotId: string) => {
     const spot = points.find(p => p.id === spotId);
     if (!spot) return;
     
@@ -237,7 +242,7 @@ const CityDetail = () => {
             <CityMap 
               points={points}
               cityLocation={city.location}
-              onPointSelect={handleSpotClick}
+              onPointSelect={handleMapSpotClick}
             />
           </div>
           
@@ -274,7 +279,7 @@ const CityDetail = () => {
                 isLoading={false}
                 error={loadingError}
                 selectedSpot={selectedSpot ? selectedSpot.id : null}
-                onSpotClick={handleViewSpotDetails} 
+                onSpotClick={handleSpotClick} 
               />
             </TabsContent>
             

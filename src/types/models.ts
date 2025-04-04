@@ -1,4 +1,3 @@
-
 // Core entity types for the application
 
 export type Language = 'ru' | 'en' | 'hi';
@@ -81,14 +80,13 @@ export interface Route {
   cityId: string;
   name: Record<Language, string>;
   description: Record<Language, string>;
-  media: MediaItem[];
   thumbnail: string;
   pointIds: string[];
   eventIds: string[];
-  distance?: number; // In kilometers
-  duration?: number; // In minutes
-  points?: Point[]; // Optional array of points in the route
-  events?: Event[]; // Optional array of events in the route
+  media: MediaItem[];
+  distance?: number;
+  duration?: number;
+  images?: string[];
 }
 
 export interface Event {
@@ -96,11 +94,11 @@ export interface Event {
   cityId: string;
   name: Record<Language, string>;
   description: Record<Language, string>;
-  media: MediaItem[];
   thumbnail: string;
   pointIds: string[];
   startDate: string;
-  endDate: string;
-  ownerId?: string;
-  type?: boolean; // true for calendar events, false for daily events
+  endDate?: string;
+  media: MediaItem[];
+  type?: boolean;
+  images?: string[];
 }

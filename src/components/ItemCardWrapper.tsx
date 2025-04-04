@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import ItemCard from './ItemCard';
 import FavoriteButton from './FavoriteButton';
 import { Language } from '../types/models';
@@ -39,20 +39,24 @@ const ItemCardWrapper: React.FC<ItemCardWrapperProps> = (props) => {
       onClick();
     } else {
       // Default navigation based on type if no onClick provided
-      switch (type) {
-        case 'city':
-          navigate(`/cities/${id}`);
-          break;
-        case 'point':
-          navigate(`/points/${id}`);
-          break;
-        case 'route':
-          navigate(`/routes/${id}`);
-          break;
-        case 'event':
-          navigate(`/events/${id}`);
-          break;
-      }
+      navigateToItem();
+    }
+  };
+  
+  const navigateToItem = () => {
+    switch (type) {
+      case 'city':
+        navigate(`/cities/${id}`);
+        break;
+      case 'point':
+        navigate(`/points/${id}`);
+        break;
+      case 'route':
+        navigate(`/routes/${id}`);
+        break;
+      case 'event':
+        navigate(`/events/${id}`);
+        break;
     }
   };
 

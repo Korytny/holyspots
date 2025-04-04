@@ -29,21 +29,21 @@ const transformEventData = (eventData: any): Event => {
   }
   
   // Process images
-  let images = [];
+  let imageArray: string[] = [];
   let thumbnail = '/placeholder.svg';
   
   try {
     if (eventData.images) {
       if (Array.isArray(eventData.images)) {
-        images = eventData.images;
+        imageArray = eventData.images;
       } else if (typeof eventData.images === 'string') {
-        images = JSON.parse(eventData.images);
+        imageArray = JSON.parse(eventData.images);
       } else if (typeof eventData.images === 'object') {
-        images = Object.values(eventData.images);
+        imageArray = Object.values(eventData.images);
       }
       
-      if (images.length > 0) {
-        thumbnail = images[0];
+      if (imageArray.length > 0) {
+        thumbnail = imageArray[0];
       }
     }
   } catch (e) {
@@ -61,7 +61,7 @@ const transformEventData = (eventData: any): Event => {
     startDate: eventData.time || '',
     endDate: eventData.end_time || '',
     type: eventData.type,
-    images: images
+    images: imageArray
   };
 };
 

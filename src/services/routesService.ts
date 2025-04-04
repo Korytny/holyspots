@@ -28,17 +28,40 @@ const transformRouteData = (routeData: any): Route => {
     console.warn('Could not parse route description:', e);
   }
   
+  // Process images
+  let imageArray: string[] = [];
+  let thumbnail = '/placeholder.svg';
+  
+  try {
+    if (routeData.images) {
+      if (Array.isArray(routeData.images)) {
+        imageArray = routeData.images;
+      } else if (typeof routeData.images === 'string') {
+        imageArray = JSON.parse(routeData.images);
+      } else if (typeof routeData.images === 'object') {
+        imageArray = Object.values(routeData.images);
+      }
+      
+      if (imageArray.length > 0) {
+        thumbnail = imageArray[0];
+      }
+    }
+  } catch (e) {
+    console.warn('Could not parse route images:', e);
+  }
+  
   return {
     id: routeData.id,
     cityId: routeData.city_id || '',
     name: parsedName,
     description: parsedDescription,
     media: [],
-    thumbnail: '/placeholder.svg',
-    pointIds: [], // Will be filled in by another function
+    thumbnail: thumbnail,
+    pointIds: [],
     eventIds: [],
     distance: routeData.distance || 0,
-    duration: routeData.duration || 0
+    duration: routeData.duration || 0,
+    images: imageArray
   };
 };
 
