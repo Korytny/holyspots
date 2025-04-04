@@ -50,13 +50,13 @@ const transformRouteData = (item: any): Route => {
   // Process point IDs
   let pointIds: string[] = [];
   if (item.spots && Array.isArray(item.spots)) {
-    pointIds = item.spots.filter(spot => typeof spot === 'string');
+    pointIds = item.spots.filter((spot: any) => typeof spot === 'string');
   }
   
   // Process event IDs
   let eventIds: string[] = [];
   if (item.events && Array.isArray(item.events)) {
-    eventIds = item.events.filter(event => typeof event === 'string');
+    eventIds = item.events.filter((event: any) => typeof event === 'string');
   }
   
   // Get a valid thumbnail
