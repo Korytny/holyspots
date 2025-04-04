@@ -1,204 +1,201 @@
-import { supabase } from '@/integrations/supabase/client';
-import { Route, Language, Point, Event, GeoPoint } from '../types/models';
-import { fetchPointById, fetchPointsByCity } from './pointsService';
-import { fetchEventById } from './eventsService';
 
-// Helper functions for fetching related entities
-export const fetchPointsByIds = async (pointIds: string[]): Promise<Point[]> => {
-  if (!pointIds.length) return [];
-  
-  const points = [];
-  for (const id of pointIds) {
-    const point = await fetchPointById(id);
-    if (point) points.push(point);
-  }
-  
-  return points;
-};
+import { supabase } from '../integrations/supabase/client';
+import { formatRoute } from './utils/routeTransformers';
+import { Route } from '../types/models';
+import { fetchPointsByIds, fetchEventsByIds } from './utils/commonHelpers';
 
-export const fetchEventsByIds = async (eventIds: string[]): Promise<Event[]> => {
-  if (!eventIds.length) return [];
-  
-  const events = [];
-  for (const id of eventIds) {
-    const event = await fetchEventById(id);
-    if (event) events.push(event);
-  }
-  
-  return events;
-};
-
-// Helper function to transform database route to app Route type
-const transformRouteData = (item: any): Route => {
-  // Create default language record with empty strings
-  const defaultLangRecord: Record<Language, string> = {
-    en: '',
-    ru: '',
-    hi: ''
-  };
-  
-  // Get name with proper language structure or use default
-  const name: Record<Language, string> = item.name && typeof item.name === 'object' 
-    ? { ...defaultLangRecord, ...item.name }
-    : defaultLangRecord;
-  
-  // Get description with proper language structure or use default
-  const description: Record<Language, string> = item.info && typeof item.info === 'object'
-    ? { ...defaultLangRecord, ...item.info }
-    : defaultLangRecord;
-  
-  // Process point IDs
-  let pointIds: string[] = [];
-  if (item.spots && Array.isArray(item.spots)) {
-    pointIds = item.spots.filter((spot: any) => typeof spot === 'string');
-  }
-  
-  // Process event IDs
-  let eventIds: string[] = [];
-  if (item.events && Array.isArray(item.events)) {
-    eventIds = item.events.filter((event: any) => typeof event === 'string');
-  }
-  
-  // Get a valid thumbnail
-  let thumbnail = '/placeholder.svg';
-  if (item.image && typeof item.image === 'string') {
-    thumbnail = item.image;
-  }
-  
-  return {
-    id: item.id,
-    cityId: item.city || '',
-    name,
-    description,
-    thumbnail,
-    pointIds,
-    eventIds,
-    duration: item.duration || 0,
-    distance: item.distance || 0,
-    difficulty: item.difficulty || 'easy'
-  };
-};
-
-export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
+/**
+ * Fetches all available routes
+ */
+export const fetchRoutes = async (): Promise<Route[]> => {
   try {
     const { data, error } = await supabase
       .from('routes')
-      .select('*')
-      .eq('city', cityId);
+      .select('*');
     
-    if (error) throw error;
-    
-    if (!data || data.length === 0) {
-      console.log(`No routes found for city ID ${cityId}`);
+    if (error) {
+      console.error('Error fetching routes:', error);
       return [];
     }
     
-    const routes: Route[] = data.map(item => transformRouteData(item));
+    if (!data) {
+      return [];
+    }
     
-    return routes;
+    // Map and format the route data
+    const formattedRoutes = await Promise.all(
+      data.map(async (route) => {
+        return formatRoute(route);
+      })
+    );
+    
+    return formattedRoutes;
   } catch (error) {
-    console.error(`Error fetching routes for city ID ${cityId}:`, error);
+    console.error('Error in fetchRoutes:', error);
     return [];
   }
 };
 
+/**
+ * Fetches a specific route by ID
+ */
 export const fetchRouteById = async (routeId: string): Promise<Route | null> => {
+  if (!routeId) {
+    console.error('No route ID provided');
+    return null;
+  }
+  
   try {
     const { data, error } = await supabase
       .from('routes')
       .select('*')
       .eq('id', routeId)
-      .maybeSingle();
+      .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error(`Error fetching route ${routeId}:`, error);
+      return null;
+    }
     
     if (!data) {
       console.log(`No route found with ID ${routeId}`);
       return null;
     }
     
-    const route = transformRouteData(data);
+    // Format the route data
+    const formattedRoute = await formatRoute(data);
     
-    // Fetch associated points
-    const points = await fetchPointsByIds(route.pointIds);
+    // Fetch related points and events
+    if (formattedRoute.pointIds.length > 0) {
+      formattedRoute.points = await fetchPointsByIds(formattedRoute.pointIds);
+    }
     
-    // Fetch associated events
-    const events = await fetchEventsByIds(route.eventIds);
+    if (formattedRoute.eventIds.length > 0) {
+      formattedRoute.events = await fetchEventsByIds(formattedRoute.eventIds);
+    }
     
-    return route;
+    return formattedRoute;
   } catch (error) {
-    console.error(`Error fetching route with ID ${routeId}:`, error);
+    console.error(`Error in fetchRouteById (${routeId}):`, error);
     return null;
   }
 };
 
-export const fetchAllRoutes = async (): Promise<Route[]> => {
+/**
+ * Fetches routes for a specific city
+ */
+export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
+  if (!cityId) {
+    console.error('No city ID provided');
+    return [];
+  }
+  
   try {
     const { data, error } = await supabase
       .from('routes')
-      .select('*');
+      .select('*')
+      .eq('city_id', cityId);
     
-    if (error) throw error;
-    
-    if (!data || data.length === 0) {
-      console.log("No routes found");
+    if (error) {
+      console.error(`Error fetching routes for city ${cityId}:`, error);
       return [];
     }
     
-    const routes: Route[] = data.map(item => transformRouteData(item));
+    if (!data || data.length === 0) {
+      console.log(`No routes found for city ${cityId}`);
+      return [];
+    }
     
-    return routes;
+    // Map and format the route data
+    const formattedRoutes = await Promise.all(
+      data.map(async (route) => {
+        return formatRoute(route);
+      })
+    );
+    
+    return formattedRoutes;
   } catch (error) {
-    console.error('Error fetching all routes:', error);
+    console.error(`Error in fetchRoutesByCity (${cityId}):`, error);
     return [];
   }
 };
 
+/**
+ * Fetches routes for a specific point
+ */
 export const fetchRoutesByPoint = async (pointId: string): Promise<Route[]> => {
+  if (!pointId) {
+    console.error('No point ID provided');
+    return [];
+  }
+  
   try {
     const { data, error } = await supabase
-      .from('routes')
-      .select('*')
-      .contains('spots', [pointId]);
+      .from('routes_points')
+      .select('route_id')
+      .eq('point_id', pointId);
     
-    if (error) throw error;
-    
-    if (!data || data.length === 0) {
-      console.log(`No routes found for point ID ${pointId}`);
+    if (error) {
+      console.error(`Error fetching route IDs for point ${pointId}:`, error);
       return [];
     }
     
-    const routes: Route[] = data.map(item => transformRouteData(item));
+    if (!data || data.length === 0) {
+      console.log(`No routes found for point ${pointId}`);
+      return [];
+    }
     
-    return routes;
+    // Extract route IDs
+    const routeIds = data.map(item => item.route_id);
+    
+    // Fetch each route
+    const routePromises = routeIds.map(id => fetchRouteById(id));
+    const routes = await Promise.all(routePromises);
+    
+    // Filter out any null routes
+    return routes.filter(route => route !== null) as Route[];
   } catch (error) {
-    console.error(`Error fetching routes for point ID ${pointId}:`, error);
+    console.error(`Error in fetchRoutesByPoint (${pointId}):`, error);
     return [];
   }
 };
 
+/**
+ * Fetches routes for a specific event
+ */
 export const fetchRoutesByEvent = async (eventId: string): Promise<Route[]> => {
+  if (!eventId) {
+    console.error('No event ID provided');
+    return [];
+  }
+  
   try {
     const { data, error } = await supabase
-      .from('routes')
-      .select('*')
-      .contains('events', [eventId]);
+      .from('routes_events')
+      .select('route_id')
+      .eq('event_id', eventId);
     
-    if (error) throw error;
-    
-    if (!data || data.length === 0) {
-      console.log(`No routes found for event ID ${eventId}`);
+    if (error) {
+      console.error(`Error fetching route IDs for event ${eventId}:`, error);
       return [];
     }
     
-    const routes: Route[] = data.map(item => transformRouteData(item));
+    if (!data || data.length === 0) {
+      console.log(`No routes found for event ${eventId}`);
+      return [];
+    }
     
-    return routes;
+    // Extract route IDs
+    const routeIds = data.map(item => item.route_id);
+    
+    // Fetch each route
+    const routePromises = routeIds.map(id => fetchRouteById(id));
+    const routes = await Promise.all(routePromises);
+    
+    // Filter out any null routes
+    return routes.filter(route => route !== null) as Route[];
   } catch (error) {
-    console.error(`Error fetching routes for event ID ${eventId}:`, error);
+    console.error(`Error in fetchRoutesByEvent (${eventId}):`, error);
     return [];
   }
 };
-
-// Keeping for backward compatibility
-export const fetchRoutesByCityId = fetchRoutesByCity;
