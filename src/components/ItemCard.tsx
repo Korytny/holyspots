@@ -1,3 +1,4 @@
+
 import { 
   MapPin,
   Calendar,
@@ -50,6 +51,11 @@ const ItemCard: React.FC<ItemCardProps> = ({
     ? description[language]
     : (description?.en || 'No description available');
 
+  // Truncate description for display
+  const truncatedDescription = displayDescription.length > 120
+    ? displayDescription.substring(0, 120) + '...'
+    : displayDescription;
+
   // Determine icon based on type
   const getIcon = () => {
     switch (type) {
@@ -100,7 +106,12 @@ const ItemCard: React.FC<ItemCardProps> = ({
       </div>
       
       <div className="p-4">
-        <h3 className="font-medium text-lg mb-3 line-clamp-1">{displayName}</h3>
+        <h3 className="font-medium text-lg mb-2 line-clamp-1">{displayName}</h3>
+        
+        {/* Show description for city and point cards */}
+        {(type === 'city' || type === 'point') && (
+          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{truncatedDescription}</p>
+        )}
         
         <div className="flex flex-col gap-2">
           {location && (

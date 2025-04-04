@@ -159,6 +159,8 @@ const PointDetail = () => {
               </div>
             </div>
             
+            <p className="text-muted-foreground mb-6">{spotDescription}</p>
+            
             <MediaGallery media={mediaItems} />
             
             <div className="mt-6">
@@ -180,11 +182,6 @@ const PointDetail = () => {
                 
                 <TabsContent value="info" className="pt-4">
                   <div className="prose max-w-none">
-                    <h3 className="text-lg font-medium mb-2">{t('description')}</h3>
-                    {spotDescription.split('\n').map((paragraph, index) => (
-                      <p key={index} className="mb-4">{paragraph}</p>
-                    ))}
-                    
                     {spot.type && (
                       <div className="mt-4">
                         <h3 className="text-lg font-medium mb-2">{t('type')}:</h3>
