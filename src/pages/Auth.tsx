@@ -7,13 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FcGoogle } from 'react-icons/fc';
-import { AiFillApple } from 'react-icons/ai';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const { t } = useLanguage();
-  const { signIn, signUp, googleSignIn, appleSignIn, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { signIn, signUp, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -73,46 +72,22 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
-      // Используем полный URL текущего окна вместо фиксированного
       const currentUrl = window.location.origin;
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${currentUrl}/cities`,  // Перенаправляем на cities после успешной аутентификации
+          redirectTo: `${currentUrl}/cities`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent'
+            prompt: 'consent',
           }
         }
       });
       
       if (error) throw error;
-      // No need to navigate as this will redirect to Google
     } catch (err: any) {
       setError(err.message || 'Failed to sign in with Google.');
-      console.error(err);
-      setIsLoading(false);
-    }
-  };
-  
-  const handleAppleSignIn = async () => {
-    setError(null);
-    setIsLoading(true);
-    
-    try {
-      // Также обновляем и для Apple авторизации
-      const currentUrl = window.location.origin;
-      
-      await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: {
-          redirectTo: `${currentUrl}/cities`, // Перенаправляем на cities после успешной аутентификации
-        }
-      });
-      // No need to navigate as this will redirect to Apple
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in with Apple.');
       console.error(err);
       setIsLoading(false);
     }
@@ -207,17 +182,6 @@ const Auth = () => {
                   <FcGoogle size={20} />
                   {t('continueWithGoogle')}
                 </Button>
-                
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full flex items-center justify-center gap-2"
-                  onClick={handleAppleSignIn}
-                  disabled={isLoading}
-                >
-                  <AiFillApple size={20} />
-                  {t('continueWithApple')}
-                </Button>
               </div>
             </form>
           </TabsContent>
@@ -299,17 +263,6 @@ const Auth = () => {
                 >
                   <FcGoogle size={20} />
                   {t('continueWithGoogle')}
-                </Button>
-                
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full flex items-center justify-center gap-2"
-                  onClick={handleAppleSignIn}
-                  disabled={isLoading}
-                >
-                  <AiFillApple size={20} />
-                  {t('continueWithApple')}
                 </Button>
               </div>
             </form>

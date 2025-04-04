@@ -1,253 +1,230 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Point, Language } from '../types/models';
+import { Point, Language, GeoPoint } from '../types/models';
+import { Json } from '@/types/supabase';
 
-/**
- * Fetches points by cityId
- */
-export const fetchPointsByCityId = async (cityId: string): Promise<Point[]> => {
+// Helper function to parse JSON safely
+const safeParseJson = (json: Json | null): any => {
+  if (!json) return null;
+  
+  if (typeof json === 'object') return json;
+  
   try {
-    const { data, error } = await supabase
-      .from('spots')
-      .select('*')
-      .eq('city', cityId);
-      
-    if (error) throw error;
-    
-    if (!data) return [];
-    
-    // Transform Supabase data to our model
-    return data.map(spot => {
-      const nameRecord = tryParseJson(spot.name, {
-        en: 'Unknown', ru: 'Неизвестно', hi: 'अज्ञात'
-      });
-      
-      const descriptionRecord = tryParseJson(spot.info, {
-        en: '', ru: '', hi: ''
-      });
-      
-      // Map images correctly
-      const images = Array.isArray(spot.images) 
-        ? spot.images 
-        : (typeof spot.images === 'object' && spot.images !== null)
-          ? Object.values(spot.images).filter(img => typeof img === 'string')
-          : [];
-          
-      const thumbnail = Array.isArray(images) && images.length > 0 
-        ? images[0] 
-        : '/placeholder.svg';
-        
-      // Try to get point coordinates
-      let latitude = 0;
-      let longitude = 0;
-      
-      if (spot.coordinates && typeof spot.coordinates === 'object') {
-        latitude = parseFloat(spot.coordinates.latitude) || 0;
-        longitude = parseFloat(spot.coordinates.longitude) || 0;
-      }
-      
-      // Create point property with type and coordinates
-      const point = {
-        type: 'Point',
-        coordinates: [longitude, latitude] as [number, number]
-      };
-      
-      return {
-        id: spot.id,
-        cityId: spot.city,
-        type: mapSpotTypeToPointType(spot.type),
-        name: nameRecord as Record<Language, string>,
-        description: descriptionRecord as Record<Language, string>,
-        media: [], // Default empty media array
-        thumbnail,
-        images: images as string[],
-        location: {
-          latitude,
-          longitude
-        },
-        routeIds: spot.routes || [],
-        eventIds: spot.events || [],
-        ownerId: undefined,
-        point
-      };
-    });
-  } catch (error) {
-    console.error('Error fetching points by cityId:', error);
-    throw error;
+    return typeof json === 'string' ? JSON.parse(json) : json;
+  } catch (e) {
+    console.error('Error parsing JSON:', e);
+    return json;
   }
 };
 
-/**
- * Maps database spot type to app point type
- */
-function mapSpotTypeToPointType(typeId: number): 'temple' | 'ashram' | 'kund' | 'other' {
-  switch (typeId) {
-    case 1: return 'temple';
-    case 2: return 'ashram';
-    case 3: return 'kund';
-    default: return 'other';
-  }
-}
-
-/**
- * Helper function to safely parse JSON
- */
-function tryParseJson(json: any, defaultValue: any) {
-  if (!json) return defaultValue;
+export const fetchAllPoints = async (): Promise<Point[]> => {
+  const { data, error } = await supabase
+    .from('spots')
+    .select('*');
   
-  if (typeof json === 'string') {
-    try {
-      return JSON.parse(json);
-    } catch (e) {
-      return defaultValue;
-    }
-  }
+  if (error) throw error;
   
-  return json;
-}
+  return data?.map(spot => {
+    const nameData = safeParseJson(spot.name) || { en: 'Unknown', ru: 'Неизвестно', hi: 'अज्ञात' };
+    const infoData = safeParseJson(spot.info) || { en: '', ru: '', hi: '' };
+    const imagesData = safeParseJson(spot.images) || [];
+    const coordinatesData = safeParseJson(spot.coordinates) || {};
 
-/**
- * Fetches a single point by id
- */
-export const fetchPointById = async (pointId: string): Promise<Point | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('spots')
-      .select('*')
-      .eq('id', pointId)
-      .single();
-      
-    if (error) throw error;
+    // Default fallbacks for coordinates
+    let lat = 0, lng = 0;
     
-    if (!data) return null;
-    
-    // Transform data to our model
-    const nameRecord = tryParseJson(data.name, {
-      en: 'Unknown', ru: 'Неизвестно', hi: 'अज्ञात'
-    });
-    
-    const descriptionRecord = tryParseJson(data.info, {
-      en: '', ru: '', hi: ''
-    });
-    
-    // Map images correctly
-    const images = Array.isArray(data.images) 
-      ? data.images 
-      : (typeof data.images === 'object' && data.images !== null)
-        ? Object.values(data.images).filter(img => typeof img === 'string')
-        : [];
-        
-    const thumbnail = Array.isArray(images) && images.length > 0 
-      ? images[0] 
-      : '/placeholder.svg';
-      
-    // Try to get point coordinates
-    let latitude = 0;
-    let longitude = 0;
-    
-    if (data.coordinates && typeof data.coordinates === 'object') {
-      latitude = parseFloat(data.coordinates.latitude) || 0;
-      longitude = parseFloat(data.coordinates.longitude) || 0;
+    // Handle different types of coordinates data structure
+    if (coordinatesData && typeof coordinatesData === 'object') {
+      if ('latitude' in coordinatesData) {
+        lat = parseFloat(coordinatesData.latitude) || 0;
+        lng = parseFloat(coordinatesData.longitude) || 0;
+      } else if (Array.isArray(coordinatesData) && coordinatesData.length >= 2) {
+        // If it's an array like [lng, lat]
+        lng = parseFloat(coordinatesData[0]) || 0;
+        lat = parseFloat(coordinatesData[1]) || 0;
+      }
     }
     
-    // Create point property with type and coordinates
-    const point = {
+    // Create a GeoPoint for the coordinates
+    const point: GeoPoint = {
       type: 'Point',
-      coordinates: [longitude, latitude] as [number, number]
+      coordinates: [lng, lat]
     };
+    
+    // Create a location string for display purposes
+    const location = `${lng.toFixed(6)}, ${lat.toFixed(6)}`;
+    
+    // Default to empty arrays if not present
+    const routes = [] as string[];
+    const events = [] as string[];
     
     return {
-      id: data.id,
-      cityId: data.city,
-      type: mapSpotTypeToPointType(data.type),
-      name: nameRecord as Record<Language, string>,
-      description: descriptionRecord as Record<Language, string>,
-      media: [], // Default empty media array
-      thumbnail,
-      images: images as string[],
-      location: {
-        latitude,
-        longitude
-      },
-      routeIds: data.routes || [],
-      eventIds: data.events || [],
-      ownerId: undefined,
-      point
+      id: spot.id,
+      cityId: spot.city,
+      type: spot.type === 1 ? 'temple' : 
+            spot.type === 2 ? 'ashram' : 
+            spot.type === 3 ? 'kund' : 'other',
+      name: nameData as Record<Language, string>,
+      description: infoData as Record<Language, string>,
+      media: imagesData,
+      thumbnail: Array.isArray(imagesData) && imagesData.length > 0 
+        ? imagesData[0] 
+        : 'placeholder.svg',
+      images: Array.isArray(imagesData) ? imagesData : [],
+      location,
+      point,
+      routes,
+      events
     };
-  } catch (error) {
-    console.error('Error fetching point by id:', error);
-    throw error;
-  }
+  }) || [];
 };
 
-// For services with potential TypeScript errors, we add default values and proper type handling
-export const fetchAllPoints = async (): Promise<Point[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('spots')
-      .select('*');
-      
-    if (error) throw error;
-    
-    if (!data) return [];
-    
-    // Transform Supabase data to our model - same pattern as above
-    return data.map(spot => {
-      const nameRecord = tryParseJson(spot.name, {
-        en: 'Unknown', ru: 'Неизвестно', hi: 'अज्ञात'
-      });
-      
-      const descriptionRecord = tryParseJson(spot.info, {
-        en: '', ru: '', hi: ''
-      });
-      
-      // Map images correctly
-      const images = Array.isArray(spot.images) 
-        ? spot.images 
-        : (typeof spot.images === 'object' && spot.images !== null)
-          ? Object.values(spot.images).filter(img => typeof img === 'string')
-          : [];
-          
-      const thumbnail = Array.isArray(images) && images.length > 0 
-        ? images[0] 
-        : '/placeholder.svg';
-        
-      // Try to get point coordinates  
-      let latitude = 0;
-      let longitude = 0;
-      
-      if (spot.coordinates && typeof spot.coordinates === 'object') {
-        latitude = parseFloat(spot.coordinates.latitude) || 0;
-        longitude = parseFloat(spot.coordinates.longitude) || 0;
-      }
-      
-      // Create point property with type and coordinates
-      const point = {
-        type: 'Point', 
-        coordinates: [longitude, latitude] as [number, number]
-      };
-      
-      return {
-        id: spot.id,
-        cityId: spot.city,
-        type: mapSpotTypeToPointType(spot.type),
-        name: nameRecord as Record<Language, string>,
-        description: descriptionRecord as Record<Language, string>,
-        media: [], // Default empty media array
-        thumbnail,
-        images: images as string[],
-        location: {
-          latitude,
-          longitude
-        },
-        routeIds: spot.routes || [],
-        eventIds: spot.events || [],
-        ownerId: undefined,
-        point
-      };
-    });
-  } catch (error) {
-    console.error('Error fetching all points:', error);
+export const fetchPointById = async (pointId: string): Promise<Point | null> => {
+  const { data, error } = await supabase
+    .from('spots')
+    .select('*')
+    .eq('id', pointId)
+    .single();
+  
+  if (error) {
+    if (error.code === 'PGRST116') {
+      // Record not found
+      return null;
+    }
     throw error;
   }
+  
+  if (!data) return null;
+  
+  const nameData = safeParseJson(data.name) || { en: 'Unknown', ru: 'Неизвестно', hi: 'अज्ञात' };
+  const infoData = safeParseJson(data.info) || { en: '', ru: '', hi: '' };
+  const imagesData = safeParseJson(data.images) || [];
+  const coordinatesData = safeParseJson(data.coordinates) || {};
+  
+  // Default fallbacks for coordinates
+  let lat = 0, lng = 0;
+  
+  // Handle different types of coordinates data structure
+  if (coordinatesData && typeof coordinatesData === 'object') {
+    if ('latitude' in coordinatesData) {
+      lat = parseFloat(coordinatesData.latitude) || 0;
+      lng = parseFloat(coordinatesData.longitude) || 0;
+    } else if (Array.isArray(coordinatesData) && coordinatesData.length >= 2) {
+      // If it's an array like [lng, lat]
+      lng = parseFloat(coordinatesData[0]) || 0;
+      lat = parseFloat(coordinatesData[1]) || 0;
+    }
+  }
+  
+  // Create a GeoPoint for the coordinates
+  const point: GeoPoint = {
+    type: 'Point',
+    coordinates: [lng, lat]
+  };
+  
+  // Create a location string for display purposes
+  const location = `${lng.toFixed(6)}, ${lat.toFixed(6)}`;
+  
+  // Default to empty arrays if not present
+  const routes = [] as string[];
+  const events = [] as string[];
+  
+  const thumbnail = Array.isArray(imagesData) && imagesData.length > 0 
+    ? imagesData[0] 
+    : 'placeholder.svg';
+  
+  return {
+    id: data.id,
+    cityId: data.city,
+    type: data.type === 1 ? 'temple' : 
+          data.type === 2 ? 'ashram' : 
+          data.type === 3 ? 'kund' : 'other',
+    name: nameData as Record<Language, string>,
+    description: infoData as Record<Language, string>,
+    media: imagesData,
+    thumbnail,
+    images: Array.isArray(imagesData) ? imagesData : [],
+    location,
+    point,
+    routes,
+    events
+  };
+};
+
+export const fetchPointsByCityId = async (cityId: string): Promise<Point[]> => {
+  const { data, error } = await supabase
+    .from('spots')
+    .select('*')
+    .eq('city', cityId);
+  
+  if (error) throw error;
+  
+  return data?.map(spot => {
+    const nameData = safeParseJson(spot.name) || { en: 'Unknown', ru: 'Неизвестно', hi: 'अज्ञात' };
+    const infoData = safeParseJson(spot.info) || { en: '', ru: '', hi: '' };
+    const imagesData = safeParseJson(spot.images) || [];
+    const coordinatesData = safeParseJson(spot.coordinates) || {};
+
+    // Default fallbacks for coordinates
+    let lat = 0, lng = 0;
+    
+    // Handle different types of coordinates data structure
+    if (coordinatesData && typeof coordinatesData === 'object') {
+      if ('latitude' in coordinatesData) {
+        lat = parseFloat(coordinatesData.latitude) || 0;
+        lng = parseFloat(coordinatesData.longitude) || 0;
+      } else if (Array.isArray(coordinatesData) && coordinatesData.length >= 2) {
+        // If it's an array like [lng, lat]
+        lng = parseFloat(coordinatesData[0]) || 0;
+        lat = parseFloat(coordinatesData[1]) || 0;
+      }
+    }
+    
+    // Create a GeoPoint for the coordinates
+    const point: GeoPoint = {
+      type: 'Point',
+      coordinates: [lng, lat]
+    };
+    
+    // Create a location string for display purposes
+    const location = `${lng.toFixed(6)}, ${lat.toFixed(6)}`;
+    
+    // Default to empty arrays if not present
+    const routes = [] as string[];
+    const events = [] as string[];
+    
+    const thumbnail = Array.isArray(imagesData) && imagesData.length > 0 
+      ? imagesData[0] 
+      : 'placeholder.svg';
+    
+    return {
+      id: spot.id,
+      cityId: spot.city,
+      type: spot.type === 1 ? 'temple' : 
+            spot.type === 2 ? 'ashram' : 
+            spot.type === 3 ? 'kund' : 'other',
+      name: nameData as Record<Language, string>,
+      description: infoData as Record<Language, string>,
+      media: imagesData,
+      thumbnail,
+      images: Array.isArray(imagesData) ? imagesData : [],
+      location,
+      point,
+      routes,
+      events
+    };
+  }) || [];
+};
+
+export const fetchPointsByRouteId = async (routeId: string): Promise<Point[]> => {
+  // Here we would need to query for spots that are associated with this route
+  // This would require a function or a query to get spots by route ID
+  // Since this functionality isn't fully implemented, we'll return an empty array for now
+  return [];
+};
+
+export const fetchPointsByEventId = async (eventId: string): Promise<Point[]> => {
+  // Similar to fetchPointsByRouteId, this would require querying spots by event ID
+  // Returning an empty array for now
+  return [];
 };

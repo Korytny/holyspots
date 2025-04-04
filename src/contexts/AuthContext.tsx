@@ -12,7 +12,6 @@ interface AuthContextType {
   signUp: (email: string, password: string, name?: string) => Promise<void>;
   signOut: () => Promise<void>;
   googleSignIn: () => Promise<void>;
-  appleSignIn: () => Promise<void>;
   addFavorite: (itemId: string, itemType: 'city' | 'point' | 'route' | 'event') => Promise<void>;
   removeFavorite: (itemId: string, itemType: 'city' | 'point' | 'route' | 'event') => Promise<void>;
   isFavorite: (itemId: string, itemType: 'city' | 'point' | 'route' | 'event') => boolean;
@@ -147,15 +146,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const handleHashChange = () => {
       const hash = window.location.hash;
-      if (hash && hash.includes('access_token')) {
+      if (hash && (hash.includes('access_token') || hash.includes('error='))) {
         window.history.replaceState(null, document.title, window.location.pathname);
       }
     };
 
     handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
 
     return () => {
       subscription.unsubscribe();
+      window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
 
@@ -384,7 +385,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${currentUrl}/cities`
+          redirectTo: `${currentUrl}/cities`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account'
+          }
         }
       });
       
@@ -394,32 +399,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast({
         title: "Google sign in failed",
         description: error.message || "Failed to sign in with Google. Please try again.",
-        variant: "destructive"
-      });
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const appleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      const currentUrl = window.location.origin;
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: {
-          redirectTo: `${currentUrl}/cities`
-        }
-      });
-      
-      if (error) throw error;
-    } catch (error: any) {
-      console.error('Apple sign in error:', error);
-      toast({
-        title: "Apple sign in failed",
-        description: error.message || "Failed to sign in with Apple. Please try again.",
         variant: "destructive"
       });
       throw error;
@@ -438,7 +417,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUp,
         signOut,
         googleSignIn,
-        appleSignIn,
         addFavorite,
         removeFavorite,
         isFavorite
