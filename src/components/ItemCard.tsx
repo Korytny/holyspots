@@ -1,10 +1,8 @@
 
-import { Button } from '@/components/ui/button';
 import { 
   MapPin,
   Calendar,
   Navigation,
-  ArrowRight,
   Heart
 } from 'lucide-react';
 import { useState } from 'react';
@@ -42,7 +40,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
   extraContent
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
 
   // Safety check to ensure name and description are valid objects
   const displayName = name && typeof name === 'object' && name[language] 
@@ -66,9 +64,10 @@ const ItemCard: React.FC<ItemCardProps> = ({
   
   return (
     <div 
-      className="sacred-card card-hover"
+      className="sacred-card card-hover cursor-pointer"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={onClick}
     >
       <div className="relative overflow-hidden h-48">
         <img 
@@ -81,19 +80,17 @@ const ItemCard: React.FC<ItemCardProps> = ({
         
         {/* Favorite button */}
         {onToggleFavorite && (
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={(e) => {
               e.stopPropagation();
               onToggleFavorite();
             }}
-            className="absolute top-2 right-2 bg-white/80 hover:bg-white rounded-full z-10"
+            className="absolute top-2 right-2 bg-white/80 hover:bg-white rounded-full z-10 p-2"
           >
             <Heart 
               className={`h-5 w-5 ${isFavorite ? 'fill-burgundy text-burgundy' : 'text-muted-foreground'}`} 
             />
-          </Button>
+          </button>
         )}
         
         {/* Type indicator */}
@@ -135,15 +132,6 @@ const ItemCard: React.FC<ItemCardProps> = ({
           {/* Render the extra content if provided */}
           {extraContent}
         </div>
-        
-        <Button 
-          variant="ghost" 
-          className="w-full mt-3 justify-between"
-          onClick={onClick}
-        >
-          {t('details')}
-          <ArrowRight className="h-4 w-4" />
-        </Button>
       </div>
     </div>
   );
