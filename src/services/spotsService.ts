@@ -1,9 +1,9 @@
 
 // Re-export all functionality from pointsService to maintain compatibility
-import {
-  fetchAllPoints,
+import { 
+  fetchPointsByCity, 
   fetchPointById,
-  fetchPointsByCityId,
+  fetchAllPoints,
   fetchPointsByRouteId,
   fetchPointsByEventId
 } from './pointsService';
@@ -11,7 +11,7 @@ import {
 // Create alias functions for backward compatibility
 export const fetchAllSpots = fetchAllPoints;
 export const fetchSpotById = fetchPointById;
-export const fetchSpotsByCity = fetchPointsByCityId;
+export const fetchSpotsByCity = fetchPointsByCity;
 export const fetchSpotsByRoute = fetchPointsByRouteId;
 export const fetchSpotsByEvent = fetchPointsByEventId;
 

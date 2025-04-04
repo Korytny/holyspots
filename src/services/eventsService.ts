@@ -70,7 +70,7 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
       .from('events')
       .select('*')
       .eq('id', eventId)
-      .single();
+      .maybeSingle();
     
     if (error) {
       if (error.code === 'PGRST116') {
@@ -136,7 +136,7 @@ export const fetchEventsByCity = async (cityId: string): Promise<Event[]> => {
     // Query to get all events that contain spots from this city
     const { data: spots, error: spotsError } = await supabase
       .from('spots')
-      .select('id, events')
+      .select('id')
       .eq('city', cityId);
     
     if (spotsError) throw spotsError;
@@ -146,29 +146,35 @@ export const fetchEventsByCity = async (cityId: string): Promise<Event[]> => {
       return [];
     }
     
-    // Extract unique event IDs from all spots
-    const eventIds = new Set<string>();
-    spots.forEach(spot => {
-      if (spot.events && Array.isArray(spot.events)) {
-        spot.events.forEach((eventId: string) => eventIds.add(eventId));
-      }
-    });
+    // Get spot IDs
+    const spotIds = spots.map(spot => spot.id);
     
-    if (eventIds.size === 0) {
-      console.log(`No events found for city ID ${cityId}`);
+    // Extract event IDs from spot_event join table
+    const { data: spotEvents, error: spotEventsError } = await supabase
+      .from('spot_event')
+      .select('event_id')
+      .in('spot_id', spotIds);
+    
+    if (spotEventsError) throw spotEventsError;
+    
+    if (!spotEvents || spotEvents.length === 0) {
+      console.log(`No events found for city ID ${cityId} via spots`);
       return [];
     }
+    
+    // Get unique event IDs
+    const eventIds = [...new Set(spotEvents.map(item => item.event_id))];
     
     // Fetch the events by their IDs
     const { data, error } = await supabase
       .from('events')
       .select('*')
-      .in('id', Array.from(eventIds));
+      .in('id', eventIds);
     
     if (error) throw error;
     
     if (!data || data.length === 0) {
-      console.log(`No events found with IDs ${Array.from(eventIds).join(', ')}`);
+      console.log(`No events found with IDs ${eventIds.join(', ')}`);
       return [];
     }
     

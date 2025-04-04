@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchCityById } from '../services/citiesService';
-import { fetchPointsByCityId } from '../services/pointsService';
+import { fetchPointsByCity } from '../services/pointsService';
 import { fetchRoutesByCity } from '../services/routesService';
 import { fetchEventsByCity } from '../services/eventsService';
 import { City, Point, Route, Event, GeoPoint } from '../types/models';

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -52,7 +51,7 @@ const EventDetail = () => {
         setEvent(eventData);
         
         // Fetch related routes with the eventId parameter
-        const routesData = await fetchRoutesByEventId(eventId);
+        const routesData = await fetchRoutesByEvent(eventId);
         setRoutes(routesData);
         
         // Fetch related points with the eventId parameter
