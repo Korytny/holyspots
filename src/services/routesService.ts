@@ -1,187 +1,187 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Route, Language } from '../types/models';
-import { Json } from '../types/supabase';
+import { Language } from '@/types/models';
+import { Json } from '@/types/supabase';
+import { Route, Point } from '../types/models';
+import { fetchPointsByIds } from './pointsService';
+import { fetchEventsByIds } from './eventsService';
 
-// Объявляем все экспортируемые функции в начале файла
-export const fetchAllRoutes = async (): Promise<Route[]> => {
-  return await fetchRoutes();
+// Helper function to transform route data from Supabase to our Route type
+const transformRouteData = async (routeData: { id: string; name: Json }[]): Promise<Route[]> => {
+  const routes: Route[] = [];
+  
+  for (const route of routeData) {
+    // Fetch spot-route associations to get point IDs
+    const { data: spotRouteData } = await supabase
+      .from('spot_route')
+      .select('spot_id')
+      .eq('route_id', route.id);
+    
+    const pointIds = spotRouteData?.map(sr => sr.spot_id) || [];
+    
+    // Fetch route-event associations to get event IDs
+    const { data: routeEventData } = await supabase
+      .from('route_event')
+      .select('event_id')
+      .eq('route_id', route.id);
+      
+    const eventIds = routeEventData?.map(re => re.event_id) || [];
+    
+    // Convert the name field to the expected format
+    const nameField = route.name as Record<Language, string> || {};
+    
+    // Build the route object
+    routes.push({
+      id: route.id,
+      name: nameField,
+      description: {}, // Default empty description
+      pointIds: pointIds,
+      eventIds: eventIds,
+      points: [], // This will be populated later if needed
+      events: [], // This will be populated later if needed
+      media: [], // No media by default
+      thumbnail: null, // No thumbnail by default
+      cityId: null // No city ID by default
+    });
+  }
+  
+  return routes;
 };
 
-export const fetchRouteById = async (routeId: string): Promise<Route | null> => {
+export const fetchAllRoutes = async (): Promise<Route[]> => {
   try {
     const { data, error } = await supabase
       .from('routes')
-      .select('*')
-      .eq('id', routeId)
-      .single();
+      .select('id, name');
     
     if (error) {
-      console.error('Error fetching route:', error);
-      return null;
+      console.error('Error fetching all routes:', error);
+      return [];
     }
     
-    if (!data) return null;
-    
-    return transformRouteData(data);
+    return transformRouteData(data || []);
   } catch (error) {
-    console.error('Error in fetchRouteById:', error);
-    return null;
+    console.error('Error in fetchAllRoutes:', error);
+    return [];
   }
 };
 
 export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
   try {
-    const { data, error } = await supabase
-      .from('routes')
-      .select('*')
+    // First get all spots (points) for the city
+    const { data: cityPoints, error: pointsError } = await supabase
+      .from('spots')
+      .select('id')
       .eq('city', cityId);
-    
-    if (error) {
-      console.error('Error fetching routes by city:', error);
+      
+    if (pointsError || !cityPoints?.length) {
+      console.error('Error fetching city points:', pointsError);
       return [];
     }
     
-    return data.map(transformRouteData);
+    const pointIds = cityPoints.map(point => point.id);
+    
+    // Then get all routes that contain these points
+    const { data: spotRouteData, error: spotRouteError } = await supabase
+      .from('spot_route')
+      .select('route_id')
+      .in('spot_id', pointIds);
+      
+    if (spotRouteError || !spotRouteData?.length) {
+      console.error('Error fetching spot-route associations:', spotRouteError);
+      return [];
+    }
+    
+    // Get unique route IDs
+    const routeIds = [...new Set(spotRouteData.map(sr => sr.route_id))];
+    
+    // Finally, get the route details
+    const { data: routesData, error: routesError } = await supabase
+      .from('routes')
+      .select('id, name')
+      .in('id', routeIds);
+      
+    if (routesError) {
+      console.error('Error fetching routes by city:', routesError);
+      return [];
+    }
+    
+    return transformRouteData(routesData || []);
   } catch (error) {
     console.error('Error in fetchRoutesByCity:', error);
     return [];
   }
 };
 
+export const fetchRouteById = async (routeId: string): Promise<Route | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('routes')
+      .select('id, name')
+      .eq('id', routeId)
+      .single();
+    
+    if (error || !data) {
+      console.error('Error fetching route by ID:', error);
+      return null;
+    }
+    
+    const routes = await transformRouteData([data]);
+    if (!routes.length) return null;
+    
+    const route = routes[0];
+    
+    // Fetch the actual point objects
+    if (route.pointIds.length > 0) {
+      route.points = await fetchPointsByIds(route.pointIds);
+    }
+    
+    // Fetch the actual event objects
+    if (route.eventIds.length > 0) {
+      route.events = await fetchEventsByIds(route.eventIds);
+    }
+    
+    return route;
+  } catch (error) {
+    console.error('Error in fetchRouteById:', error);
+    return null;
+  }
+};
+
+// Add this function to support the imports in PointDetail.tsx
 export const fetchRoutesByPoint = async (pointId: string): Promise<Route[]> => {
   try {
-    // Подход через связующую таблицу
+    // Get all routes that contain this point
     const { data: spotRouteData, error: spotRouteError } = await supabase
       .from('spot_route')
       .select('route_id')
       .eq('spot_id', pointId);
-    
-    if (spotRouteError) {
-      console.error('Error fetching spot-route relations:', spotRouteError);
+      
+    if (spotRouteError || !spotRouteData?.length) {
+      console.error('Error fetching spot-route associations:', spotRouteError);
       return [];
     }
     
-    if (!spotRouteData || spotRouteData.length === 0) {
-      return [];
-    }
+    // Get unique route IDs
+    const routeIds = [...new Set(spotRouteData.map(sr => sr.route_id))];
     
-    const routeIds = spotRouteData.map(item => item.route_id);
-    
+    // Get the route details
     const { data: routesData, error: routesError } = await supabase
       .from('routes')
-      .select('*')
+      .select('id, name')
       .in('id', routeIds);
-    
+      
     if (routesError) {
       console.error('Error fetching routes by point:', routesError);
       return [];
     }
     
-    if (!routesData) return [];
-    
-    return routesData.map(transformRouteData);
+    return transformRouteData(routesData || []);
   } catch (error) {
     console.error('Error in fetchRoutesByPoint:', error);
     return [];
   }
 };
 
-export const fetchRoutesByEvent = async (eventId: string): Promise<Route[]> => {
-  try {
-    // Подход через связующую таблицу
-    const { data: routeEventData, error: routeEventError } = await supabase
-      .from('route_event')
-      .select('route_id')
-      .eq('event_id', eventId);
-    
-    if (routeEventError) {
-      console.error('Error fetching route-event relations:', routeEventError);
-      return [];
-    }
-    
-    if (!routeEventData || routeEventData.length === 0) {
-      return [];
-    }
-    
-    const routeIds = routeEventData.map(item => item.route_id);
-    
-    const { data: routesData, error: routesError } = await supabase
-      .from('routes')
-      .select('*')
-      .in('id', routeIds);
-    
-    if (routesError) {
-      console.error('Error fetching routes by event:', routesError);
-      return [];
-    }
-    
-    if (!routesData) return [];
-    
-    return routesData.map(transformRouteData);
-  } catch (error) {
-    console.error('Error in fetchRoutesByEvent:', error);
-    return [];
-  }
-};
-
-// Вспомогательные функции
-
-// Функция для преобразования данных маршрута из Supabase в тип Route
-const transformRouteData = (routeData: any): Route => {
-  // Извлечем название с учетом мультиязычности
-  const name: Record<Language, string> = {
-    en: routeData.name?.en || '',
-    ru: routeData.name?.ru || '',
-    hi: routeData.name?.hi || ''
-  };
-  
-  // Извлечем описание (если есть)
-  const description: Record<Language, string> = {
-    en: routeData.info?.en || '',
-    ru: routeData.info?.ru || '',
-    hi: routeData.info?.hi || ''
-  };
-  
-  // Подготовим медиа и thumbnail
-  const media = routeData.images && Array.isArray(routeData.images) 
-    ? routeData.images.map((img: string) => ({ url: img, type: 'image' })) 
-    : [];
-  
-  const thumbnail = routeData.images && Array.isArray(routeData.images) && routeData.images.length > 0 
-    ? routeData.images[0] 
-    : '';
-  
-  // Сформируем объект маршрута в соответствии с интерфейсом Route
-  return {
-    id: routeData.id,
-    name,
-    description,
-    pointIds: routeData.spots || [],
-    media,
-    thumbnail,
-    cityId: routeData.city || null,
-    eventIds: routeData.events || []
-  };
-};
-
-// Основная функция для получения всех маршрутов
-async function fetchRoutes(): Promise<Route[]> {
-  try {
-    const { data, error } = await supabase
-      .from('routes')
-      .select('*');
-    
-    if (error) {
-      console.error('Error fetching routes:', error);
-      return [];
-    }
-    
-    if (!data) return [];
-    
-    return data.map(transformRouteData);
-  } catch (error) {
-    console.error('Error in fetchRoutes:', error);
-    return [];
-  }
-}
+// Alias for backward compatibility
+export const fetchRoutes = fetchAllRoutes;

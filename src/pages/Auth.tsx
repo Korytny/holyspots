@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/use-toast';
 
 const Auth = () => {
   const { t } = useLanguage();
-  const { signIn, signUp, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { signIn, signUp, googleSignIn, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -23,7 +23,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   
-  // Проверяем, аутентифицирован ли пользователь
+  // Check if user is authenticated
   useEffect(() => {
     console.log('Auth page - Authentication state:', isAuthenticated);
     if (isAuthenticated) {
@@ -38,7 +38,7 @@ const Auth = () => {
     
     try {
       await signIn(email, password);
-      // Навигация будет выполнена автоматически через useEffect при изменении isAuthenticated
+      // Navigation will be handled automatically by useEffect when isAuthenticated changes
     } catch (err: any) {
       setError(err.message || 'Failed to sign in. Please check your credentials.');
       console.error(err);
@@ -58,7 +58,7 @@ const Auth = () => {
         title: "Account created successfully",
         description: "Please check your email for verification instructions.",
       });
-      // Не перенаправляем сразу после регистрации, так как пользователю нужно подтвердить email
+      // Don't redirect immediately after registration as the user needs to verify their email
     } catch (err: any) {
       setError(err.message || 'Failed to sign up. Please try again.');
       console.error(err);
@@ -67,14 +67,13 @@ const Auth = () => {
     }
   };
   
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     setError(null);
     setIsLoading(true);
     
     try {
-      const { googleSignIn } = useAuth();
-      await googleSignIn();
-      // Перенаправление будет выполнено OAuth провайдером
+      googleSignIn();
+      // Redirect will be handled by the OAuth provider
     } catch (err: any) {
       setError(err.message || 'Failed to sign in with Google.');
       console.error(err);
@@ -82,7 +81,7 @@ const Auth = () => {
     }
   };
   
-  // Показать индикатор загрузки во время начальной проверки аутентификации
+  // Show loading indicator during initial authentication check
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -94,7 +93,7 @@ const Auth = () => {
     );
   }
   
-  // Если пользователь аутентифицирован, они будут перенаправлены в useEffect
+  // If user is authenticated, they will be redirected by useEffect
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
