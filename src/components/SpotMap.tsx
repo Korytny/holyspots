@@ -29,6 +29,36 @@ const SpotMap = ({ spot, height = '300px' }: SpotMapProps) => {
     return [78.9629, 20.5937];
   };
 
+  // Get spot type name for display
+  const getSpotTypeName = (type: string): string => {
+    switch (type) {
+      case 'temple': return 'Храм';
+      case 'ashram': return 'Ашрам';
+      case 'kund': return 'Кунда';
+      default: return 'Видовое место';
+    }
+  };
+
+  // Get icon element based on spot type
+  const getSpotIcon = (type: string): string => {
+    switch (type) {
+      case 'temple': return '🏛️'; // Temple
+      case 'ashram': return '🧘'; // Ashram
+      case 'kund': return '💦';   // Kund
+      default: return '🗻';       // Scenic place
+    }
+  };
+
+  // Get background color for the marker based on type
+  const getMarkerColor = (type: string): string => {
+    switch (type) {
+      case 'temple': return '#8B5CF6'; // Purple for temples
+      case 'ashram': return '#F97316'; // Orange for ashrams
+      case 'kund': return '#0EA5E9';   // Blue for kunds
+      default: return '#10B981';       // Green for scenic places
+    }
+  };
+
   // Load Mapbox token from storage or use default
   useEffect(() => {
     const storedToken = localStorage.getItem('mapboxToken');
@@ -81,12 +111,11 @@ const SpotMap = ({ spot, height = '300px' }: SpotMapProps) => {
     markerEl.className = 'flex flex-col items-center';
     
     const icon = document.createElement('div');
-    icon.className = 'w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center shadow-md';
+    icon.className = 'w-8 h-8 rounded-full text-white flex items-center justify-center shadow-md';
+    icon.style.backgroundColor = getMarkerColor(spot.type);
     
     // Different icon based on point type
-    let iconContent = '🏛️'; // Default temple
-    if (spot.type === 'ashram') iconContent = '🧘';
-    else if (spot.type === 'kund') iconContent = '💦';
+    const iconContent = getSpotIcon(spot.type);
     
     icon.innerHTML = iconContent;
     markerEl.appendChild(icon);

@@ -97,6 +97,14 @@ const CityDetail = () => {
     fetchSpotRelatedData();
   }, [selectedSpot]);
   
+  const handleRouteClick = (routeId: string) => {
+    navigate(`/routes/${routeId}`);
+  };
+  
+  const handleEventClick = (eventId: string) => {
+    navigate(`/events/${eventId}`);
+  };
+
   if (isLoadingCity) {
     return (
       <div className="flex flex-col min-h-screen">

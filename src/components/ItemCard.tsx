@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { Badge } from '@/components/ui/badge';
 
 type ItemType = 'city' | 'point' | 'route' | 'event';
 
@@ -23,6 +24,7 @@ export interface ItemCardProps {
   date?: string;
   pointCount?: number;
   extraContent?: React.ReactNode;
+  spotType?: string; // Added for spot type display
 }
 
 const ItemCard: React.FC<ItemCardProps> = ({
@@ -37,7 +39,8 @@ const ItemCard: React.FC<ItemCardProps> = ({
   location,
   date,
   pointCount,
-  extraContent
+  extraContent,
+  spotType
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -65,6 +68,36 @@ const ItemCard: React.FC<ItemCardProps> = ({
       case 'route': return <Navigation className="h-5 w-5" />;
       case 'event': return <Calendar className="h-5 w-5" />;
       default: return <MapPin className="h-5 w-5" />;
+    }
+  };
+
+  // Get spot type name for display
+  const getSpotTypeName = (type: string): string => {
+    switch (type) {
+      case 'temple': return 'Храм';
+      case 'ashram': return 'Ашрам';
+      case 'kund': return 'Кунда';
+      default: return 'Видовое место';
+    }
+  };
+
+  // Get spot type badge color
+  const getSpotTypeColor = (type: string): string => {
+    switch (type) {
+      case 'temple': return 'bg-purple-500';
+      case 'ashram': return 'bg-orange-500';
+      case 'kund': return 'bg-blue-500';
+      default: return 'bg-green-500';
+    }
+  };
+
+  // Get spot type emoji
+  const getSpotTypeEmoji = (type: string): string => {
+    switch (type) {
+      case 'temple': return '🏛️';
+      case 'ashram': return '🧘';
+      case 'kund': return '💦';
+      default: return '🗻';
     }
   };
 
@@ -108,6 +141,14 @@ const ItemCard: React.FC<ItemCardProps> = ({
           {getIcon()}
           <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
         </div>
+
+        {/* Spot type badge for point items */}
+        {type === 'point' && spotType && (
+          <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-white text-xs font-medium flex items-center gap-1 ${getSpotTypeColor(spotType)}`}>
+            <span>{getSpotTypeEmoji(spotType)}</span>
+            <span>{getSpotTypeName(spotType)}</span>
+          </div>
+        )}
       </div>
       
       <div className="p-4">
