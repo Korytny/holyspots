@@ -29,11 +29,18 @@ const SpotMap = ({ spot, height = '300px' }: SpotMapProps) => {
     return [78.9629, 20.5937];
   };
 
-  // Ask user for mapbox token if not available
+  // Load Mapbox token from storage or use default
   useEffect(() => {
     const storedToken = localStorage.getItem('mapboxToken');
+    // Use the provided token if available
+    const defaultToken = 'pk.eyJ1Ijoia29yeXRueSIsImEiOiJjazM2OWk0aWgwaXNlM29wbmFxYmcybDA1In0.3bQx9mdXq9p3PTkxb8soeQ';
+    
     if (storedToken) {
       setMapToken(storedToken);
+    } else {
+      // Save and use the default token
+      localStorage.setItem('mapboxToken', defaultToken);
+      setMapToken(defaultToken);
     }
   }, []);
 
@@ -52,6 +59,7 @@ const SpotMap = ({ spot, height = '300px' }: SpotMapProps) => {
     if (!mapContainer.current || !mapToken) return;
 
     const coordinates = getCoordinates();
+    console.log('Map coordinates:', coordinates);
     
     mapboxgl.accessToken = mapToken;
     

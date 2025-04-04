@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -111,12 +110,15 @@ const PointDetail = () => {
   const spotName = getSpotName();
   const spotDescription = getSpotDescription();
 
-  // Get coordinates from the geometry point field or from location object
   const getCoordinatesDisplay = () => {
     if (spot.point?.coordinates) {
-      return `${t('longitude')}: ${spot.point.coordinates[0].toFixed(6)}, ${t('latitude')}: ${spot.point.coordinates[1].toFixed(6)}`;
+      const [longitude, latitude] = spot.point.coordinates;
+      return `${t('longitude')}: ${longitude.toFixed(6)}, ${t('latitude')}: ${latitude.toFixed(6)}`;
     }
-    return `${t('latitude')}: ${spot.location.latitude.toFixed(6)}, ${t('longitude')}: ${spot.location.longitude.toFixed(6)}`;
+    if (spot.location) {
+      return `${t('latitude')}: ${spot.location.latitude.toFixed(6)}, ${t('longitude')}: ${spot.location.longitude.toFixed(6)}`;
+    }
+    return 'Coordinates not available';
   };
 
   const createMediaItems = (): MediaItem[] => {
@@ -223,7 +225,7 @@ const PointDetail = () => {
             {/* Map component */}
             <div className="mt-6 mb-6">
               <h3 className="text-lg font-semibold mb-2">{t('location')}</h3>
-              <SpotMap spot={spot} height="300px" />
+              <SpotMap spot={spot} height="400px" />
             </div>
             
             <div className="mt-6">

@@ -17,11 +17,18 @@ const Map = ({ points = [], center = [78.9629, 20.5937], zoom = 4, onPointSelect
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapToken, setMapToken] = useState<string>('');
 
-  // Ask user for mapbox token if not available
+  // Load Mapbox token from storage or use default
   useEffect(() => {
     const storedToken = localStorage.getItem('mapboxToken');
+    // Use the provided token if available
+    const defaultToken = 'pk.eyJ1Ijoia29yeXRueSIsImEiOiJjazM2OWk0aWgwaXNlM29wbmFxYmcybDA1In0.3bQx9mdXq9p3PTkxb8soeQ';
+    
     if (storedToken) {
       setMapToken(storedToken);
+    } else {
+      // Save and use the default token
+      localStorage.setItem('mapboxToken', defaultToken);
+      setMapToken(defaultToken);
     }
   }, []);
 
@@ -72,6 +79,14 @@ const Map = ({ points = [], center = [78.9629, 20.5937], zoom = 4, onPointSelect
     points.forEach(point => {
       if (!map.current) return;
       
+      // Get coordinates from point (either from point geometry or location)
+      let coordinates: [number, number];
+      if (point.point?.coordinates) {
+        coordinates = point.point.coordinates;
+      } else {
+        coordinates = [point.location.longitude, point.location.latitude];
+      }
+      
       // Create custom marker element
       const markerEl = document.createElement('div');
       markerEl.className = 'flex flex-col items-center';
@@ -95,7 +110,7 @@ const Map = ({ points = [], center = [78.9629, 20.5937], zoom = 4, onPointSelect
       
       // Create and add the marker
       const marker = new mapboxgl.Marker(markerEl)
-        .setLngLat([point.location.longitude, point.location.latitude])
+        .setLngLat(coordinates)
         .addTo(map.current);
         
       // Add click handler if onPointSelect is provided
