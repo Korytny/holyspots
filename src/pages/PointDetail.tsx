@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -110,49 +109,49 @@ const PointDetail = () => {
   const spotName = getSpotName();
   const spotDescription = getSpotDescription();
 
-  // Convert image URLs to MediaItem objects
-  const mediaItems: MediaItem[] = [];
-  
-  // Check if spot has media array already formatted
-  if (Array.isArray(spot.media) && spot.media.length > 0) {
-    spot.media.forEach((item, index) => {
-      if (typeof item === 'object' && item.type && item.url) {
-        mediaItems.push(item as MediaItem);
-      }
-    });
-  }
-  
-  // If no media items were processed, check for images array
-  if (mediaItems.length === 0 && spot.images) {
-    const imageUrls = Array.isArray(spot.images) ? spot.images : 
-      (typeof spot.images === 'object' ? Object.values(spot.images) : []);
+  const createMediaItems = (): MediaItem[] => {
+    const mediaItems: MediaItem[] = [];
     
-    imageUrls.forEach((url, index) => {
-      if (typeof url === 'string') {
-        mediaItems.push({
-          id: `image-${index}`,
-          type: 'image',
-          url: url,
-          thumbnailUrl: url,
-        });
-      }
-    });
-  }
+    if (spot && Array.isArray(spot.media) && spot.media.length > 0) {
+      spot.media.forEach((item, index) => {
+        if (typeof item === 'object' && item.type && item.url) {
+          mediaItems.push(item as MediaItem);
+        }
+      });
+    }
+    
+    if (mediaItems.length === 0 && spot && spot.images && Array.isArray(spot.images)) {
+      spot.images.forEach((url, index) => {
+        if (typeof url === 'string') {
+          mediaItems.push({
+            id: `image-${index}`,
+            type: 'image',
+            url,
+            thumbnailUrl: url,
+          });
+        }
+      });
+    }
+    
+    return mediaItems;
+  };
   
+  const mediaItems = createMediaItems();
+
   const handleRouteClick = (routeId: string) => {
-    navigate(`/routes/${routeId}`);
+    window.location.href = `/routes/${routeId}`;
   };
   
   const handleEventClick = (eventId: string) => {
-    navigate(`/events/${eventId}`);
+    window.location.href = `/events/${eventId}`;
   };
 
   const getSpotTypeLabel = (type: string) => {
     switch (type) {
-      case 'temple': return t('temples');
-      case 'ashram': return t('ashrams');
-      case 'kund': return t('kunds');
-      default: return t('spots');
+      case 'temple': return 'Temple';
+      case 'ashram': return 'Ashram';
+      case 'kund': return 'Kund';
+      default: return 'Other';
     }
   };
 
@@ -179,11 +178,11 @@ const PointDetail = () => {
                   <div className="flex items-center text-sm">
                     <span className="font-medium mr-2">{t('type')}:</span>
                     <span className="inline-flex items-center px-3 py-1 bg-secondary rounded-full">
-                      {spot.type && getSpotTypeLabel(spot.type)}
+                      {spot?.type && getSpotTypeLabel(spot.type)}
                     </span>
                   </div>
                   
-                  {spot.location && (
+                  {spot?.location && (
                     <div className="flex items-center text-sm">
                       <span className="font-medium mr-2">{t('location')}:</span>
                       <span>

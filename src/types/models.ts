@@ -55,6 +55,7 @@ export interface Point {
   name: Record<Language, string>;
   description: Record<Language, string>;
   media: MediaItem[];
+  images?: string[]; // Add this field to match the data structure
   thumbnail: string;
   location: {
     latitude: number;

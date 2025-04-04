@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { Point } from '../types/models';
 
@@ -18,9 +17,28 @@ export const fetchSpotsByCity = async (cityId: string): Promise<Point[]> => {
   console.log(`Retrieved ${data.length} spots for city ${cityId}`);
   
   return data.map((spotData): Point => {
-    // Process images array - might be a JSON array or already an array of strings
-    const images = spotData.images || [];
-    const imageUrls = Array.isArray(images) ? images : [];
+    // Process media for the spot
+    const media = spotData.media || [];
+    
+    // Process images array from jsonb
+    let imageUrls: string[] = [];
+    if (spotData.images) {
+      try {
+        if (typeof spotData.images === 'string') {
+          // If images is a JSON string
+          imageUrls = JSON.parse(spotData.images);
+        } else if (Array.isArray(spotData.images)) {
+          // If images is already an array
+          imageUrls = spotData.images;
+        } else if (typeof spotData.images === 'object') {
+          // If images is a JSONB object
+          imageUrls = Object.values(spotData.images);
+        }
+      } catch (e) {
+        console.error('Error parsing images:', e);
+      }
+    }
+    
     const thumbnailUrl = imageUrls.length > 0 ? imageUrls[0] : '/placeholder.svg';
     
     return {
@@ -29,7 +47,7 @@ export const fetchSpotsByCity = async (cityId: string): Promise<Point[]> => {
       type: spotData.type ? mapSpotType(spotData.type) : 'other',
       name: spotData.name as Record<string, string>,
       description: spotData.info as Record<string, string>,
-      media: spotData.media || [],
+      media: media,
       images: imageUrls,
       thumbnail: thumbnailUrl,
       location: {
@@ -56,9 +74,28 @@ export const fetchSpotById = async (spotId: string): Promise<Point | null> => {
   
   if (!data) return null;
   
-  // Process images array - might be a JSON array or already an array of strings
-  const images = data.images || [];
-  const imageUrls = Array.isArray(images) ? images : [];
+  // Process media for the spot
+  const media = data.media || [];
+  
+  // Process images array from jsonb
+  let imageUrls: string[] = [];
+  if (data.images) {
+    try {
+      if (typeof data.images === 'string') {
+        // If images is a JSON string
+        imageUrls = JSON.parse(data.images);
+      } else if (Array.isArray(data.images)) {
+        // If images is already an array
+        imageUrls = data.images;
+      } else if (typeof data.images === 'object') {
+        // If images is a JSONB object
+        imageUrls = Object.values(data.images);
+      }
+    } catch (e) {
+      console.error('Error parsing images:', e);
+    }
+  }
+  
   const thumbnailUrl = imageUrls.length > 0 ? imageUrls[0] : '/placeholder.svg';
   
   return {
@@ -67,7 +104,7 @@ export const fetchSpotById = async (spotId: string): Promise<Point | null> => {
     type: data.type ? mapSpotType(data.type) : 'other',
     name: data.name as Record<string, string>,
     description: data.info as Record<string, string>,
-    media: data.media || [],
+    media: media,
     images: imageUrls,
     thumbnail: thumbnailUrl,
     location: {
@@ -99,9 +136,28 @@ export const fetchSpotsByIds = async (spotIds: string[]): Promise<Point[]> => {
   console.log(`Retrieved ${data.length} spots by IDs`);
   
   return data.map((spotData): Point => {
-    // Process images array - might be a JSON array or already an array of strings
-    const images = spotData.images || [];
-    const imageUrls = Array.isArray(images) ? images : [];
+    // Process media for the spot
+    const media = spotData.media || [];
+    
+    // Process images array from jsonb
+    let imageUrls: string[] = [];
+    if (spotData.images) {
+      try {
+        if (typeof spotData.images === 'string') {
+          // If images is a JSON string
+          imageUrls = JSON.parse(spotData.images);
+        } else if (Array.isArray(spotData.images)) {
+          // If images is already an array
+          imageUrls = spotData.images;
+        } else if (typeof spotData.images === 'object') {
+          // If images is a JSONB object
+          imageUrls = Object.values(spotData.images);
+        }
+      } catch (e) {
+        console.error('Error parsing images:', e);
+      }
+    }
+    
     const thumbnailUrl = imageUrls.length > 0 ? imageUrls[0] : '/placeholder.svg';
     
     return {
@@ -110,7 +166,7 @@ export const fetchSpotsByIds = async (spotIds: string[]): Promise<Point[]> => {
       type: spotData.type ? mapSpotType(spotData.type) : 'other',
       name: spotData.name as Record<string, string>,
       description: spotData.info as Record<string, string>,
-      media: spotData.media || [],
+      media: media,
       images: imageUrls,
       thumbnail: thumbnailUrl,
       location: {
@@ -156,9 +212,28 @@ export const fetchSpotsByRoute = async (routeId: string): Promise<Point[]> => {
   console.log(`Retrieved ${data?.length || 0} spots for route ${routeId}`);
   
   return data.map((spotData): Point => {
-    // Process images array - might be a JSON array or already an array of strings
-    const images = spotData.images || [];
-    const imageUrls = Array.isArray(images) ? images : [];
+    // Process media for the spot
+    const media = spotData.media || [];
+    
+    // Process images array from jsonb
+    let imageUrls: string[] = [];
+    if (spotData.images) {
+      try {
+        if (typeof spotData.images === 'string') {
+          // If images is a JSON string
+          imageUrls = JSON.parse(spotData.images);
+        } else if (Array.isArray(spotData.images)) {
+          // If images is already an array
+          imageUrls = spotData.images;
+        } else if (typeof spotData.images === 'object') {
+          // If images is a JSONB object
+          imageUrls = Object.values(spotData.images);
+        }
+      } catch (e) {
+        console.error('Error parsing images:', e);
+      }
+    }
+    
     const thumbnailUrl = imageUrls.length > 0 ? imageUrls[0] : '/placeholder.svg';
     
     return {
@@ -167,7 +242,7 @@ export const fetchSpotsByRoute = async (routeId: string): Promise<Point[]> => {
       type: spotData.type ? mapSpotType(spotData.type) : 'other',
       name: spotData.name as Record<string, string>,
       description: spotData.info as Record<string, string>,
-      media: spotData.media || [],
+      media: media,
       images: imageUrls,
       thumbnail: thumbnailUrl,
       location: {
@@ -213,9 +288,28 @@ export const fetchSpotsByEvent = async (eventId: string): Promise<Point[]> => {
   console.log(`Retrieved ${data?.length || 0} spots for event ${eventId}`);
   
   return data.map((spotData): Point => {
-    // Process images array - might be a JSON array or already an array of strings
-    const images = spotData.images || [];
-    const imageUrls = Array.isArray(images) ? images : [];
+    // Process media for the spot
+    const media = spotData.media || [];
+    
+    // Process images array from jsonb
+    let imageUrls: string[] = [];
+    if (spotData.images) {
+      try {
+        if (typeof spotData.images === 'string') {
+          // If images is a JSON string
+          imageUrls = JSON.parse(spotData.images);
+        } else if (Array.isArray(spotData.images)) {
+          // If images is already an array
+          imageUrls = spotData.images;
+        } else if (typeof spotData.images === 'object') {
+          // If images is a JSONB object
+          imageUrls = Object.values(spotData.images);
+        }
+      } catch (e) {
+        console.error('Error parsing images:', e);
+      }
+    }
+    
     const thumbnailUrl = imageUrls.length > 0 ? imageUrls[0] : '/placeholder.svg';
     
     return {
@@ -224,7 +318,7 @@ export const fetchSpotsByEvent = async (eventId: string): Promise<Point[]> => {
       type: spotData.type ? mapSpotType(spotData.type) : 'other',
       name: spotData.name as Record<string, string>,
       description: spotData.info as Record<string, string>,
-      media: spotData.media || [],
+      media: media,
       images: imageUrls,
       thumbnail: thumbnailUrl,
       location: {
