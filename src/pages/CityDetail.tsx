@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -182,12 +181,11 @@ const CityDetail = () => {
   }) : (city?.media || []);
 
   const handleSpotClick = (spotId: string) => {
-    if (selectedSpot === spotId) {
-      navigate(`/points/${spotId}`);
-      return;
-    }
-    
-    setSelectedSpot(spotId);
+    navigate(`/points/${spotId}`);
+  };
+  
+  const handleMapSpotClick = (spotId: string) => {
+    setSelectedSpot(spotId === selectedSpot ? null : spotId);
     
     if (activeTab !== 'spots') {
       setActiveTab('spots');
@@ -269,7 +267,7 @@ const CityDetail = () => {
                   points={spots} 
                   center={city.location ? [city.location.longitude, city.location.latitude] : [0, 0]} 
                   zoom={12} 
-                  onPointSelect={handleSpotClick} 
+                  onPointSelect={handleMapSpotClick} 
                 />
               </div>
             )}

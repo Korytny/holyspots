@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 import { Route } from '../types/models';
 
@@ -121,11 +122,12 @@ export const fetchRoutesByEvent = async (eventId: string): Promise<Route[]> => {
   return data.map((routeData): Route => ({
     id: routeData.id,
     cityId: routeData.city || '',
-    name: routeData.name,
-    description: routeData.info,
+    name: routeData.name as Record<string, string>,
+    description: routeData.info as Record<string, string>,
     media: routeData.media || [],
     thumbnail: routeData.images && routeData.images.length > 0 ? routeData.images[0] : '/placeholder.svg',
-    pointIds: routeData.points || [],
+    pointIds: routeData.spots || [],
+    eventIds: [],
     distance: routeData.distance,
     duration: routeData.duration,
   }));
