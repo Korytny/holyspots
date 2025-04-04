@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -119,7 +118,6 @@ const Search = () => {
     updateSearchParams({ tab: value });
   };
   
-  // Filter spots, routes, and events based on the search criteria
   const filterItems = <T extends Point | Route | Event>(
     items: T[],
     nameGetter: (item: T) => Record<string, string> | undefined,
@@ -128,16 +126,13 @@ const Search = () => {
     typeGetter?: (item: T) => string | undefined
   ) => {
     return Array.isArray(items) ? items.filter((item) => {
-      // Search term filter
       const name = nameGetter(item)?.[language]?.toLowerCase() || nameGetter(item)?.en?.toLowerCase() || '';
       const description = descriptionGetter(item)?.[language]?.toLowerCase() || descriptionGetter(item)?.en?.toLowerCase() || '';
       const matchesSearch = !searchTerm || name.includes(searchTerm.toLowerCase()) || description.includes(searchTerm.toLowerCase());
       
-      // City filter
       const itemCity = cityGetter(item);
       const matchesCity = !selectedCity || itemCity === selectedCity;
       
-      // Type filter (only for spots)
       const matchesType = !selectedSpotType || !typeGetter || (typeGetter(item) === selectedSpotType);
       
       return matchesSearch && matchesCity && matchesType;
@@ -202,7 +197,7 @@ const Search = () => {
                 <SelectValue placeholder={t('allCities')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t('allCities')}</SelectItem>
+                <SelectItem value="all">{t('allCities')}</SelectItem>
                 {cities.map(city => (
                   <SelectItem key={city.id} value={city.id}>
                     {city.name[language] || city.name.en}
@@ -219,7 +214,7 @@ const Search = () => {
                 <SelectValue placeholder={t('allSpotTypes')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t('allSpotTypes')}</SelectItem>
+                <SelectItem value="all">{t('allSpotTypes')}</SelectItem>
                 {spotTypes.map(type => (
                   <SelectItem key={type} value={type}>
                     {getSpotTypeName(type)}
