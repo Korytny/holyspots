@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -37,17 +38,27 @@ const Profile = () => {
   });
   
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      console.log("User not authenticated, redirecting to auth page");
-      navigate('/auth');
-    }
+    // Check authentication status when component mounts
+    const checkAuth = () => {
+      if (!authLoading && !isAuthenticated) {
+        console.log("User not authenticated, redirecting to auth page");
+        navigate('/auth');
+      }
+    };
+    
+    checkAuth();
+    
+    // We want to run this check whenever auth state changes
+    const interval = setInterval(checkAuth, 1000);
+    
+    return () => clearInterval(interval);
   }, [isAuthenticated, navigate, authLoading]);
   
   useEffect(() => {
-    if (user) {
+    if (user && isAuthenticated) {
       fetchFavorites();
     }
-  }, [user]);
+  }, [user, isAuthenticated]);
   
   const handleSignOut = async () => {
     try {
@@ -158,7 +169,15 @@ const Profile = () => {
   }
   
   if (!isAuthenticated) {
-    return null;
+    // Redirect handled in useEffect
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">{t('redirecting')}</p>
+        </div>
+      </div>
+    );
   }
   
   return (

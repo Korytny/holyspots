@@ -3,7 +3,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '../types/models';
 import { Session } from '@supabase/supabase-js';
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AuthContextType {
   user: User | null;
@@ -75,26 +75,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Improved session handling
+  // Improved session handling - updated to fix auth persistence issues
   useEffect(() => {
     const initAuth = async () => {
       try {
         setIsLoading(true);
         
         // First check for existing session
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        console.log("Initial session check:", initialSession ? "Session found" : "No session");
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
-        if (initialSession?.user) {
-          setSession(initialSession);
+        if (sessionError) {
+          console.error("Error getting session:", sessionError);
+          return;
+        }
+        
+        console.log("Initial session check:", sessionData.session ? "Session found" : "No session");
+        
+        if (sessionData.session?.user) {
+          setSession(sessionData.session);
           const appUser: User = {
-            id: initialSession.user.id,
-            email: initialSession.user.email || '',
-            name: initialSession.user.user_metadata?.name || 
-                  initialSession.user.user_metadata?.full_name || 
+            id: sessionData.session.user.id,
+            email: sessionData.session.user.email || '',
+            name: sessionData.session.user.user_metadata?.name || 
+                  sessionData.session.user.user_metadata?.full_name || 
                   'User',
-            avatarUrl: initialSession.user.user_metadata?.avatar_url || 
-                       initialSession.user.user_metadata?.picture,
+            avatarUrl: sessionData.session.user.user_metadata?.avatar_url || 
+                       sessionData.session.user.user_metadata?.picture,
             favorites: {
               cities: [],
               points: [],
@@ -107,14 +113,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           setUser(appUser);
           
-          // Fetch favorites after a brief delay
-          setTimeout(() => {
-            fetchUserFavorites(appUser.id);
-          }, 0);
+          // Fetch favorites after setting the user
+          fetchUserFavorites(appUser.id);
         }
         
         // Set up auth state listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        const { data } = supabase.auth.onAuthStateChange(
           (event, currentSession) => {
             console.log("Auth state changed:", event, currentSession ? "Session exists" : "No session");
             
@@ -140,7 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               
               setUser(appUser);
               
-              // Fetch favorites after a brief delay
+              // Use setTimeout to avoid recursive issues with auth state changes
               setTimeout(() => {
                 fetchUserFavorites(appUser.id);
               }, 0);
@@ -152,7 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         );
         
         return () => {
-          subscription.unsubscribe();
+          data.subscription.unsubscribe();
         };
       } catch (error) {
         console.error("Error initializing auth:", error);
