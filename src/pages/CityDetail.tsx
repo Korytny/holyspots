@@ -11,7 +11,6 @@ import {
   Navigation as NavigationIcon, 
   Calendar,
   ArrowLeft,
-  Eye,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCityById } from '../services/citiesService';
@@ -30,7 +29,6 @@ const CityDetail = () => {
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState('spots');
-  const [showMap, setShowMap] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
   const [spotRoutes, setSpotRoutes] = useState<any[]>([]);
   const [spotEvents, setSpotEvents] = useState<any[]>([]);
@@ -45,10 +43,6 @@ const CityDetail = () => {
     enabled: !!cityId,
   });
   
-  const shouldFetchSpots = activeTab === 'spots' || showMap;
-  const shouldFetchRoutes = activeTab === 'routes';
-  const shouldFetchEvents = activeTab === 'events';
-  
   const {
     data: spots = [],
     isLoading: isLoadingSpots,
@@ -56,8 +50,11 @@ const CityDetail = () => {
   } = useQuery({
     queryKey: ['spots', cityId],
     queryFn: () => fetchSpotsByCity(cityId as string),
-    enabled: !!cityId && shouldFetchSpots,
+    enabled: !!cityId,
   });
+  
+  const shouldFetchRoutes = activeTab === 'routes';
+  const shouldFetchEvents = activeTab === 'events';
   
   const {
     data: routes = [],
@@ -182,26 +179,6 @@ const CityDetail = () => {
     navigate(`/points/${spotId}`);
   };
   
-  const handleMapSpotClick = (spotId: string) => {
-    setSelectedSpot(spotId === selectedSpot ? null : spotId);
-    
-    if (activeTab !== 'spots') {
-      setActiveTab('spots');
-    }
-  };
-  
-  const handleRouteClick = (routeId: string) => {
-    navigate(`/routes/${routeId}`);
-  };
-  
-  const handleEventClick = (eventId: string) => {
-    navigate(`/events/${eventId}`);
-  };
-  
-  const toggleMapView = () => {
-    setShowMap(!showMap);
-  };
-  
   const clearSelectedSpot = () => {
     setSelectedSpot(null);
   };
@@ -268,20 +245,12 @@ const CityDetail = () => {
           <div className="p-6">
             <MediaGallery media={mediaItems} />
             
-            <div className="mt-6 flex justify-end">
-              <Button variant="outline" onClick={toggleMapView}>
-                {showMap ? t('hideMap') : t('viewOnMap')}
-                <Eye className="ml-1 h-4 w-4" />
-              </Button>
-            </div>
-            
-            {showMap && spots.length > 0 && (
-              <div className="mt-4">
+            {spots.length > 0 && (
+              <div className="mt-6">
                 <CityMap 
                   points={spots} 
                   cityLocation={city.location ? city.location : undefined} 
-                  height="500px" 
-                  onPointSelect={handleMapSpotClick} 
+                  height="500px"
                 />
               </div>
             )}
@@ -317,7 +286,7 @@ const CityDetail = () => {
                 <TabsContent value="spots" className="pt-4">
                   <CitySpots 
                     spots={spots}
-                    isLoading={shouldFetchSpots && isLoadingSpots}
+                    isLoading={isLoadingSpots}
                     error={spotsError as Error | null}
                     selectedSpot={selectedSpot}
                     onSpotClick={handleSpotClick}

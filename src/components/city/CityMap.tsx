@@ -149,11 +149,8 @@ const CityMap = ({
       
       // Add click event to the marker
       markerEl.addEventListener('click', () => {
-        if (onPointSelect) {
-          onPointSelect(point.id);
-        } else {
-          navigate(`/points/${point.id}`);
-        }
+        // Always navigate to the point detail page
+        navigate(`/points/${point.id}`);
       });
     });
 
@@ -179,7 +176,7 @@ const CityMap = ({
     return () => {
       map.current?.remove();
     };
-  }, [mapToken, points, cityLocation, navigate, onPointSelect]);
+  }, [mapToken, points, cityLocation, navigate]);
 
   if (!mapToken) {
     return (
