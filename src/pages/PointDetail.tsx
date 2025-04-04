@@ -1,8 +1,10 @@
+
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import Navigation from '../components/Navigation';
 import MediaGallery from '../components/MediaGallery';
+import SpotMap from '../components/SpotMap';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -109,6 +111,14 @@ const PointDetail = () => {
   const spotName = getSpotName();
   const spotDescription = getSpotDescription();
 
+  // Get coordinates from the geometry point field or from location object
+  const getCoordinatesDisplay = () => {
+    if (spot.point?.coordinates) {
+      return `${t('longitude')}: ${spot.point.coordinates[0].toFixed(6)}, ${t('latitude')}: ${spot.point.coordinates[1].toFixed(6)}`;
+    }
+    return `${t('latitude')}: ${spot.location.latitude.toFixed(6)}, ${t('longitude')}: ${spot.location.longitude.toFixed(6)}`;
+  };
+
   const createMediaItems = (): MediaItem[] => {
     const mediaItems: MediaItem[] = [];
     
@@ -182,14 +192,12 @@ const PointDetail = () => {
                     </span>
                   </div>
                   
-                  {spot?.location && (
-                    <div className="flex items-center text-sm">
-                      <span className="font-medium mr-2">{t('location')}:</span>
-                      <span>
-                        {t('latitude')}: {spot.location.latitude.toFixed(6)}, {t('longitude')}: {spot.location.longitude.toFixed(6)}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center text-sm">
+                    <span className="font-medium mr-2">{t('location')}:</span>
+                    <span>
+                      {getCoordinatesDisplay()}
+                    </span>
+                  </div>
                   
                   <div className="flex items-center gap-4 mt-1">
                     <div className="inline-flex items-center text-sm">
@@ -211,6 +219,12 @@ const PointDetail = () => {
             
           <div className="p-6">
             <MediaGallery media={mediaItems} />
+            
+            {/* Map component */}
+            <div className="mt-6 mb-6">
+              <h3 className="text-lg font-semibold mb-2">{t('location')}</h3>
+              <SpotMap spot={spot} height="300px" />
+            </div>
             
             <div className="mt-6">
               <Tabs value={activeTab} onValueChange={setActiveTab}>

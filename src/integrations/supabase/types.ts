@@ -14,7 +14,7 @@ export type Database = {
           country: string | null
           events_count: number | null
           id: string
-          images: string[] | null
+          images: Json | null
           info: Json | null
           name: string
           routes_count: number | null
@@ -24,7 +24,7 @@ export type Database = {
           country?: string | null
           events_count?: number | null
           id?: string
-          images?: string[] | null
+          images?: Json | null
           info?: Json | null
           name: string
           routes_count?: number | null
@@ -34,7 +34,7 @@ export type Database = {
           country?: string | null
           events_count?: number | null
           id?: string
-          images?: string[] | null
+          images?: Json | null
           info?: Json | null
           name?: string
           routes_count?: number | null

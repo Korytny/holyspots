@@ -54,6 +54,7 @@ export const fetchSpotsByCity = async (cityId: string): Promise<Point[]> => {
         latitude: spotData.coordinates?.latitude || 0,
         longitude: spotData.coordinates?.longitude || 0
       },
+      point: spotData.point,
       routeIds: [],
       eventIds: [],
     };
@@ -111,6 +112,7 @@ export const fetchSpotById = async (spotId: string): Promise<Point | null> => {
       latitude: data.coordinates?.latitude || 0,
       longitude: data.coordinates?.longitude || 0
     },
+    point: data.point,
     routeIds: [],
     eventIds: [],
   };
@@ -325,6 +327,7 @@ export const fetchSpotsByEvent = async (eventId: string): Promise<Point[]> => {
         latitude: spotData.coordinates?.latitude || 0,
         longitude: spotData.coordinates?.longitude || 0
       },
+      point: spotData.point,
       routeIds: [],
       eventIds: [],
     };

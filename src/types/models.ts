@@ -55,7 +55,7 @@ export interface Point {
   name: Record<Language, string>;
   description: Record<Language, string>;
   media: MediaItem[];
-  images?: string[]; // Add this field to match the data structure
+  images?: string[]; // Array of image URLs
   thumbnail: string;
   location: {
     latitude: number;
@@ -64,6 +64,10 @@ export interface Point {
   routeIds: string[];
   eventIds: string[];
   ownerId?: string;
+  point?: {
+    type: string;
+    coordinates: [number, number]; // [longitude, latitude]
+  };
 }
 
 export interface Route {
