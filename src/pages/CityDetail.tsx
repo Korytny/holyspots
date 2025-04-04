@@ -1,12 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import Navigation from '../components/Navigation';
 import MediaGallery from '../components/MediaGallery';
-import ItemCard from '../components/ItemCard';
 import Map from '../components/Map';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   MapPin, 
@@ -14,8 +13,7 @@ import {
   Calendar,
   ArrowLeft,
   Eye,
-  Info,
-  ChevronLeft
+  Info
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCityById } from '../services/citiesService';
@@ -23,6 +21,10 @@ import { fetchSpotsByCity } from '../services/spotsService';
 import { fetchRoutesByCity, fetchRoutesBySpot } from '../services/routesService';
 import { fetchEventsByCity, fetchEventsBySpot } from '../services/eventsService';
 import { MediaItem, Point } from '../types/models';
+import CitySpots from '../components/city/CitySpots';
+import CityRoutes from '../components/city/CityRoutes';
+import CityEvents from '../components/city/CityEvents';
+import SelectedSpotDetails from '../components/city/SelectedSpotDetails';
 
 const CityDetail = () => {
   const { cityId } = useParams<{ cityId: string }>();
@@ -99,11 +101,6 @@ const CityDetail = () => {
     
     fetchSpotRelatedData();
   }, [selectedSpot]);
-  
-  const isLoading = isLoadingCity || 
-    (shouldFetchSpots && isLoadingSpots) || 
-    (shouldFetchRoutes && isLoadingRoutes) || 
-    (shouldFetchEvents && isLoadingEvents);
   
   if (isLoadingCity) {
     return (
@@ -279,74 +276,14 @@ const CityDetail = () => {
             
             <div className="mt-6">
               {selectedSpot && (
-                <div className="mb-6 bg-muted p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-xl font-semibold flex items-center">
-                      <MapPin className="mr-2 h-5 w-5" />
-                      {selectedSpotObject?.name?.[language] || selectedSpotObject?.name?.en || 'Selected Spot'}
-                    </h2>
-                    <Button variant="ghost" size="sm" onClick={clearSelectedSpot}>
-                      <ChevronLeft className="mr-1 h-4 w-4" />
-                      {t('back')}
-                    </Button>
-                  </div>
-                  
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {selectedSpotObject?.description?.[language] || selectedSpotObject?.description?.en || 'No description available'}
-                  </p>
-                  
-                  {spotRoutes.length > 0 && (
-                    <div className="mb-4">
-                      <h3 className="text-lg font-medium mb-2 flex items-center">
-                        <NavigationIcon className="mr-2 h-4 w-4" />
-                        {t('relatedRoutes')}
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {spotRoutes.map(route => (
-                          <ItemCard
-                            key={route.id}
-                            id={route.id}
-                            type="route"
-                            name={route.name || { en: 'Unnamed Route' }}
-                            description={route.description || { en: 'No description available' }}
-                            thumbnail={route.thumbnail || '/placeholder.svg'}
-                            onClick={() => handleRouteClick(route.id)}
-                            pointCount={route.pointIds?.length || 0}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {spotEvents.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-medium mb-2 flex items-center">
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {t('relatedEvents')}
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {spotEvents.map(event => (
-                          <ItemCard
-                            key={event.id}
-                            id={event.id}
-                            type="event"
-                            name={event.name || { en: 'Unnamed Event' }}
-                            description={event.description || { en: 'No description available' }}
-                            thumbnail={event.thumbnail || '/placeholder.svg'}
-                            onClick={() => handleEventClick(event.id)}
-                            date={event.startDate ? new Date(event.startDate).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU') : undefined}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {spotRoutes.length === 0 && spotEvents.length === 0 && (
-                    <div className="text-center py-4">
-                      <p className="text-muted-foreground">No related routes or events found for this spot</p>
-                    </div>
-                  )}
-                </div>
+                <SelectedSpotDetails 
+                  selectedSpot={selectedSpotObject}
+                  spotRoutes={spotRoutes}
+                  spotEvents={spotEvents}
+                  onClearSelectedSpot={clearSelectedSpot}
+                  onRouteClick={handleRouteClick}
+                  onEventClick={handleEventClick}
+                />
               )}
 
               <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -384,106 +321,31 @@ const CityDetail = () => {
                 </TabsContent>
                 
                 <TabsContent value="spots" className="pt-4">
-                  {shouldFetchSpots && isLoadingSpots ? (
-                    <div className="flex justify-center items-center py-12">
-                      <div className="animate-pulse-gentle">Loading spots...</div>
-                    </div>
-                  ) : spotsError ? (
-                    <div className="text-center py-8">
-                      <p className="text-red-500">Error loading spots: {(spotsError as Error).message}</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {spots.length > 0 ? (
-                        spots.map(spot => (
-                          <ItemCard
-                            key={spot.id}
-                            id={spot.id}
-                            type="point"
-                            name={spot.name || { en: 'Unnamed Spot' }}
-                            description={spot.description || { en: 'No description available' }}
-                            thumbnail={spot.thumbnail || '/placeholder.svg'}
-                            onClick={() => handleSpotClick(spot.id)}
-                            extraContent={selectedSpot === spot.id ? (
-                              <div className="mt-2 px-2 py-1 bg-primary text-primary-foreground text-xs rounded-full inline-block">
-                                Selected
-                              </div>
-                            ) : null}
-                          />
-                        ))
-                      ) : (
-                        <div className="col-span-full text-center py-8">
-                          <p className="text-muted-foreground">No spots available</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <CitySpots 
+                    spots={spots}
+                    isLoading={shouldFetchSpots && isLoadingSpots}
+                    error={spotsError as Error | null}
+                    selectedSpot={selectedSpot}
+                    onSpotClick={handleSpotClick}
+                  />
                 </TabsContent>
                 
                 <TabsContent value="routes" className="pt-4">
-                  {shouldFetchRoutes && isLoadingRoutes ? (
-                    <div className="flex justify-center items-center py-12">
-                      <div className="animate-pulse-gentle">Loading routes...</div>
-                    </div>
-                  ) : routesError ? (
-                    <div className="text-center py-8">
-                      <p className="text-red-500">Error loading routes: {(routesError as Error).message}</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {routes.length > 0 ? (
-                        routes.map(route => (
-                          <ItemCard
-                            key={route.id}
-                            id={route.id}
-                            type="route"
-                            name={route.name || { en: 'Unnamed Route' }}
-                            description={route.description || { en: 'No description available' }}
-                            thumbnail={route.thumbnail || '/placeholder.svg'}
-                            onClick={() => handleRouteClick(route.id)}
-                            pointCount={route.pointIds?.length || 0}
-                          />
-                        ))
-                      ) : (
-                        <div className="col-span-full text-center py-8">
-                          <p className="text-muted-foreground">No routes available</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <CityRoutes 
+                    routes={routes}
+                    isLoading={shouldFetchRoutes && isLoadingRoutes}
+                    error={routesError as Error | null}
+                    onRouteClick={handleRouteClick}
+                  />
                 </TabsContent>
                 
                 <TabsContent value="events" className="pt-4">
-                  {shouldFetchEvents && isLoadingEvents ? (
-                    <div className="flex justify-center items-center py-12">
-                      <div className="animate-pulse-gentle">Loading events...</div>
-                    </div>
-                  ) : eventsError ? (
-                    <div className="text-center py-8">
-                      <p className="text-red-500">Error loading events: {(eventsError as Error).message}</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {events.length > 0 ? (
-                        events.map(event => (
-                          <ItemCard
-                            key={event.id}
-                            id={event.id}
-                            type="event"
-                            name={event.name || { en: 'Unnamed Event' }}
-                            description={event.description || { en: 'No description available' }}
-                            thumbnail={event.thumbnail || '/placeholder.svg'}
-                            onClick={() => handleEventClick(event.id)}
-                            date={event.startDate ? new Date(event.startDate).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU') : undefined}
-                          />
-                        ))
-                      ) : (
-                        <div className="col-span-full text-center py-8">
-                          <p className="text-muted-foreground">No events available</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <CityEvents
+                    events={events}
+                    isLoading={shouldFetchEvents && isLoadingEvents}
+                    error={eventsError as Error | null}
+                    onEventClick={handleEventClick}
+                  />
                 </TabsContent>
               </Tabs>
             </div>
