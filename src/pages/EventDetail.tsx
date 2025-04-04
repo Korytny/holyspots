@@ -7,6 +7,7 @@ import MediaGallery from '../components/MediaGallery';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ItemCard from '../components/ItemCard';
 import { 
   ArrowLeft,
   Navigation as NavigationIcon, 
@@ -126,7 +127,17 @@ const EventDetail = () => {
     ? new Date(event.startDate).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU') 
     : '';
 
-  const mediaItems: MediaItem[] = event?.media || [];
+  // Fix for images: Ensure media is correctly processed
+  const mediaItems: MediaItem[] = event.media || [];
+  if (event.thumbnail && mediaItems.length === 0) {
+    // If we have a thumbnail but no media items, create one
+    mediaItems.push({
+      id: 'main-image',
+      type: 'image',
+      url: event.thumbnail,
+      title: eventName
+    });
+  }
   
   const handleSpotClick = (spotId: string) => {
     navigate(`/points/${spotId}`);
@@ -224,28 +235,17 @@ const EventDetail = () => {
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {spots.map(spot => (
-                          <Card 
-                            key={spot.id} 
-                            className="cursor-pointer hover:shadow-md transition-shadow"
+                          <ItemCard 
+                            key={spot.id}
+                            id={spot.id}
+                            type="point"
+                            name={spot.name}
+                            description={spot.description}
+                            thumbnail={spot.thumbnail || '/placeholder.svg'}
                             onClick={() => handleSpotClick(spot.id)}
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-center">
-                                <div 
-                                  className="w-12 h-12 rounded-md bg-cover bg-center mr-4" 
-                                  style={{backgroundImage: `url(${spot.thumbnail || '/placeholder.svg'})`}}
-                                />
-                                <div>
-                                  <h3 className="font-medium">
-                                    {spot.name?.[language] || spot.name?.en || 'Unnamed Spot'}
-                                  </h3>
-                                  <p className="text-sm text-muted-foreground truncate">
-                                    {spot.description?.[language] || spot.description?.en || ''}
-                                  </p>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
+                            location={spot.cityId}
+                            spotType={spot.type}
+                          />
                         ))}
                       </div>
                     </div>
@@ -260,28 +260,16 @@ const EventDetail = () => {
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {routes.map(route => (
-                          <Card 
-                            key={route.id} 
-                            className="cursor-pointer hover:shadow-md transition-shadow"
+                          <ItemCard 
+                            key={route.id}
+                            id={route.id}
+                            type="route"
+                            name={route.name}
+                            description={route.description}
+                            thumbnail={route.thumbnail || '/placeholder.svg'}
                             onClick={() => handleRouteClick(route.id)}
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-center">
-                                <div 
-                                  className="w-12 h-12 rounded-md bg-cover bg-center mr-4" 
-                                  style={{backgroundImage: `url(${route.thumbnail || '/placeholder.svg'})`}}
-                                />
-                                <div>
-                                  <h3 className="font-medium">
-                                    {route.name?.[language] || route.name?.en || 'Unnamed Route'}
-                                  </h3>
-                                  <p className="text-sm text-muted-foreground truncate">
-                                    {route.description?.[language] || route.description?.en || ''}
-                                  </p>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
+                            pointCount={route.pointIds?.length || 0}
+                          />
                         ))}
                       </div>
                     </div>

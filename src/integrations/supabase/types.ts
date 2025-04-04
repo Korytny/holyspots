@@ -80,20 +80,26 @@ export type Database = {
       events: {
         Row: {
           id: string
+          images: Json | null
           info: Json | null
           name: Json
+          time: string | null
           type: boolean | null
         }
         Insert: {
           id?: string
+          images?: Json | null
           info?: Json | null
           name: Json
+          time?: string | null
           type?: boolean | null
         }
         Update: {
           id?: string
+          images?: Json | null
           info?: Json | null
           name?: Json
+          time?: string | null
           type?: boolean | null
         }
         Relationships: []
