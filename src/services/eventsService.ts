@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { Event, Language, MediaItem, Json } from '../types/models';
+import { Event, Language } from '../types/models';
 
 export const fetchAllEvents = async (): Promise<Event[]> => {
   try {
@@ -17,55 +16,23 @@ export const fetchAllEvents = async (): Promise<Event[]> => {
     
     // Transform database records to Event objects
     const events: Event[] = data.map(item => {
-      // Process media items safely
-      let mediaItems: MediaItem[] = [];
-      if (item.images) {
-        if (Array.isArray(item.images)) {
-          mediaItems = item.images.map((url, index) => ({
-            id: `image-${index}`,
-            type: 'image',
-            url: typeof url === 'string' ? url : '',
-            thumbnailUrl: typeof url === 'string' ? url : '',
-          }));
-        } else if (typeof item.images === 'object' && item.images !== null) {
-          Object.values(item.images).forEach((url, index) => {
-            if (typeof url === 'string') {
-              mediaItems.push({
-                id: `image-${index}`,
-                type: 'image',
-                url,
-                thumbnailUrl: url,
-              });
-            }
-          });
-        }
-      }
-
-      // Get a valid thumbnail from images
-      let thumbnail = '/placeholder.svg';
-      if (Array.isArray(item.images) && item.images.length > 0) {
-        const firstImage = item.images[0];
-        if (typeof firstImage === 'string') {
-          thumbnail = firstImage;
-        }
-      } else if (typeof item.images === 'object' && item.images !== null) {
-        const firstImage = Object.values(item.images)[0];
-        if (typeof firstImage === 'string') {
-          thumbnail = firstImage;
-        }
-      }
-
+      const cityId = typeof item.city === 'string' ? item.city : '';
+      
       return {
         id: item.id,
-        cityId: '', // Default empty string as city may not be present
-        name: item.name as Record<Language, string>,
-        description: item.info as Record<Language, string>,
-        media: mediaItems,
-        thumbnail,
+        cityId: cityId,
+        name: item.name as Record<string, string>, // Fix type recursion
+        description: {
+          en: '',
+          ru: '',
+          hi: '',
+          ...(((item.info as any) || {})?.description || {})
+        },
+        date: item.time || '',
+        media: item.images || [],
+        thumbnail: '/placeholder.svg',
         pointIds: [],
-        startDate: item.time || new Date().toISOString(),
-        endDate: item.time || new Date().toISOString(),
-        type: item.type
+        type: item.type || false,
       };
     });
     
@@ -156,12 +123,12 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
   }
 };
 
-export const fetchEventsByCityId = async (cityId: string): Promise<Event[]> => {
+export const fetchEventsByCity = async (cityId: string): Promise<Event[]> => {
   try {
     const { data, error } = await supabase
       .from('events')
       .select('*')
-      .eq('city', cityId); // Assuming city field matches cityId in the model
+      .eq('city', cityId);
     
     if (error) throw error;
     
@@ -172,55 +139,21 @@ export const fetchEventsByCityId = async (cityId: string): Promise<Event[]> => {
     
     // Transform database records to Event objects
     const events: Event[] = data.map(item => {
-      // Process media items safely
-      let mediaItems: MediaItem[] = [];
-      if (item.images) {
-        if (Array.isArray(item.images)) {
-          mediaItems = item.images.map((url, index) => ({
-            id: `image-${index}`,
-            type: 'image',
-            url: typeof url === 'string' ? url : '',
-            thumbnailUrl: typeof url === 'string' ? url : '',
-          }));
-        } else if (typeof item.images === 'object' && item.images !== null) {
-          Object.values(item.images).forEach((url, index) => {
-            if (typeof url === 'string') {
-              mediaItems.push({
-                id: `image-${index}`,
-                type: 'image',
-                url,
-                thumbnailUrl: url,
-              });
-            }
-          });
-        }
-      }
-
-      // Get a valid thumbnail from images
-      let thumbnail = '/placeholder.svg';
-      if (Array.isArray(item.images) && item.images.length > 0) {
-        const firstImage = item.images[0];
-        if (typeof firstImage === 'string') {
-          thumbnail = firstImage;
-        }
-      } else if (typeof item.images === 'object' && item.images !== null) {
-        const firstImage = Object.values(item.images)[0];
-        if (typeof firstImage === 'string') {
-          thumbnail = firstImage;
-        }
-      }
-
       return {
         id: item.id,
-        cityId: cityId,
-        name: item.name as Record<Language, string>,
-        description: item.info as Record<Language, string>,
-        media: mediaItems,
-        thumbnail,
+        cityId: cityId, 
+        name: item.name as Record<string, string>, // Fix type recursion
+        description: {
+          en: '',
+          ru: '',
+          hi: '',
+          ...(((item.info as any) || {})?.description || {})
+        },
+        date: item.time || '',
+        media: item.images || [],
+        thumbnail: '/placeholder.svg',
         pointIds: [],
-        startDate: item.time || new Date().toISOString(),
-        endDate: item.time || new Date().toISOString(),
-        type: item.type
+        type: item.type || false,
       };
     });
     
@@ -231,8 +164,7 @@ export const fetchEventsByCityId = async (cityId: string): Promise<Event[]> => {
   }
 };
 
-// Alias for backward compatibility
-export const fetchEventsByCity = fetchEventsByCityId;
+export const fetchEventsByCityId = fetchEventsByCity;
 
 export const fetchEventsByRouteId = async (routeId: string): Promise<Event[]> => {
   try {
@@ -323,7 +255,6 @@ export const fetchEventsByRouteId = async (routeId: string): Promise<Event[]> =>
   }
 };
 
-// Alias for backward compatibility
 export const fetchEventsByRoute = fetchEventsByRouteId;
 
 export const fetchEventsByPointId = async (pointId: string): Promise<Event[]> => {
@@ -415,6 +346,4 @@ export const fetchEventsByPointId = async (pointId: string): Promise<Event[]> =>
   }
 };
 
-// Alias for backward compatibility
 export const fetchEventsBySpot = fetchEventsByPointId;
-

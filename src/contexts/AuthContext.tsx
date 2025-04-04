@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '../types/models';
@@ -74,21 +75,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Improved session handling
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        console.log("Auth state changed:", event, currentSession);
-        setSession(currentSession);
+    const initAuth = async () => {
+      try {
+        setIsLoading(true);
         
-        if (currentSession?.user) {
+        // First check for existing session
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        console.log("Initial session check:", initialSession ? "Session found" : "No session");
+        
+        if (initialSession?.user) {
+          setSession(initialSession);
           const appUser: User = {
-            id: currentSession.user.id,
-            email: currentSession.user.email || '',
-            name: currentSession.user.user_metadata?.name || 
-                  currentSession.user.user_metadata?.full_name || 
+            id: initialSession.user.id,
+            email: initialSession.user.email || '',
+            name: initialSession.user.user_metadata?.name || 
+                  initialSession.user.user_metadata?.full_name || 
                   'User',
-            avatarUrl: currentSession.user.user_metadata?.avatar_url || 
-                       currentSession.user.user_metadata?.picture,
+            avatarUrl: initialSession.user.user_metadata?.avatar_url || 
+                       initialSession.user.user_metadata?.picture,
             favorites: {
               cities: [],
               points: [],
@@ -101,49 +107,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           setUser(appUser);
           
+          // Fetch favorites after a brief delay
           setTimeout(() => {
             fetchUserFavorites(appUser.id);
           }, 0);
-        } else {
-          setUser(null);
         }
         
+        // Set up auth state listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (event, currentSession) => {
+            console.log("Auth state changed:", event, currentSession ? "Session exists" : "No session");
+            
+            if (currentSession?.user) {
+              setSession(currentSession);
+              const appUser: User = {
+                id: currentSession.user.id,
+                email: currentSession.user.email || '',
+                name: currentSession.user.user_metadata?.name || 
+                      currentSession.user.user_metadata?.full_name || 
+                      'User',
+                avatarUrl: currentSession.user.user_metadata?.avatar_url || 
+                           currentSession.user.user_metadata?.picture,
+                favorites: {
+                  cities: [],
+                  points: [],
+                  routes: [],
+                  events: []
+                },
+                ownedPoints: [],
+                ownedEvents: []
+              };
+              
+              setUser(appUser);
+              
+              // Fetch favorites after a brief delay
+              setTimeout(() => {
+                fetchUserFavorites(appUser.id);
+              }, 0);
+            } else {
+              setUser(null);
+              setSession(null);
+            }
+          }
+        );
+        
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+      } finally {
         setIsLoading(false);
       }
-    );
+    };
+    
+    initAuth();
+  }, []);
 
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      setSession(initialSession);
-      
-      if (initialSession?.user) {
-        const appUser: User = {
-          id: initialSession.user.id,
-          email: initialSession.user.email || '',
-          name: initialSession.user.user_metadata?.name || 
-                initialSession.user.user_metadata?.full_name || 
-                'User',
-          avatarUrl: initialSession.user.user_metadata?.avatar_url || 
-                     initialSession.user.user_metadata?.picture,
-          favorites: {
-            cities: [],
-            points: [],
-            routes: [],
-            events: []
-          },
-          ownedPoints: [],
-          ownedEvents: []
-        };
-        
-        setUser(appUser);
-        
-        setTimeout(() => {
-          fetchUserFavorites(appUser.id);
-        }, 0);
-      }
-      
-      setIsLoading(false);
-    });
-
+  // Redirect URL handling for OAuth
+  useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash;
       if (hash && (hash.includes('access_token') || hash.includes('error='))) {
@@ -155,7 +177,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     window.addEventListener('hashchange', handleHashChange);
 
     return () => {
-      subscription.unsubscribe();
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
@@ -319,6 +340,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) throw error;
+      
+      // No need to navigate here, we'll let the auth state change handle it
     } catch (error: any) {
       console.error('Sign in error:', error);
       toast({
@@ -412,7 +435,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         isLoading,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && !!session,
         signIn,
         signUp,
         signOut,

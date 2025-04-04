@@ -163,8 +163,8 @@ export const fetchRoutesByEventId = async (eventId: string): Promise<Route[]> =>
     // Transform database records to Route objects
     const routes: Route[] = routesData.map(item => ({
       id: item.id,
-      cityId: '', // Will need to be populated if routes are associated with cities
-      name: item.name as Record<Language, string>,
+      cityId: '',
+      name: item.name as Record<string, string>, // Fix the type recursion issue
       description: {
         en: '',
         ru: '',
@@ -172,9 +172,9 @@ export const fetchRoutesByEventId = async (eventId: string): Promise<Route[]> =>
         ...((item.name as any)?.description || {})
       },
       media: [],
-      thumbnail: '/placeholder.svg', // Default placeholder
+      thumbnail: '/placeholder.svg',
       pointIds: [],
-      eventIds: [eventId], // Include the event ID
+      eventIds: [eventId],
       distance: 0,
       duration: 0
     }));
@@ -186,7 +186,7 @@ export const fetchRoutesByEventId = async (eventId: string): Promise<Route[]> =>
   }
 };
 
-// Aliases to maintain backward compatibility
+// Ensure this alias is properly defined
 export const fetchRoutesByEvent = fetchRoutesByEventId;
 
 export const fetchRoutesByPointId = async (pointId: string): Promise<Route[]> => {

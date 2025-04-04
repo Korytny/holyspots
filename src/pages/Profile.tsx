@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +10,7 @@ import ItemCardWrapper from '../components/ItemCardWrapper';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import Navigation from '../components/Navigation';
+import { useToast } from '@/components/ui/use-toast';
 
 interface FavoritesData {
   cities: City[];
@@ -25,6 +25,7 @@ const Profile = () => {
   const { user, signOut, isLoading: authLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { toast } = useToast();
   
   const [favoritesData, setFavoritesData] = useState<FavoritesData>({
     cities: [],
@@ -36,8 +37,8 @@ const Profile = () => {
   });
   
   useEffect(() => {
-    // Only redirect if not authenticated and not still loading
-    if (!isAuthenticated && !authLoading) {
+    if (!authLoading && !isAuthenticated) {
+      console.log("User not authenticated, redirecting to auth page");
       navigate('/auth');
     }
   }, [isAuthenticated, navigate, authLoading]);
@@ -51,17 +52,27 @@ const Profile = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
+      toast({
+        title: t('signedOut'),
+        description: t('youHaveBeenSignedOut'),
+      });
       navigate('/auth');
     } catch (error) {
       console.error('Failed to sign out', error);
+      toast({
+        title: t('error'),
+        description: t('failedToSignOut'),
+        variant: 'destructive'
+      });
     }
   };
 
   const fetchFavorites = async () => {
     try {
       setFavoritesData(prev => ({ ...prev, isLoading: true, error: null }));
+      console.log("Fetching favorites for user:", user?.id);
+      console.log("User favorites:", user?.favorites);
 
-      // Fetch cities
       if (user?.favorites.cities.length) {
         const citiesPromises = user.favorites.cities.map(cityId => 
           fetchCityById(cityId)
@@ -78,7 +89,6 @@ const Profile = () => {
         setFavoritesData(prev => ({ ...prev, cities: [], isLoading: false }));
       }
 
-      // Fetch points
       if (user?.favorites.points.length) {
         const pointsPromises = user.favorites.points.map(pointId => 
           fetchPointById(pointId)
@@ -95,7 +105,6 @@ const Profile = () => {
         setFavoritesData(prev => ({ ...prev, points: [], isLoading: false }));
       }
 
-      // Fetch routes
       if (user?.favorites.routes.length) {
         const routesPromises = user.favorites.routes.map(routeId => 
           fetchRouteById(routeId)
@@ -112,7 +121,6 @@ const Profile = () => {
         setFavoritesData(prev => ({ ...prev, routes: [], isLoading: false }));
       }
 
-      // Fetch events
       if (user?.favorites.events.length) {
         const eventsPromises = user.favorites.events.map(eventId => 
           fetchEventById(eventId)
