@@ -1,11 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Point, Language, Json } from '../types/models';
-
-export interface GeoPoint {
-  type: string;
-  coordinates: [number, number]; // [longitude, latitude]
-}
+import { Point, Language, GeoPoint, MediaItem } from '../types/models';
 
 export const fetchAllPoints = async (): Promise<Point[]> => {
   try {
@@ -22,39 +17,73 @@ export const fetchAllPoints = async (): Promise<Point[]> => {
     
     // Transform database records to Point objects
     const points: Point[] = data.map(item => {
-      let coordinates: { latitude: number; longitude: number } = { latitude: 0, longitude: 0 };
-      let pointData: GeoPoint | undefined;
+      // Create media items from images
+      let mediaItems: MediaItem[] = [];
+      let imageArray: string[] = [];
       
-      if (item.coordinates && typeof item.coordinates === 'object') {
-        const coords = item.coordinates as { lat?: number; lng?: number };
-        coordinates = {
-          latitude: coords.lat || 0,
-          longitude: coords.lng || 0
-        };
+      if (item.images) {
+        if (Array.isArray(item.images)) {
+          imageArray = item.images.filter(img => typeof img === 'string') as string[];
+        } else if (typeof item.images === 'object' && item.images !== null) {
+          imageArray = Object.values(item.images)
+            .filter(img => typeof img === 'string') as string[];
+        }
         
-        pointData = {
-          type: 'Point',
-          coordinates: [coordinates.longitude, coordinates.latitude]
-        };
+        mediaItems = imageArray.map((url, index) => ({
+          id: `image-${index}`,
+          type: 'image',
+          url,
+          thumbnailUrl: url,
+        }));
+      }
+      
+      // Get a valid thumbnail
+      let thumbnail = '/placeholder.svg';
+      if (imageArray.length > 0) {
+        thumbnail = imageArray[0];
+      }
+      
+      // Create location object
+      let location = {
+        latitude: 0,
+        longitude: 0
+      };
+      
+      if (item.point?.coordinates) {
+        location.longitude = item.point.coordinates[0];
+        location.latitude = item.point.coordinates[1];
+      } else if (item.coordinates) {
+        // Extract coordinates from the coordinates field if available
+        try {
+          if (typeof item.coordinates === 'object' && item.coordinates !== null) {
+            const coords = item.coordinates;
+            if ('latitude' in coords && 'longitude' in coords) {
+              location.latitude = parseFloat(coords.latitude);
+              location.longitude = parseFloat(coords.longitude);
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing coordinates:', e);
+        }
       }
       
       return {
         id: item.id,
         cityId: item.city || '',
-        type: mapTypeToEnum(item.type),
+        type: (typeof item.type === 'number' ? 
+          (item.type === 0 ? 'temple' : 
+           item.type === 1 ? 'ashram' : 
+           item.type === 2 ? 'kund' : 'other') : 
+          'other') as 'temple' | 'ashram' | 'kund' | 'other',
         name: item.name as Record<Language, string>,
         description: item.info as Record<Language, string>,
-        media: [],
-        thumbnail: Array.isArray(item.images) && item.images.length > 0 
-          ? item.images[0] 
-          : typeof item.images === 'object' && item.images !== null 
-            ? Object.values(item.images)[0] || '/placeholder.svg'
-            : '/placeholder.svg',
-        images: item.images as string[] || [],
-        location: coordinates,
-        point: pointData,
-        routeIds: [], // These will be populated from spot_route table if needed
-        eventIds: []  // These will be populated from spot_event table if needed
+        media: mediaItems,
+        thumbnail,
+        images: imageArray,
+        location,
+        point: item.point as GeoPoint,
+        routeIds: [],
+        eventIds: []
       };
     });
     
@@ -63,14 +92,6 @@ export const fetchAllPoints = async (): Promise<Point[]> => {
     console.error('Error fetching points:', error);
     return [];
   }
-};
-
-// Helper function to map numeric type to enum string
-const mapTypeToEnum = (type: number | null | undefined): 'temple' | 'ashram' | 'kund' | 'other' => {
-  if (type === 1) return 'temple';
-  if (type === 2) return 'ashram';
-  if (type === 3) return 'kund';
-  return 'other';
 };
 
 export const fetchPointById = async (pointId: string): Promise<Point | null> => {
@@ -94,40 +115,73 @@ export const fetchPointById = async (pointId: string): Promise<Point | null> => 
       return null;
     }
     
-    let coordinates: { latitude: number; longitude: number } = { latitude: 0, longitude: 0 };
-    let pointData: GeoPoint | undefined;
+    // Create media items from images
+    let mediaItems: MediaItem[] = [];
+    let imageArray: string[] = [];
     
-    if (data.coordinates && typeof data.coordinates === 'object') {
-      const coords = data.coordinates as { lat?: number; lng?: number };
-      coordinates = {
-        latitude: coords.lat || 0,
-        longitude: coords.lng || 0
-      };
+    if (data.images) {
+      if (Array.isArray(data.images)) {
+        imageArray = data.images.filter(img => typeof img === 'string') as string[];
+      } else if (typeof data.images === 'object' && data.images !== null) {
+        imageArray = Object.values(data.images)
+          .filter(img => typeof img === 'string') as string[];
+      }
       
-      pointData = {
-        type: 'Point',
-        coordinates: [coordinates.longitude, coordinates.latitude]
-      };
+      mediaItems = imageArray.map((url, index) => ({
+        id: `image-${index}`,
+        type: 'image',
+        url,
+        thumbnailUrl: url,
+      }));
     }
     
-    // Transform database record to Point object
+    // Get a valid thumbnail
+    let thumbnail = '/placeholder.svg';
+    if (imageArray.length > 0) {
+      thumbnail = imageArray[0];
+    }
+    
+    // Create location object
+    let location = {
+      latitude: 0,
+      longitude: 0
+    };
+    
+    if (data.point?.coordinates) {
+      location.longitude = data.point.coordinates[0];
+      location.latitude = data.point.coordinates[1];
+    } else if (data.coordinates) {
+      // Extract coordinates from the coordinates field if available
+      try {
+        if (typeof data.coordinates === 'object' && data.coordinates !== null) {
+          const coords = data.coordinates;
+          if ('latitude' in coords && 'longitude' in coords) {
+            location.latitude = parseFloat(coords.latitude);
+            location.longitude = parseFloat(coords.longitude);
+          }
+        }
+      } catch (e) {
+        console.error('Error parsing coordinates:', e);
+      }
+    }
+    
     const point: Point = {
       id: data.id,
       cityId: data.city || '',
-      type: mapTypeToEnum(data.type),
+      type: (typeof data.type === 'number' ? 
+        (data.type === 0 ? 'temple' : 
+         data.type === 1 ? 'ashram' : 
+         data.type === 2 ? 'kund' : 'other') : 
+        'other') as 'temple' | 'ashram' | 'kund' | 'other',
       name: data.name as Record<Language, string>,
       description: data.info as Record<Language, string>,
-      media: [],
-      thumbnail: Array.isArray(data.images) && data.images.length > 0 
-        ? data.images[0] 
-        : typeof data.images === 'object' && data.images !== null 
-          ? Object.values(data.images)[0] || '/placeholder.svg'
-          : '/placeholder.svg',
-      images: data.images as string[] || [],
-      location: coordinates,
-      point: pointData,
-      routeIds: [], // These will be populated from spot_route table if needed
-      eventIds: []  // These will be populated from spot_event table if needed
+      media: mediaItems,
+      thumbnail,
+      images: imageArray,
+      location,
+      point: data.point as GeoPoint,
+      routeIds: [],
+      eventIds: []
     };
     
     return point;
@@ -153,39 +207,73 @@ export const fetchPointsByCityId = async (cityId: string): Promise<Point[]> => {
     
     // Transform database records to Point objects
     const points: Point[] = data.map(item => {
-      let coordinates: { latitude: number; longitude: number } = { latitude: 0, longitude: 0 };
-      let pointData: GeoPoint | undefined;
+      // Create media items from images
+      let mediaItems: MediaItem[] = [];
+      let imageArray: string[] = [];
       
-      if (item.coordinates && typeof item.coordinates === 'object') {
-        const coords = item.coordinates as { lat?: number; lng?: number };
-        coordinates = {
-          latitude: coords.lat || 0,
-          longitude: coords.lng || 0
-        };
+      if (item.images) {
+        if (Array.isArray(item.images)) {
+          imageArray = item.images.filter(img => typeof img === 'string') as string[];
+        } else if (typeof item.images === 'object' && item.images !== null) {
+          imageArray = Object.values(item.images)
+            .filter(img => typeof img === 'string') as string[];
+        }
         
-        pointData = {
-          type: 'Point',
-          coordinates: [coordinates.longitude, coordinates.latitude]
-        };
+        mediaItems = imageArray.map((url, index) => ({
+          id: `image-${index}`,
+          type: 'image',
+          url,
+          thumbnailUrl: url,
+        }));
+      }
+      
+      // Get a valid thumbnail
+      let thumbnail = '/placeholder.svg';
+      if (imageArray.length > 0) {
+        thumbnail = imageArray[0];
+      }
+      
+      // Create location object
+      let location = {
+        latitude: 0,
+        longitude: 0
+      };
+      
+      if (item.point?.coordinates) {
+        location.longitude = item.point.coordinates[0];
+        location.latitude = item.point.coordinates[1];
+      } else if (item.coordinates) {
+        // Extract coordinates from the coordinates field if available
+        try {
+          if (typeof item.coordinates === 'object' && item.coordinates !== null) {
+            const coords = item.coordinates;
+            if ('latitude' in coords && 'longitude' in coords) {
+              location.latitude = parseFloat(coords.latitude);
+              location.longitude = parseFloat(coords.longitude);
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing coordinates:', e);
+        }
       }
       
       return {
         id: item.id,
         cityId: item.city || '',
-        type: mapTypeToEnum(item.type),
+        type: (typeof item.type === 'number' ? 
+          (item.type === 0 ? 'temple' : 
+           item.type === 1 ? 'ashram' : 
+           item.type === 2 ? 'kund' : 'other') : 
+          'other') as 'temple' | 'ashram' | 'kund' | 'other',
         name: item.name as Record<Language, string>,
         description: item.info as Record<Language, string>,
-        media: [],
-        thumbnail: Array.isArray(item.images) && item.images.length > 0 
-          ? item.images[0] 
-          : typeof item.images === 'object' && item.images !== null 
-            ? Object.values(item.images)[0] || '/placeholder.svg'
-            : '/placeholder.svg',
-        images: item.images as string[] || [],
-        location: coordinates,
-        point: pointData,
-        routeIds: [], // These will be populated from spot_route table if needed
-        eventIds: []  // These will be populated from spot_event table if needed
+        media: mediaItems,
+        thumbnail,
+        images: imageArray,
+        location,
+        point: item.point as GeoPoint,
+        routeIds: [],
+        eventIds: []
       };
     });
     
@@ -210,55 +298,89 @@ export const fetchPointsByRouteId = async (routeId: string): Promise<Point[]> =>
       return [];
     }
     
-    const spotIds = data.map(item => item.spot_id);
+    const pointIds = data.map(item => item.spot_id);
     
-    const { data: spotsData, error: spotsError } = await supabase
+    const { data: pointsData, error: pointsError } = await supabase
       .from('spots')
       .select('*')
-      .in('id', spotIds);
+      .in('id', pointIds);
     
-    if (spotsError) throw spotsError;
+    if (pointsError) throw pointsError;
     
-    if (!spotsData || spotsData.length === 0) {
-      console.log(`No spots found with IDs ${spotIds.join(', ')}`);
+    if (!pointsData || pointsData.length === 0) {
+      console.log(`No points found with IDs ${pointIds.join(', ')}`);
       return [];
     }
     
     // Transform database records to Point objects
-    const points: Point[] = spotsData.map(item => {
-      let coordinates: { latitude: number; longitude: number } = { latitude: 0, longitude: 0 };
-      let pointData: GeoPoint | undefined;
+    const points: Point[] = pointsData.map(item => {
+      // Create media items from images
+      let mediaItems: MediaItem[] = [];
+      let imageArray: string[] = [];
       
-      if (item.coordinates && typeof item.coordinates === 'object') {
-        const coords = item.coordinates as { lat?: number; lng?: number };
-        coordinates = {
-          latitude: coords.lat || 0,
-          longitude: coords.lng || 0
-        };
+      if (item.images) {
+        if (Array.isArray(item.images)) {
+          imageArray = item.images.filter(img => typeof img === 'string') as string[];
+        } else if (typeof item.images === 'object' && item.images !== null) {
+          imageArray = Object.values(item.images)
+            .filter(img => typeof img === 'string') as string[];
+        }
         
-        pointData = {
-          type: 'Point',
-          coordinates: [coordinates.longitude, coordinates.latitude]
-        };
+        mediaItems = imageArray.map((url, index) => ({
+          id: `image-${index}`,
+          type: 'image',
+          url,
+          thumbnailUrl: url,
+        }));
+      }
+      
+      // Get a valid thumbnail
+      let thumbnail = '/placeholder.svg';
+      if (imageArray.length > 0) {
+        thumbnail = imageArray[0];
+      }
+      
+      // Create location object
+      let location = {
+        latitude: 0,
+        longitude: 0
+      };
+      
+      if (item.point?.coordinates) {
+        location.longitude = item.point.coordinates[0];
+        location.latitude = item.point.coordinates[1];
+      } else if (item.coordinates) {
+        // Extract coordinates from the coordinates field if available
+        try {
+          if (typeof item.coordinates === 'object' && item.coordinates !== null) {
+            const coords = item.coordinates;
+            if ('latitude' in coords && 'longitude' in coords) {
+              location.latitude = parseFloat(coords.latitude);
+              location.longitude = parseFloat(coords.longitude);
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing coordinates:', e);
+        }
       }
       
       return {
         id: item.id,
         cityId: item.city || '',
-        type: mapTypeToEnum(item.type),
+        type: (typeof item.type === 'number' ? 
+          (item.type === 0 ? 'temple' : 
+           item.type === 1 ? 'ashram' : 
+           item.type === 2 ? 'kund' : 'other') : 
+          'other') as 'temple' | 'ashram' | 'kund' | 'other',
         name: item.name as Record<Language, string>,
         description: item.info as Record<Language, string>,
-        media: [],
-        thumbnail: Array.isArray(item.images) && item.images.length > 0 
-          ? item.images[0] 
-          : typeof item.images === 'object' && item.images !== null 
-            ? Object.values(item.images)[0] || '/placeholder.svg'
-            : '/placeholder.svg',
-        images: item.images as string[] || [],
-        location: coordinates,
-        point: pointData,
-        routeIds: [routeId], // Include the current route ID
-        eventIds: []  // These will be populated from spot_event table if needed
+        media: mediaItems,
+        thumbnail,
+        images: imageArray,
+        location,
+        point: item.point as GeoPoint,
+        routeIds: [routeId],
+        eventIds: []
       };
     });
     
@@ -283,55 +405,89 @@ export const fetchPointsByEventId = async (eventId: string): Promise<Point[]> =>
       return [];
     }
     
-    const spotIds = data.map(item => item.spot_id);
+    const pointIds = data.map(item => item.spot_id);
     
-    const { data: spotsData, error: spotsError } = await supabase
+    const { data: pointsData, error: pointsError } = await supabase
       .from('spots')
       .select('*')
-      .in('id', spotIds);
+      .in('id', pointIds);
     
-    if (spotsError) throw spotsError;
+    if (pointsError) throw pointsError;
     
-    if (!spotsData || spotsData.length === 0) {
-      console.log(`No spots found with IDs ${spotIds.join(', ')}`);
+    if (!pointsData || pointsData.length === 0) {
+      console.log(`No points found with IDs ${pointIds.join(', ')}`);
       return [];
     }
     
     // Transform database records to Point objects
-    const points: Point[] = spotsData.map(item => {
-      let coordinates: { latitude: number; longitude: number } = { latitude: 0, longitude: 0 };
-      let pointData: GeoPoint | undefined;
+    const points: Point[] = pointsData.map(item => {
+      // Create media items from images
+      let mediaItems: MediaItem[] = [];
+      let imageArray: string[] = [];
       
-      if (item.coordinates && typeof item.coordinates === 'object') {
-        const coords = item.coordinates as { lat?: number; lng?: number };
-        coordinates = {
-          latitude: coords.lat || 0,
-          longitude: coords.lng || 0
-        };
+      if (item.images) {
+        if (Array.isArray(item.images)) {
+          imageArray = item.images.filter(img => typeof img === 'string') as string[];
+        } else if (typeof item.images === 'object' && item.images !== null) {
+          imageArray = Object.values(item.images)
+            .filter(img => typeof img === 'string') as string[];
+        }
         
-        pointData = {
-          type: 'Point',
-          coordinates: [coordinates.longitude, coordinates.latitude]
-        };
+        mediaItems = imageArray.map((url, index) => ({
+          id: `image-${index}`,
+          type: 'image',
+          url,
+          thumbnailUrl: url,
+        }));
+      }
+      
+      // Get a valid thumbnail
+      let thumbnail = '/placeholder.svg';
+      if (imageArray.length > 0) {
+        thumbnail = imageArray[0];
+      }
+      
+      // Create location object
+      let location = {
+        latitude: 0,
+        longitude: 0
+      };
+      
+      if (item.point?.coordinates) {
+        location.longitude = item.point.coordinates[0];
+        location.latitude = item.point.coordinates[1];
+      } else if (item.coordinates) {
+        // Extract coordinates from the coordinates field if available
+        try {
+          if (typeof item.coordinates === 'object' && item.coordinates !== null) {
+            const coords = item.coordinates;
+            if ('latitude' in coords && 'longitude' in coords) {
+              location.latitude = parseFloat(coords.latitude);
+              location.longitude = parseFloat(coords.longitude);
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing coordinates:', e);
+        }
       }
       
       return {
         id: item.id,
         cityId: item.city || '',
-        type: mapTypeToEnum(item.type),
+        type: (typeof item.type === 'number' ? 
+          (item.type === 0 ? 'temple' : 
+           item.type === 1 ? 'ashram' : 
+           item.type === 2 ? 'kund' : 'other') : 
+          'other') as 'temple' | 'ashram' | 'kund' | 'other',
         name: item.name as Record<Language, string>,
         description: item.info as Record<Language, string>,
-        media: [],
-        thumbnail: Array.isArray(item.images) && item.images.length > 0 
-          ? item.images[0] 
-          : typeof item.images === 'object' && item.images !== null 
-            ? Object.values(item.images)[0] || '/placeholder.svg'
-            : '/placeholder.svg',
-        images: item.images as string[] || [],
-        location: coordinates,
-        point: pointData,
-        routeIds: [], // These will be populated from spot_route table if needed
-        eventIds: [eventId]  // Include the current event ID
+        media: mediaItems,
+        thumbnail,
+        images: imageArray,
+        location,
+        point: item.point as GeoPoint,
+        routeIds: [],
+        eventIds: [eventId]
       };
     });
     
@@ -341,3 +497,10 @@ export const fetchPointsByEventId = async (eventId: string): Promise<Point[]> =>
     return [];
   }
 };
+
+// Create alias functions for backward compatibility
+export const fetchSpotById = fetchPointById;
+export const fetchAllSpots = fetchAllPoints;
+export const fetchSpotsByCity = fetchPointsByCityId;
+export const fetchSpotsByRoute = fetchPointsByRouteId;
+export const fetchSpotsByEvent = fetchPointsByEventId;
