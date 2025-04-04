@@ -25,7 +25,7 @@ const PointDetail = () => {
   const { pointId } = useParams<{ pointId: string }>();
   const { language, t } = useLanguage();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('info');
+  const [activeTab, setActiveTab] = useState('routes');
 
   const { 
     data: spot,
@@ -121,20 +121,14 @@ const PointDetail = () => {
     navigate(`/events/${eventId}`);
   };
 
-  const renderSpotStats = () => {
-    return (
-      <div className="flex flex-wrap gap-2 mt-1">
-        <div className="inline-flex items-center px-2 py-1 text-sm bg-secondary rounded-full">
-          <NavigationIcon className="h-4 w-4 mr-1" />
-          {routes.length || 0}
-        </div>
-        
-        <div className="inline-flex items-center px-2 py-1 text-sm bg-secondary rounded-full">
-          <Calendar className="h-4 w-4 mr-1" />
-          {events.length || 0}
-        </div>
-      </div>
-    );
+  // Helper function to get spot type label
+  const getSpotTypeLabel = (type: string) => {
+    switch (type) {
+      case 'temple': return t('temples');
+      case 'ashram': return t('ashrams');
+      case 'kund': return t('kunds');
+      default: return t('spots');
+    }
   };
 
   return (
@@ -148,28 +142,59 @@ const PointDetail = () => {
         </Button>
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="p-6">
+          {/* Information panel */}
+          <div className="bg-secondary/20 p-6">
             <div className="flex flex-col md:flex-row md:items-start justify-between mb-6">
               <div>
                 <div className="flex items-center">
                   <MapPin className="h-5 w-5 mr-2 text-primary" />
                   <h1 className="text-3xl font-bold">{spotName}</h1>
                 </div>
-                {renderSpotStats()}
+                
+                <div className="mt-3 flex flex-col gap-2">
+                  {/* Type */}
+                  <div className="flex items-center text-sm">
+                    <span className="font-medium mr-2">{t('type')}:</span>
+                    <span className="inline-flex items-center px-3 py-1 bg-secondary rounded-full">
+                      {spot.type && getSpotTypeLabel(spot.type)}
+                    </span>
+                  </div>
+                  
+                  {/* Location coordinates */}
+                  {spot.location && (
+                    <div className="flex items-center text-sm">
+                      <span className="font-medium mr-2">{t('location')}:</span>
+                      <span>
+                        {t('latitude')}: {spot.location.latitude.toFixed(6)}, {t('longitude')}: {spot.location.longitude.toFixed(6)}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Stats */}
+                  <div className="flex items-center gap-4 mt-1">
+                    <div className="inline-flex items-center text-sm">
+                      <NavigationIcon className="h-4 w-4 mr-1 text-muted-foreground" />
+                      <span><span className="font-medium">{routes.length || 0}</span> {routes.length === 1 ? t('route') : t('routes')}</span>
+                    </div>
+                    
+                    <div className="inline-flex items-center text-sm">
+                      <Calendar className="h-4 w-4 mr-1 text-muted-foreground" />
+                      <span><span className="font-medium">{events.length || 0}</span> {events.length === 1 ? t('event') : t('events')}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             
-            <p className="text-muted-foreground mb-6">{spotDescription}</p>
+            <p className="text-muted-foreground mb-2">{spotDescription}</p>
+          </div>
             
+          <div className="p-6">
             <MediaGallery media={mediaItems} />
             
             <div className="mt-6">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="w-full grid grid-cols-3">
-                  <TabsTrigger value="info" className="flex items-center">
-                    <Info className="mr-1 h-4 w-4" />
-                    {t('info')}
-                  </TabsTrigger>
+                <TabsList className="w-full grid grid-cols-2">
                   <TabsTrigger value="routes" className="flex items-center">
                     <NavigationIcon className="mr-1 h-4 w-4" />
                     {t('routes')}
@@ -179,27 +204,6 @@ const PointDetail = () => {
                     {t('events')}
                   </TabsTrigger>
                 </TabsList>
-                
-                <TabsContent value="info" className="pt-4">
-                  <div className="prose max-w-none">
-                    {spot.type && (
-                      <div className="mt-4">
-                        <h3 className="text-lg font-medium mb-2">{t('type')}:</h3>
-                        <div className="inline-flex items-center px-3 py-1 bg-secondary rounded-full">
-                          {spot.type}
-                        </div>
-                      </div>
-                    )}
-                    {spot.location && (
-                      <div className="mt-4">
-                        <h3 className="text-lg font-medium mb-2">{t('location')}:</h3>
-                        <div className="text-sm">
-                          {t('latitude')}: {spot.location.latitude.toFixed(6)}, {t('longitude')}: {spot.location.longitude.toFixed(6)}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
                 
                 <TabsContent value="routes" className="pt-4">
                   <CityRoutes 
