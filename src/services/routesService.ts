@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { Route } from '../types/models';
 
@@ -153,6 +152,52 @@ export const fetchAllRoutes = async (): Promise<Route[]> => {
   }
   
   console.log(`Retrieved ${data?.length || 0} total routes`);
+  
+  return data.map((routeData): Route => ({
+    id: routeData.id,
+    cityId: routeData.city || '',
+    name: routeData.name as Record<string, string>,
+    description: routeData.info as Record<string, string>,
+    media: routeData.media || [],
+    thumbnail: routeData.images && routeData.images.length > 0 ? routeData.images[0] : '/placeholder.svg',
+    pointIds: routeData.spots || [],
+    eventIds: [],
+    distance: routeData.distance,
+    duration: routeData.duration,
+  }));
+};
+
+export const fetchRoutesByEvent = async (eventId: string): Promise<Route[]> => {
+  console.log('Fetching routes for event:', eventId);
+  
+  // Use the route_event relationship table
+  const { data: relationData, error: relationError } = await supabase
+    .from('route_event')
+    .select('route_id')
+    .eq('event_id', eventId);
+  
+  if (relationError) {
+    console.error('Error fetching route-event relations:', relationError);
+    throw relationError;
+  }
+  
+  if (!relationData || relationData.length === 0) {
+    return [];
+  }
+  
+  const routeIds = relationData.map(relation => relation.route_id);
+  
+  const { data, error } = await supabase
+    .from('routes')
+    .select('*')
+    .in('id', routeIds);
+  
+  if (error) {
+    console.error('Error fetching routes for event:', error);
+    throw error;
+  }
+  
+  console.log(`Retrieved ${data?.length || 0} routes for event ${eventId}`);
   
   return data.map((routeData): Route => ({
     id: routeData.id,
