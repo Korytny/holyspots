@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import Navigation from '../components/Navigation';
 import MediaGallery from '../components/MediaGallery';
-import Map from '../components/Map';
+import CityMap from '../components/city/CityMap';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -277,10 +277,10 @@ const CityDetail = () => {
             
             {showMap && spots.length > 0 && (
               <div className="mt-4">
-                <Map 
+                <CityMap 
                   points={spots} 
-                  center={city.location ? [city.location.longitude, city.location.latitude] : [0, 0]} 
-                  zoom={12} 
+                  cityLocation={city.location ? city.location : undefined} 
+                  height="500px" 
                   onPointSelect={handleMapSpotClick} 
                 />
               </div>
