@@ -1,4 +1,3 @@
-
 import { 
   MapPin,
   Calendar,
@@ -101,11 +100,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
       </div>
       
       <div className="p-4">
-        <h3 className="font-medium text-lg mb-1 line-clamp-1">{displayName}</h3>
-        
-        <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-          {displayDescription}
-        </p>
+        <h3 className="font-medium text-lg mb-3 line-clamp-1">{displayName}</h3>
         
         <div className="flex flex-col gap-2">
           {location && (
