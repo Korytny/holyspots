@@ -65,6 +65,43 @@ export const fetchSpotById = async (spotId: string): Promise<Point | null> => {
   };
 };
 
+// New function to fetch spots by IDs
+export const fetchSpotsByIds = async (spotIds: string[]): Promise<Point[]> => {
+  if (!spotIds || spotIds.length === 0) {
+    return [];
+  }
+  
+  console.log('Fetching spots by IDs:', spotIds);
+  
+  const { data, error } = await supabase
+    .from('spots')
+    .select('*')
+    .in('id', spotIds);
+  
+  if (error) {
+    console.error('Error fetching spots by IDs:', error);
+    throw error;
+  }
+  
+  console.log(`Retrieved ${data.length} spots by IDs`);
+  
+  return data.map((spotData): Point => ({
+    id: spotData.id,
+    cityId: spotData.city || '',
+    type: spotData.type ? mapSpotType(spotData.type) : 'other',
+    name: spotData.name as Record<string, string>,
+    description: spotData.info as Record<string, string>,
+    media: spotData.media || [],
+    thumbnail: spotData.images && spotData.images.length > 0 ? spotData.images[0] : '/placeholder.svg',
+    location: {
+      latitude: spotData.coordinates?.latitude || 0,
+      longitude: spotData.coordinates?.longitude || 0
+    },
+    routeIds: [],
+    eventIds: [],
+  }));
+};
+
 // Helper function to map numeric spot types to string types
 function mapSpotType(typeId: number): 'temple' | 'ashram' | 'kund' | 'other' {
   switch (typeId) {
