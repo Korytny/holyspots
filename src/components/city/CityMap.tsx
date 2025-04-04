@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Point } from '../../types/models';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
-import { ChurchIcon, Yoga, MapPin, Navigation } from 'lucide-react';
+import { ChurchIcon, PersonStanding, MapPin, Navigation } from 'lucide-react';
 
 interface CityMapProps {
   points: Point[];
@@ -25,16 +25,13 @@ const CityMap = ({
   const [mapToken, setMapToken] = useState<string>('');
   const navigate = useNavigate();
 
-  // Load Mapbox token from storage or use default
   useEffect(() => {
     const storedToken = localStorage.getItem('mapboxToken');
-    // Use the provided token if available
     const defaultToken = 'pk.eyJ1Ijoia29yeXRueSIsImEiOiJjazM2OWk0aWgwaXNlM29wbmFxYmcybDA1In0.3bQx9mdXq9p3PTkxb8soeQ';
     
     if (storedToken) {
       setMapToken(storedToken);
     } else {
-      // Save and use the default token
       localStorage.setItem('mapboxToken', defaultToken);
       setMapToken(defaultToken);
     }
@@ -50,14 +47,12 @@ const CityMap = ({
     }
   };
 
-  // Calculate the center point for the map
   const getMapCenter = (): [number, number] => {
     if (cityLocation) {
       return [cityLocation.longitude, cityLocation.latitude];
     }
 
     if (points.length > 0) {
-      // Get average of all point coordinates
       let totalLng = 0;
       let totalLat = 0;
       let validPoints = 0;
@@ -79,11 +74,9 @@ const CityMap = ({
       }
     }
 
-    // Default to India if no coordinates available
     return [78.9629, 20.5937];
   };
 
-  // Get spot type name for display
   const getSpotTypeName = (type: string): string => {
     switch (type) {
       case 'temple': return 'Храм';
@@ -93,27 +86,24 @@ const CityMap = ({
     }
   };
 
-  // Get icon element based on spot type
   const getSpotIcon = (type: string): string => {
     switch (type) {
-      case 'temple': return '🏛️'; // Temple
-      case 'ashram': return '🧘'; // Ashram
-      case 'kund': return '💦';   // Kund
-      default: return '🗻';       // Scenic place
+      case 'temple': return '🏛️';
+      case 'ashram': return '🧘';
+      case 'kund': return '💦';
+      default: return '🗻';
     }
   };
 
-  // Get background color for the marker based on type
   const getMarkerColor = (type: string): string => {
     switch (type) {
-      case 'temple': return '#8B5CF6'; // Purple for temples
-      case 'ashram': return '#F97316'; // Orange for ashrams
-      case 'kund': return '#0EA5E9';   // Blue for kunds
-      default: return '#10B981';       // Green for scenic places
+      case 'temple': return '#8B5CF6';
+      case 'ashram': return '#F97316';
+      case 'kund': return '#0EA5E9';
+      default: return '#10B981';
     }
   };
 
-  // Initialize map when token is available
   useEffect(() => {
     if (!mapContainer.current || !mapToken || points.length === 0) return;
 
@@ -129,26 +119,20 @@ const CityMap = ({
       zoom: 11
     });
 
-    // Add navigation controls
     map.current.addControl(
       new mapboxgl.NavigationControl(),
       'top-right'
     );
 
-    // Add markers for each point
     points.forEach(point => {
-      // Get coordinates from the point
       let coordinates: [number, number];
       
-      // First try to get from the geometry point field
       if (point.point?.coordinates) {
         coordinates = point.point.coordinates;
       } else {
-        // Fallback to the location object
         coordinates = [point.location.longitude, point.location.latitude];
       }
       
-      // Create custom marker element
       const markerEl = document.createElement('div');
       markerEl.className = 'flex flex-col items-center';
       markerEl.style.cursor = 'pointer';
@@ -157,34 +141,27 @@ const CityMap = ({
       icon.className = 'w-8 h-8 rounded-full text-white flex items-center justify-center shadow-md';
       icon.style.backgroundColor = getMarkerColor(point.type);
       
-      // Different icon based on point type
       const iconContent = getSpotIcon(point.type);
       
       icon.innerHTML = iconContent;
       markerEl.appendChild(icon);
       
-      // Add a label below
       const label = document.createElement('div');
       label.className = 'text-xs font-bold mt-1 px-2 py-1 bg-white/80 rounded shadow-sm';
       
-      // Get the spot name based on available languages
       const spotName = point.name.en || Object.values(point.name)[0];
       label.innerText = spotName;
       markerEl.appendChild(label);
       
-      // Create and add the marker
       const marker = new mapboxgl.Marker(markerEl)
         .setLngLat(coordinates)
         .addTo(map.current);
       
-      // Add click event to the marker
       markerEl.addEventListener('click', () => {
-        // Always navigate to the point detail page
         navigate(`/points/${point.id}`);
       });
     });
 
-    // Adjust bounds to fit all markers
     if (points.length > 1) {
       const bounds = new mapboxgl.LngLatBounds();
       
@@ -202,7 +179,6 @@ const CityMap = ({
       });
     }
 
-    // Clean up on unmount
     return () => {
       map.current?.remove();
     };
