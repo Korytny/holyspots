@@ -15,17 +15,23 @@ const SpotMap = ({ spot, height = '300px' }: SpotMapProps) => {
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapToken, setMapToken] = useState<string>('');
 
-  // Get coordinates from the spot
-  const getCoordinates = (): [number, number] => {
+  // Get valid coordinates from the spot
+  const getCoordinates = (): [number, number] | null => {
     // First try to get from the geometry point field
     if (spot.point?.coordinates) {
-      return spot.point.coordinates;
+      const [lng, lat] = spot.point.coordinates;
+      if (!isNaN(lng) && !isNaN(lat)) {
+        return spot.point.coordinates;
+      }
     }
     // Fallback to the location object
     if (spot.location) {
-      return [spot.location.longitude, spot.location.latitude];
+      const { longitude, latitude } = spot.location;
+      if (!isNaN(longitude) && !isNaN(latitude)) {
+        return [longitude, latitude];
+      }
     }
-    // Default to India if no coordinates available
+    // Default to India if no valid coordinates available
     return [78.9629, 20.5937];
   };
 
@@ -91,48 +97,62 @@ const SpotMap = ({ spot, height = '300px' }: SpotMapProps) => {
     const coordinates = getCoordinates();
     console.log('Map coordinates:', coordinates);
     
+    // Don't proceed if we don't have valid coordinates
+    if (!coordinates) {
+      console.error('No valid coordinates found for the spot');
+      return;
+    }
+    
     mapboxgl.accessToken = mapToken;
     
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v11',
-      center: coordinates,
-      zoom: 13
-    });
+    try {
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: coordinates,
+        zoom: 13
+      });
 
-    // Add navigation controls
-    map.current.addControl(
-      new mapboxgl.NavigationControl(),
-      'top-right'
-    );
+      // Add navigation controls
+      map.current.addControl(
+        new mapboxgl.NavigationControl(),
+        'top-right'
+      );
 
-    // Create and add marker for the spot
-    const markerEl = document.createElement('div');
-    markerEl.className = 'flex flex-col items-center';
-    
-    const icon = document.createElement('div');
-    icon.className = 'w-8 h-8 rounded-full text-white flex items-center justify-center shadow-md';
-    icon.style.backgroundColor = getMarkerColor(spot.type);
-    
-    // Different icon based on point type
-    const iconContent = getSpotIcon(spot.type);
-    
-    icon.innerHTML = iconContent;
-    markerEl.appendChild(icon);
-    
-    // Add a label below
-    const label = document.createElement('div');
-    label.className = 'text-xs font-bold mt-1 px-2 py-1 bg-white/80 rounded shadow-sm';
-    
-    // Get the spot name based on available languages
-    const spotName = spot.name.en || Object.values(spot.name)[0];
-    label.innerText = spotName;
-    markerEl.appendChild(label);
-    
-    // Create and add the marker
-    new mapboxgl.Marker(markerEl)
-      .setLngLat(coordinates)
-      .addTo(map.current);
+      // Create and add marker for the spot
+      map.current.on('load', () => {
+        if (!map.current) return;
+        
+        const markerEl = document.createElement('div');
+        markerEl.className = 'flex flex-col items-center';
+        
+        const icon = document.createElement('div');
+        icon.className = 'w-8 h-8 rounded-full text-white flex items-center justify-center shadow-md';
+        icon.style.backgroundColor = getMarkerColor(spot.type);
+        
+        // Different icon based on point type
+        const iconContent = getSpotIcon(spot.type);
+        
+        icon.innerHTML = iconContent;
+        markerEl.appendChild(icon);
+        
+        // Add a label below
+        const label = document.createElement('div');
+        label.className = 'text-xs font-bold mt-1 px-2 py-1 bg-white/80 rounded shadow-sm';
+        
+        // Get the spot name based on available languages
+        const spotName = spot.name.en || Object.values(spot.name)[0];
+        label.innerText = spotName;
+        markerEl.appendChild(label);
+        
+        // Create and add the marker
+        new mapboxgl.Marker(markerEl)
+          .setLngLat(coordinates)
+          .addTo(map.current);
+      });
+    } catch (error) {
+      console.error('Error initializing map:', error);
+    }
 
     // Clean up on unmount
     return () => {

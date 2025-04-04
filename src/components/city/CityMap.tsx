@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -48,7 +49,7 @@ const CityMap = ({
   };
 
   const getMapCenter = (): [number, number] => {
-    if (cityLocation) {
+    if (cityLocation && !isNaN(cityLocation.longitude) && !isNaN(cityLocation.latitude)) {
       return [cityLocation.longitude, cityLocation.latitude];
     }
 
@@ -59,13 +60,19 @@ const CityMap = ({
 
       points.forEach(point => {
         if (point.point?.coordinates) {
-          totalLng += point.point.coordinates[0];
-          totalLat += point.point.coordinates[1];
-          validPoints++;
+          const [lng, lat] = point.point.coordinates;
+          if (!isNaN(lng) && !isNaN(lat)) {
+            totalLng += lng;
+            totalLat += lat;
+            validPoints++;
+          }
         } else if (point.location) {
-          totalLng += point.location.longitude;
-          totalLat += point.location.latitude;
-          validPoints++;
+          const { longitude, latitude } = point.location;
+          if (!isNaN(longitude) && !isNaN(latitude)) {
+            totalLng += longitude;
+            totalLat += latitude;
+            validPoints++;
+          }
         }
       });
 
@@ -74,7 +81,7 @@ const CityMap = ({
       }
     }
 
-    return [78.9629, 20.5937];
+    return [78.9629, 20.5937]; // Default to India
   };
 
   const getSpotTypeName = (type: string): string => {
@@ -112,71 +119,115 @@ const CityMap = ({
     
     mapboxgl.accessToken = mapToken;
     
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v11',
-      center: center,
-      zoom: 11
-    });
-
-    map.current.addControl(
-      new mapboxgl.NavigationControl(),
-      'top-right'
-    );
-
-    points.forEach(point => {
-      let coordinates: [number, number];
-      
-      if (point.point?.coordinates) {
-        coordinates = point.point.coordinates;
-      } else {
-        coordinates = [point.location.longitude, point.location.latitude];
-      }
-      
-      const markerEl = document.createElement('div');
-      markerEl.className = 'flex flex-col items-center';
-      markerEl.style.cursor = 'pointer';
-      
-      const icon = document.createElement('div');
-      icon.className = 'w-8 h-8 rounded-full text-white flex items-center justify-center shadow-md';
-      icon.style.backgroundColor = getMarkerColor(point.type);
-      
-      const iconContent = getSpotIcon(point.type);
-      
-      icon.innerHTML = iconContent;
-      markerEl.appendChild(icon);
-      
-      const label = document.createElement('div');
-      label.className = 'text-xs font-bold mt-1 px-2 py-1 bg-white/80 rounded shadow-sm';
-      
-      const spotName = point.name.en || Object.values(point.name)[0];
-      label.innerText = spotName;
-      markerEl.appendChild(label);
-      
-      const marker = new mapboxgl.Marker(markerEl)
-        .setLngLat(coordinates)
-        .addTo(map.current);
-      
-      markerEl.addEventListener('click', () => {
-        navigate(`/points/${point.id}`);
+    try {
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: center,
+        zoom: 11
       });
-    });
 
-    if (points.length > 1) {
-      const bounds = new mapboxgl.LngLatBounds();
-      
-      points.forEach(point => {
-        if (point.point?.coordinates) {
-          bounds.extend(point.point.coordinates);
-        } else if (point.location) {
-          bounds.extend([point.location.longitude, point.location.latitude]);
+      map.current.addControl(
+        new mapboxgl.NavigationControl(),
+        'top-right'
+      );
+
+      map.current.on('load', () => {
+        if (!map.current) return;
+        
+        // Add markers for points with valid coordinates
+        points.forEach(point => {
+          if (!map.current) return;
+          
+          // Get coordinates from point (either from point geometry or location)
+          let coordinates: [number, number] | null = null;
+          
+          if (point.point?.coordinates) {
+            const [lng, lat] = point.point.coordinates;
+            if (!isNaN(lng) && !isNaN(lat)) {
+              coordinates = [lng, lat];
+            }
+          } else if (point.location) {
+            const { longitude, latitude } = point.location;
+            if (!isNaN(longitude) && !isNaN(latitude)) {
+              coordinates = [longitude, latitude];
+            }
+          }
+          
+          if (!coordinates) {
+            console.warn(`Point ${point.id} has invalid coordinates`);
+            return;
+          }
+          
+          const markerEl = document.createElement('div');
+          markerEl.className = 'flex flex-col items-center';
+          markerEl.style.cursor = 'pointer';
+          
+          const icon = document.createElement('div');
+          icon.className = 'w-8 h-8 rounded-full text-white flex items-center justify-center shadow-md';
+          icon.style.backgroundColor = getMarkerColor(point.type);
+          
+          const iconContent = getSpotIcon(point.type);
+          
+          icon.innerHTML = iconContent;
+          markerEl.appendChild(icon);
+          
+          const label = document.createElement('div');
+          label.className = 'text-xs font-bold mt-1 px-2 py-1 bg-white/80 rounded shadow-sm';
+          
+          const spotName = point.name.en || Object.values(point.name)[0];
+          label.innerText = spotName;
+          markerEl.appendChild(label);
+          
+          // Create and add the marker
+          new mapboxgl.Marker(markerEl)
+            .setLngLat(coordinates)
+            .addTo(map.current);
+          
+          markerEl.addEventListener('click', () => {
+            navigate(`/points/${point.id}`);
+          });
+        });
+
+        // If we have multiple points, fit the map to show all of them
+        if (points.length > 1) {
+          // Collect all valid coordinates
+          const validCoordinates = points
+            .map(point => {
+              if (point.point?.coordinates) {
+                const [lng, lat] = point.point.coordinates;
+                return !isNaN(lng) && !isNaN(lat) ? point.point.coordinates as mapboxgl.LngLatLike : null;
+              } 
+              if (point.location) {
+                const { longitude, latitude } = point.location;
+                return !isNaN(longitude) && !isNaN(latitude) ? [longitude, latitude] as mapboxgl.LngLatLike : null;
+              }
+              return null;
+            })
+            .filter(coord => coord !== null) as mapboxgl.LngLatLike[];
+          
+          if (validCoordinates.length > 1) {
+            // Create bounds from the first coordinate
+            const bounds = new mapboxgl.LngLatBounds(
+              validCoordinates[0],
+              validCoordinates[0]
+            );
+            
+            // Extend the bounds with the rest of the coordinates
+            validCoordinates.slice(1).forEach(coord => {
+              bounds.extend(coord);
+            });
+            
+            // Fit the map to the bounds
+            map.current.fitBounds(bounds, {
+              padding: { top: 50, bottom: 50, left: 50, right: 50 },
+              maxZoom: 15
+            });
+          }
         }
       });
-      
-      map.current.fitBounds(bounds, {
-        padding: 50,
-        maxZoom: 15
-      });
+    } catch (error) {
+      console.error('Error initializing map:', error);
     }
 
     return () => {
