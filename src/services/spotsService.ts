@@ -210,18 +210,14 @@ export const fetchSpotsByEvent = async (eventId: string): Promise<Point[]> => {
           spotData.type === 3 ? 'kund' : 'other',
     name: spotData.name as Record<string, string>,
     description: spotData.info as Record<string, string>,
-    media: [],
-    images: spotData.images || [],
+    media: spotData.media || [],
     thumbnail: spotData.images && spotData.images.length > 0 ? spotData.images[0] : '/placeholder.svg',
     location: {
-      latitude: spotData.coordinates?.latitude || 0,
-      longitude: spotData.coordinates?.longitude || 0
-    },
-    point: spotData.point || {
-      type: 'Point',
-      coordinates: [spotData.coordinates?.longitude || 0, spotData.coordinates?.latitude || 0]
+      latitude: (spotData.point?.coordinates?.[1] as number) || 0,
+      longitude: (spotData.point?.coordinates?.[0] as number) || 0
     },
     routeIds: spotData.routes || [],
-    eventIds: spotData.events || []
+    eventIds: spotData.events || [],
+    point: spotData.point
   }));
 };

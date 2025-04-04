@@ -94,4 +94,5 @@ export interface Event {
   startDate: string;
   endDate: string;
   ownerId?: string;
+  type?: boolean; // true for calendar events, false for daily events
 }

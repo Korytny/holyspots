@@ -82,16 +82,19 @@ export type Database = {
           id: string
           info: Json | null
           name: Json
+          type: boolean | null
         }
         Insert: {
           id?: string
           info?: Json | null
           name: Json
+          type?: boolean | null
         }
         Update: {
           id?: string
           info?: Json | null
           name?: Json
+          type?: boolean | null
         }
         Relationships: []
       }

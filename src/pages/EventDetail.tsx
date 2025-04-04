@@ -1,28 +1,33 @@
 
 import { useParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import Navigation from '../components/Navigation';
 import MediaGallery from '../components/MediaGallery';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ArrowLeft,
   Navigation as NavigationIcon, 
   Calendar,
   MapPin,
+  Info,
   Clock
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchEventById } from '../services/eventsService';
+import { fetchEventById, fetchAllEvents } from '../services/eventsService';
 import { fetchSpotsByEvent } from '../services/spotsService';
 import { fetchRoutesByEvent } from '../services/routesService';
 import { MediaItem } from '../types/models';
+import DailyEvents from '../components/events/DailyEvents';
+import EventCalendar from '../components/events/EventCalendar';
 
-// Now continue with the EventDetail page
 const EventDetail = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const { language, t } = useLanguage();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('info');
 
   const { 
     data: event,
@@ -37,6 +42,7 @@ const EventDetail = () => {
   const {
     data: spots = [],
     isLoading: isLoadingSpots,
+    error: spotsError
   } = useQuery({
     queryKey: ['event-spots', eventId],
     queryFn: () => fetchSpotsByEvent(eventId as string),
@@ -46,10 +52,21 @@ const EventDetail = () => {
   const {
     data: routes = [],
     isLoading: isLoadingRoutes,
+    error: routesError
   } = useQuery({
     queryKey: ['event-routes', eventId],
     queryFn: () => fetchRoutesByEvent(eventId as string),
     enabled: !!eventId,
+  });
+
+  const {
+    data: allEvents = [],
+    isLoading: isLoadingAllEvents,
+    error: allEventsError
+  } = useQuery({
+    queryKey: ['all-events'],
+    queryFn: () => fetchAllEvents(),
+    enabled: activeTab === 'events',
   });
 
   if (isLoadingEvent || isLoadingSpots || isLoadingRoutes) {
@@ -118,6 +135,33 @@ const EventDetail = () => {
   const handleRouteClick = (routeId: string) => {
     navigate(`/routes/${routeId}`);
   };
+  
+  const handleEventClick = (evtId: string) => {
+    navigate(`/events/${evtId}`);
+  };
+
+  const renderEventStats = () => {
+    return (
+      <div className="flex flex-wrap gap-2 mt-1">
+        <div className="inline-flex items-center px-2 py-1 text-sm bg-secondary rounded-full">
+          <MapPin className="h-4 w-4 mr-1" />
+          {spots.length || 0}
+        </div>
+        
+        <div className="inline-flex items-center px-2 py-1 text-sm bg-secondary rounded-full">
+          <NavigationIcon className="h-4 w-4 mr-1" />
+          {routes.length || 0}
+        </div>
+        
+        {formattedDate && (
+          <div className="inline-flex items-center px-2 py-1 text-sm bg-secondary rounded-full">
+            <Clock className="h-4 w-4 mr-1" />
+            {formattedDate}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-muted">
@@ -137,15 +181,7 @@ const EventDetail = () => {
                   <Calendar className="h-5 w-5 mr-2 text-primary" />
                   <h1 className="text-3xl font-bold">{eventName}</h1>
                 </div>
-                
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {formattedDate && (
-                    <div className="inline-flex items-center px-2 py-1 text-sm bg-secondary rounded-full">
-                      <Clock className="h-4 w-4 mr-1" />
-                      {formattedDate}
-                    </div>
-                  )}
-                </div>
+                {renderEventStats()}
               </div>
             </div>
             
@@ -154,83 +190,128 @@ const EventDetail = () => {
             <MediaGallery media={mediaItems} />
             
             <div className="mt-6">
-              <div className="prose max-w-none">
-                {eventDescription.split('\n').map((paragraph, index) => (
-                  <p key={index} className="mb-4">{paragraph}</p>
-                ))}
-              </div>
-              
-              {spots.length > 0 && (
-                <div className="mt-8">
-                  <h2 className="text-xl font-semibold mb-4 flex items-center">
-                    <MapPin className="mr-2 h-4 w-4" />
-                    {t('relatedSpots')}
-                  </h2>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {spots.map(spot => (
-                      <Card 
-                        key={spot.id} 
-                        className="cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => handleSpotClick(spot.id)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-center">
-                            <div 
-                              className="w-12 h-12 rounded-md bg-cover bg-center mr-4" 
-                              style={{backgroundImage: `url(${spot.thumbnail || '/placeholder.svg'})`}}
-                            />
-                            <div>
-                              <h3 className="font-medium">
-                                {spot.name?.[language] || spot.name?.en || 'Unnamed Spot'}
-                              </h3>
-                              <p className="text-sm text-muted-foreground truncate">
-                                {spot.description?.[language] || spot.description?.en || ''}
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="w-full grid grid-cols-3">
+                  <TabsTrigger value="info" className="flex items-center">
+                    <Info className="mr-1 h-4 w-4" />
+                    {t('info')}
+                  </TabsTrigger>
+                  <TabsTrigger value="related" className="flex items-center">
+                    <MapPin className="mr-1 h-4 w-4" />
+                    {t('related')}
+                  </TabsTrigger>
+                  <TabsTrigger value="events" className="flex items-center">
+                    <Calendar className="mr-1 h-4 w-4" />
+                    {t('events')}
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="info" className="pt-4">
+                  <div className="prose max-w-none">
+                    {eventDescription.split('\n').map((paragraph, index) => (
+                      <p key={index} className="mb-4">{paragraph}</p>
                     ))}
                   </div>
-                </div>
-              )}
-              
-              {routes.length > 0 && (
-                <div className="mt-8">
-                  <h2 className="text-xl font-semibold mb-4 flex items-center">
-                    <NavigationIcon className="mr-2 h-4 w-4" />
-                    {t('relatedRoutes')}
-                  </h2>
+                </TabsContent>
+                
+                <TabsContent value="related" className="pt-4">
+                  {spots.length > 0 && (
+                    <div className="mb-8">
+                      <h2 className="text-xl font-semibold mb-4 flex items-center">
+                        <MapPin className="mr-2 h-4 w-4" />
+                        {t('relatedSpots')}
+                      </h2>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {spots.map(spot => (
+                          <Card 
+                            key={spot.id} 
+                            className="cursor-pointer hover:shadow-md transition-shadow"
+                            onClick={() => handleSpotClick(spot.id)}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-center">
+                                <div 
+                                  className="w-12 h-12 rounded-md bg-cover bg-center mr-4" 
+                                  style={{backgroundImage: `url(${spot.thumbnail || '/placeholder.svg'})`}}
+                                />
+                                <div>
+                                  <h3 className="font-medium">
+                                    {spot.name?.[language] || spot.name?.en || 'Unnamed Spot'}
+                                  </h3>
+                                  <p className="text-sm text-muted-foreground truncate">
+                                    {spot.description?.[language] || spot.description?.en || ''}
+                                  </p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {routes.map(route => (
-                      <Card 
-                        key={route.id} 
-                        className="cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => handleRouteClick(route.id)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-center">
-                            <div 
-                              className="w-12 h-12 rounded-md bg-cover bg-center mr-4" 
-                              style={{backgroundImage: `url(${route.thumbnail || '/placeholder.svg'})`}}
-                            />
-                            <div>
-                              <h3 className="font-medium">
-                                {route.name?.[language] || route.name?.en || 'Unnamed Route'}
-                              </h3>
-                              <p className="text-sm text-muted-foreground truncate">
-                                {route.description?.[language] || route.description?.en || ''}
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                  {routes.length > 0 && (
+                    <div>
+                      <h2 className="text-xl font-semibold mb-4 flex items-center">
+                        <NavigationIcon className="mr-2 h-4 w-4" />
+                        {t('relatedRoutes')}
+                      </h2>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {routes.map(route => (
+                          <Card 
+                            key={route.id} 
+                            className="cursor-pointer hover:shadow-md transition-shadow"
+                            onClick={() => handleRouteClick(route.id)}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-center">
+                                <div 
+                                  className="w-12 h-12 rounded-md bg-cover bg-center mr-4" 
+                                  style={{backgroundImage: `url(${route.thumbnail || '/placeholder.svg'})`}}
+                                />
+                                <div>
+                                  <h3 className="font-medium">
+                                    {route.name?.[language] || route.name?.en || 'Unnamed Route'}
+                                  </h3>
+                                  <p className="text-sm text-muted-foreground truncate">
+                                    {route.description?.[language] || route.description?.en || ''}
+                                  </p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {spots.length === 0 && routes.length === 0 && (
+                    <div className="py-12 text-center text-muted-foreground">
+                      {t('noRelatedItems')}
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="events" className="pt-4">
+                  <div className="space-y-8">
+                    <DailyEvents 
+                      events={allEvents}
+                      isLoading={isLoadingAllEvents}
+                      error={allEventsError as Error | null}
+                      onEventClick={handleEventClick}
+                    />
+                    
+                    <EventCalendar 
+                      events={allEvents}
+                      isLoading={isLoadingAllEvents}
+                      error={allEventsError as Error | null}
+                      onEventClick={handleEventClick}
+                    />
                   </div>
-                </div>
-              )}
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         </div>

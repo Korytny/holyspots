@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 import { Event } from '../types/models';
 
@@ -210,5 +211,6 @@ export const fetchEventsByRoute = async (routeId: string): Promise<Event[]> => {
     startDate: eventData.time || '',
     endDate: eventData.time || '',
     ownerId: eventData.ownerId,
+    type: eventData.type
   }));
 };

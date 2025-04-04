@@ -20,6 +20,7 @@ import { fetchEventsByRoute } from '../services/eventsService';
 import { MediaItem } from '../types/models';
 import CitySpots from '../components/city/CitySpots';
 import CityEvents from '../components/city/CityEvents';
+import RouteMap from '../components/RouteMap';
 
 const RouteDetail = () => {
   const { routeId } = useParams<{ routeId: string }>();
@@ -44,7 +45,7 @@ const RouteDetail = () => {
   } = useQuery({
     queryKey: ['route-spots', routeId],
     queryFn: () => fetchSpotsByRoute(routeId as string),
-    enabled: !!routeId && activeTab === 'spots',
+    enabled: !!routeId,
   });
   
   const {
@@ -54,7 +55,7 @@ const RouteDetail = () => {
   } = useQuery({
     queryKey: ['route-events', routeId],
     queryFn: () => fetchEventsByRoute(routeId as string),
-    enabled: !!routeId && activeTab === 'events',
+    enabled: !!routeId,
   });
 
   if (isLoadingRoute) {
@@ -185,6 +186,15 @@ const RouteDetail = () => {
                     {routeDescription.split('\n').map((paragraph, index) => (
                       <p key={index} className="mb-4">{paragraph}</p>
                     ))}
+                    
+                    {/* Route Map */}
+                    <div className="mt-6">
+                      <h2 className="text-xl font-semibold mb-4">
+                        {t('routeMap')}
+                      </h2>
+                      <RouteMap route={route} points={spots} />
+                    </div>
+                    
                     {route.distance && (
                       <div className="mt-4">
                         <h3 className="text-lg font-medium mb-2">{t('distance')}:</h3>
@@ -207,7 +217,7 @@ const RouteDetail = () => {
                 <TabsContent value="spots" className="pt-4">
                   <CitySpots 
                     spots={spots}
-                    isLoading={activeTab === 'spots' && isLoadingSpots}
+                    isLoading={isLoadingSpots}
                     error={spotsError as Error | null}
                     selectedSpot={null}
                     onSpotClick={handleSpotClick}
@@ -217,7 +227,7 @@ const RouteDetail = () => {
                 <TabsContent value="events" className="pt-4">
                   <CityEvents
                     events={events}
-                    isLoading={activeTab === 'events' && isLoadingEvents}
+                    isLoading={isLoadingEvents}
                     error={eventsError as Error | null}
                     onEventClick={handleEventClick}
                   />
