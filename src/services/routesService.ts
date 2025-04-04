@@ -7,7 +7,7 @@ import { fetchPointsByIds, fetchEventsByIds } from './utils/commonHelpers';
 /**
  * Fetches all available routes
  */
-export const fetchRoutes = async (): Promise<Route[]> => {
+export const fetchAllRoutes = async (): Promise<Route[]> => {
   try {
     const { data, error } = await supabase
       .from('routes')
@@ -31,10 +31,13 @@ export const fetchRoutes = async (): Promise<Route[]> => {
     
     return formattedRoutes;
   } catch (error) {
-    console.error('Error in fetchRoutes:', error);
+    console.error('Error in fetchAllRoutes:', error);
     return [];
   }
 };
+
+// Alias for backward compatibility
+export const fetchRoutes = fetchAllRoutes;
 
 /**
  * Fetches a specific route by ID
@@ -130,8 +133,9 @@ export const fetchRoutesByPoint = async (pointId: string): Promise<Route[]> => {
   }
   
   try {
+    // This query might need to be updated based on your DB structure
     const { data, error } = await supabase
-      .from('routes_points')
+      .from('route_point')
       .select('route_id')
       .eq('point_id', pointId);
     
@@ -170,8 +174,9 @@ export const fetchRoutesByEvent = async (eventId: string): Promise<Route[]> => {
   }
   
   try {
+    // This query might need to be updated based on your DB structure
     const { data, error } = await supabase
-      .from('routes_events')
+      .from('route_event')
       .select('route_id')
       .eq('event_id', eventId);
     

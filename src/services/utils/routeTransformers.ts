@@ -1,5 +1,5 @@
 
-import { Route, Language } from '../../types/models';
+import { Route, Language, Point, Event } from '../../types/models';
 
 /**
  * Formats route data from database format to application format
@@ -41,6 +41,8 @@ export const formatRoute = async (rawRoute: any): Promise<Route> => {
       eventIds,
       distance: rawRoute.distance,
       duration: rawRoute.duration,
+      points: [], // Initialize empty arrays for points and events
+      events: []
     };
     
     return formattedRoute;

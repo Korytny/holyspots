@@ -40,10 +40,10 @@ const Navigation = () => {
       }
       
       if (isAuthenticated) {
-        return "bg-emerald-DEFAULT text-white"; // Authenticated - green
+        return "bg-emerald-500 text-white"; // Authenticated - green
       }
       
-      return "bg-destructive text-white"; // Not authenticated - red
+      return "bg-red-500 text-white"; // Not authenticated - explicitly red
     }
     
     return isActive(path) ? "bg-primary text-primary-foreground" : "hover:bg-secondary";

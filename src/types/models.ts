@@ -87,6 +87,8 @@ export interface Route {
   eventIds: string[];
   distance?: number; // In kilometers
   duration?: number; // In minutes
+  points?: Point[]; // Optional array of points in the route
+  events?: Event[]; // Optional array of events in the route
 }
 
 export interface Event {
