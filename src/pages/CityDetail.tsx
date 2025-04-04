@@ -50,7 +50,6 @@ const CityDetail = () => {
       setIsLoading(true);
       setLoadingError(null);
       try {
-        // Fetch city details
         const cityData = await fetchCityById(cityId);
         
         if (!cityData) {
@@ -65,7 +64,6 @@ const CityDetail = () => {
         
         setCity(cityData);
         
-        // Fetch spots, routes, and events for this city
         const [spotsData, routesData, eventsData] = await Promise.all([
           fetchPointsByCity(cityId),
           fetchRoutesByCity(cityId),
@@ -76,11 +74,9 @@ const CityDetail = () => {
         setRoutes(routesData);
         setEvents(eventsData);
         
-        // If there are spots, set the center point to the first spot's location
         if (spotsData.length > 0 && spotsData[0].location) {
           const firstPoint = spotsData[0].location;
           
-          // Create a GeoPoint from the location
           const geoPoint: GeoPoint = {
             type: "Point",
             coordinates: [firstPoint.longitude, firstPoint.latitude]

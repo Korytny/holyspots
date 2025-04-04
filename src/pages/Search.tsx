@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { fetchAllPoints } from '../services/pointsService';
-import { fetchRoutes } from "../services/routesService";
+import { fetchAllRoutes } from "../services/routesService";
 import { fetchEvents } from "../services/eventsService";
 import { Point, Route, Event } from '../types/models';
 import { Input } from "@/components/ui/input"
