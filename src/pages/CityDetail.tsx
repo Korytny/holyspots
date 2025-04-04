@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchCityById } from '../services/citiesService';
@@ -16,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { fetchRoutesByPoint } from '../services/routesService';
 import { fetchEventsByPoint } from '../services/eventsService';
+import SelectedSpotDetails from '../components/city/SelectedSpotDetails';
 
 const CityDetail = () => {
   const { cityId } = useParams<{ cityId: string }>();
@@ -148,6 +150,10 @@ const CityDetail = () => {
     setSelectedSpotRoutes([]);
     setSelectedSpotEvents([]);
   };
+
+  const handleViewSpotDetails = (pointId: string) => {
+    navigate(`/points/${pointId}`);
+  };
   
   if (isLoading) {
     return (
@@ -194,56 +200,72 @@ const CityDetail = () => {
           )}
         </header>
         
-        <Tabs defaultValue="map" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="map">Map</TabsTrigger>
-            <TabsTrigger value="spots">
-              {t('pointsOfInterest')} ({points.length})
-            </TabsTrigger>
-            <TabsTrigger value="routes">
-              {t('routes')} ({routes.length})
-            </TabsTrigger>
-            <TabsTrigger value="events">
-              {t('events')} ({events.length})
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="map" className="p-0">
+        <div className="space-y-8">
+          {/* Map goes first */}
+          <div className="w-full">
             <CityMap 
               points={points}
               cityLocation={city.location}
               onPointSelect={handleSpotClick}
             />
-          </TabsContent>
+          </div>
           
-          <TabsContent value="spots">
-            <CitySpots 
-              spots={points} 
-              isLoading={false}
-              error={loadingError}
-              selectedSpot={selectedSpot ? selectedSpot.id : null}
-              onSpotClick={handleSpotClick} 
-            />
-          </TabsContent>
-          
-          <TabsContent value="routes">
-            <CityRoutes 
-              routes={routes}
-              isLoading={false}
-              error={loadingError}
+          {/* Selected spot details when available */}
+          {isSpotDetailsOpen && selectedSpot && (
+            <SelectedSpotDetails
+              selectedSpot={selectedSpot}
+              spotRoutes={selectedSpotRoutes}
+              spotEvents={selectedSpotEvents}
+              onClearSelectedSpot={handleCloseSpotDetails}
               onRouteClick={handleRouteClick}
-            />
-          </TabsContent>
-          
-          <TabsContent value="events">
-            <CityEvents 
-              events={events}
-              isLoading={false}
-              error={loadingError}
               onEventClick={handleEventClick}
+              onViewSpotDetails={handleViewSpotDetails}
             />
-          </TabsContent>
-        </Tabs>
+          )}
+          
+          {/* Tabs for different sections */}
+          <Tabs defaultValue="spots" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="spots">
+                {t('pointsOfInterest')} ({points.length})
+              </TabsTrigger>
+              <TabsTrigger value="routes">
+                {t('routes')} ({routes.length})
+              </TabsTrigger>
+              <TabsTrigger value="events">
+                {t('events')} ({events.length})
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="spots">
+              <CitySpots 
+                spots={points} 
+                isLoading={false}
+                error={loadingError}
+                selectedSpot={selectedSpot ? selectedSpot.id : null}
+                onSpotClick={handleSpotClick} 
+              />
+            </TabsContent>
+            
+            <TabsContent value="routes">
+              <CityRoutes 
+                routes={routes}
+                isLoading={false}
+                error={loadingError}
+                onRouteClick={handleRouteClick}
+              />
+            </TabsContent>
+            
+            <TabsContent value="events">
+              <CityEvents 
+                events={events}
+                isLoading={false}
+                error={loadingError}
+                onEventClick={handleEventClick}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );

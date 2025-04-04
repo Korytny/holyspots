@@ -2,7 +2,49 @@
 import { supabase } from '../integrations/supabase/client';
 import { formatRoute } from './utils/routeTransformers';
 import { Route } from '../types/models';
-import { fetchPointsByIds, fetchEventsByIds } from './utils/commonHelpers';
+
+// Import these functions directly to avoid circular dependencies
+const fetchPointsByIds = async (pointIds: string[]): Promise<any[]> => {
+  if (!pointIds || pointIds.length === 0) return [];
+  
+  try {
+    const { data, error } = await supabase
+      .from('spots')
+      .select('*')
+      .in('id', pointIds);
+      
+    if (error) {
+      console.error('Error fetching points by IDs:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in fetchPointsByIds:', error);
+    return [];
+  }
+};
+
+const fetchEventsByIds = async (eventIds: string[]): Promise<any[]> => {
+  if (!eventIds || eventIds.length === 0) return [];
+  
+  try {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .in('id', eventIds);
+      
+    if (error) {
+      console.error('Error fetching events by IDs:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in fetchEventsByIds:', error);
+    return [];
+  }
+};
 
 /**
  * Fetches all available routes
@@ -153,12 +195,23 @@ export const fetchRoutesByPoint = async (pointId: string): Promise<Route[]> => {
     // Extract route IDs
     const routeIds = data.map(item => item.route_id);
     
-    // Fetch each route but avoid passing the point ID to prevent recursion
-    const routePromises = routeIds.map(id => fetchRouteById(id));
-    const routes = await Promise.all(routePromises);
+    // Fetch routes directly from the database to avoid recursion
+    const { data: routesData, error: routesError } = await supabase
+      .from('routes')
+      .select('*')
+      .in('id', routeIds);
+      
+    if (routesError) {
+      console.error(`Error fetching routes for point ${pointId}:`, routesError);
+      return [];
+    }
     
-    // Filter out any null routes
-    return routes.filter(route => route !== null) as Route[];
+    // Format the routes
+    const formattedRoutes = await Promise.all(
+      (routesData || []).map(route => formatRoute(route))
+    );
+    
+    return formattedRoutes;
   } catch (error) {
     console.error(`Error in fetchRoutesByPoint (${pointId}):`, error);
     return [];

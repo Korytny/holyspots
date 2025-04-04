@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { Point, Route, Event } from "../../types/models";
-import { ChevronLeft, MapPin, Navigation, Calendar } from "lucide-react";
+import { ChevronLeft, MapPin, Navigation, Calendar, ExternalLink } from "lucide-react";
 import ItemCardWrapper from "../ItemCardWrapper";
 import FavoriteDetailButton from "../FavoriteDetailButton";
 
@@ -13,6 +13,7 @@ interface SelectedSpotDetailsProps {
   onClearSelectedSpot: () => void;
   onRouteClick: (routeId: string) => void;
   onEventClick: (eventId: string) => void;
+  onViewSpotDetails?: (pointId: string) => void;
 }
 
 const SelectedSpotDetails: React.FC<SelectedSpotDetailsProps> = ({
@@ -21,20 +22,32 @@ const SelectedSpotDetails: React.FC<SelectedSpotDetailsProps> = ({
   spotEvents,
   onClearSelectedSpot,
   onRouteClick,
-  onEventClick
+  onEventClick,
+  onViewSpotDetails
 }) => {
   const { language, t } = useLanguage();
 
   if (!selectedSpot) return null;
 
   return (
-    <div className="mb-6 bg-muted p-4 rounded-lg">
+    <div className="mb-6 bg-white p-4 rounded-lg shadow-md">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-xl font-semibold flex items-center">
           <MapPin className="mr-2 h-5 w-5" />
           {selectedSpot?.name?.[language] || selectedSpot?.name?.en || 'Selected Spot'}
         </h2>
         <div className="flex space-x-2">
+          {onViewSpotDetails && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => onViewSpotDetails(selectedSpot.id)}
+              className="flex items-center"
+            >
+              <ExternalLink className="mr-1 h-4 w-4" />
+              {t('viewDetails')}
+            </Button>
+          )}
           <FavoriteDetailButton 
             itemId={selectedSpot.id}
             itemType="point"
@@ -50,6 +63,21 @@ const SelectedSpotDetails: React.FC<SelectedSpotDetailsProps> = ({
       <p className="text-sm text-muted-foreground mb-4">
         {selectedSpot?.description?.[language] || selectedSpot?.description?.en || 'No description available'}
       </p>
+      
+      {selectedSpot.images && selectedSpot.images.length > 0 && (
+        <div className="mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {selectedSpot.images.slice(0, 3).map((image, index) => (
+              <img 
+                key={index} 
+                src={image} 
+                alt={`${selectedSpot.name?.[language] || selectedSpot.name?.en} - ${index + 1}`} 
+                className="w-full h-24 object-cover rounded-md"
+              />
+            ))}
+          </div>
+        </div>
+      )}
       
       {spotRoutes.length > 0 && (
         <div className="mb-4">
