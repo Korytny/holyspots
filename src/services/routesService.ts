@@ -1,4 +1,3 @@
-
 import { supabase } from '../integrations/supabase/client';
 import { formatRoute } from './utils/routeTransformers';
 import { Route } from '../types/models';
@@ -68,13 +67,14 @@ export const fetchRouteById = async (routeId: string): Promise<Route | null> => 
     // Format the route data
     const formattedRoute = await formatRoute(data);
     
-    // Fetch related points and events - but avoid infinite recursion
+    // Fetch related points without fetching routes to avoid recursion
     if (formattedRoute.pointIds && formattedRoute.pointIds.length > 0) {
-      formattedRoute.points = await fetchPointsByIds(formattedRoute.pointIds);
+      formattedRoute.points = await fetchPointsByIds(formattedRoute.pointIds, false);
     }
     
+    // Fetch related events without fetching routes to avoid recursion
     if (formattedRoute.eventIds && formattedRoute.eventIds.length > 0) {
-      formattedRoute.events = await fetchEventsByIds(formattedRoute.eventIds);
+      formattedRoute.events = await fetchEventsByIds(formattedRoute.eventIds, false);
     }
     
     return formattedRoute;
@@ -152,7 +152,7 @@ export const fetchRoutesByPoint = async (pointId: string): Promise<Route[]> => {
     // Extract route IDs
     const routeIds = data.map(item => item.route_id);
     
-    // Fetch each route
+    // Fetch each route but avoid passing the point ID to prevent recursion
     const routePromises = routeIds.map(id => fetchRouteById(id));
     const routes = await Promise.all(routePromises);
     

@@ -1,41 +1,16 @@
+
 import { Link, useLocation } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
 import { MapPin, User, Search, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import LanguageSwitcher from "./LanguageSwitcher";
-import { useAuth } from "../contexts/AuthContext";
-import { useToast } from "@/components/ui/use-toast";
 
 const Navigation = () => {
   const { t } = useLanguage();
   const location = useLocation();
   const [open, setOpen] = useState(false);
-  const { isAuthenticated, isLoading, checkAuthStatus } = useAuth();
-  const [authChecked, setAuthChecked] = useState(false);
-  const { toast } = useToast();
-  
-  useEffect(() => {
-    const verifyAuth = async () => {
-      try {
-        const authenticated = await checkAuthStatus();
-        console.log("Auth check result:", authenticated);
-        setAuthChecked(true);
-      } catch (err) {
-        console.error("Error verifying auth:", err);
-      }
-    };
-    
-    verifyAuth();
-    
-    // Poll auth status every 5 seconds instead of 10 for quicker updates
-    const intervalId = setInterval(verifyAuth, 5000);
-    
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [checkAuthStatus]);
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -55,27 +30,8 @@ const Navigation = () => {
     icon: <User className="h-5 w-5" />
   }];
   
-  // Function to determine profile button color based on auth status
+  // Simplified button style without authentication check
   const getProfileButtonStyle = (path: string) => {
-    if (path === '/profile') {
-      if (isLoading || !authChecked) {
-        return "bg-gray-400 text-white"; // Loading state - gray
-      }
-      
-      if (isAuthenticated) {
-        toast({
-          title: "Authenticated",
-          description: "User is authenticated", 
-          duration: 3000
-        });
-        console.log("User is authenticated, button should be green");
-        return "bg-emerald-500 text-white"; // Authenticated - green
-      }
-      
-      console.log("User is NOT authenticated, button should be red");
-      return "bg-red-500 text-white"; // Not authenticated - explicitly red
-    }
-    
     return isActive(path) ? "bg-primary text-primary-foreground" : "hover:bg-secondary";
   };
   
@@ -93,9 +49,7 @@ const Navigation = () => {
               key={route.path} 
               to={route.path} 
               className={`flex items-center px-4 py-3 rounded-md text-lg transition-colors ${
-                route.path === '/profile' 
-                  ? getProfileButtonStyle(route.path)
-                  : isActive(route.path) ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
+                isActive(route.path) ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
               }`} 
               onClick={() => setOpen(false)}
             >
@@ -126,9 +80,7 @@ const Navigation = () => {
               key={route.path} 
               to={route.path} 
               className={`px-3 py-2 rounded-md flex items-center transition-colors ${
-                route.path === '/profile' 
-                  ? getProfileButtonStyle(route.path)
-                  : isActive(route.path) ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
+                isActive(route.path) ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
               }`}
             >
               {route.icon}
