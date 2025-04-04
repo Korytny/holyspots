@@ -16,7 +16,7 @@ const LanguageSelection = () => {
     }
   }, [navigate]);
 
-  const handleLanguageSelect = (lang: 'en' | 'ru') => {
+  const handleLanguageSelect = (lang: 'en' | 'ru' | 'hi') => {
     setLanguage(lang);
     navigate('/auth');
   };
@@ -43,6 +43,14 @@ const LanguageSelection = () => {
             onClick={() => handleLanguageSelect('ru')}
           >
             Русский
+          </Button>
+          
+          <Button
+            variant={language === 'hi' ? 'default' : 'outline'}
+            className="w-full text-lg py-6"
+            onClick={() => handleLanguageSelect('hi')}
+          >
+            हिन्दी
           </Button>
         </div>
       </div>

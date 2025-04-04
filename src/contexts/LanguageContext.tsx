@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { fetchAvailableLanguages, DatabaseLanguage } from '../services/languageService';
 
@@ -8,15 +9,15 @@ interface Translations {
   [key: string]: string;
 }
 
+interface LanguageProviderProps {
+  children: ReactNode;
+}
+
 export interface LanguageContextType {
   language: Language;
   t: (key: string) => string;
   setLanguage: (lang: Language) => void;
   supportedLanguages: Language[];
-}
-
-interface LanguageProviderProps {
-  children: ReactNode;
 }
 
 const defaultTranslations: {[key in Language]: Translations} = {

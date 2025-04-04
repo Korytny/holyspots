@@ -9,26 +9,25 @@ export interface DatabaseLanguage {
 }
 
 export const fetchAvailableLanguages = async (): Promise<DatabaseLanguage[]> => {
-  const { data, error } = await supabase
-    .from('language')
-    .select('*')
-    .order('id');
-  
-  if (error) {
-    console.error('Error fetching languages:', error);
-    throw error;
+  try {
+    const { data, error } = await supabase
+      .from('language')
+      .select('*')
+      .order('id');
+    
+    if (error) {
+      console.error('Error fetching languages:', error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Failed to fetch languages:', error);
+    // Return default languages if database query fails
+    return [
+      { id: 1, code: 'en', name: 'English', created_at: '' },
+      { id: 2, code: 'ru', name: 'Russian', created_at: '' },
+      { id: 3, code: 'hi', name: 'Hindi', created_at: '' }
+    ];
   }
-  
-  return data || [];
-};
-
-// Helper function to get supported languages (used by LanguageContext)
-export const getSupportedLanguages = (): string[] => {
-  return ['en', 'ru', 'hi'];
-};
-
-// Helper function to get translations (placeholder for future use)
-export const getTranslations = async (languageCode: string): Promise<Record<string, string>> => {
-  // In a real implementation, this might fetch translations from a database or API
-  return {};
 };
