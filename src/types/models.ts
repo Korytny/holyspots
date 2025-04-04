@@ -46,6 +46,8 @@ export interface City {
   spots_count?: number;
   routes_count?: number;
   events_count?: number;
+  // Add country field
+  country?: string;
 }
 
 export interface Point {

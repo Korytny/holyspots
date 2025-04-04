@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -11,7 +10,7 @@ import { MapPin, Heart, LogOut } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import ItemCardWrapper from '../components/ItemCardWrapper';
-import { City, Point, Route, Event } from '../types/models';
+import { City, Point, Route, Event, Language } from '../types/models';
 
 const Profile = () => {
   const { t, language } = useLanguage();
@@ -61,15 +60,16 @@ const Profile = () => {
           
         if (citiesError) throw citiesError;
         
-        const cities = citiesData.map(city => ({
+        const cities: City[] = citiesData.map(city => ({
           id: city.id,
-          name: typeof city.name === 'object' ? city.name : { en: city.name, ru: city.name },
-          description: city.info || { en: '', ru: '' },
-          thumbnail: city.images?.[0] || '/placeholder.svg',
+          name: typeof city.name === 'object' ? city.name as Record<Language, string> : { en: city.name, ru: city.name, hi: city.name } as Record<Language, string>,
+          description: city.info ? (typeof city.info === 'object' ? city.info as Record<Language, string> : { en: String(city.info), ru: String(city.info), hi: String(city.info) }) : { en: '', ru: '', hi: '' },
+          thumbnail: Array.isArray(city.images) && city.images.length > 0 ? city.images[0] : '/placeholder.svg',
           pointIds: [],
           routeIds: [],
           eventIds: [],
-          location: { latitude: 0, longitude: 0 }
+          location: { latitude: 0, longitude: 0 },
+          country: typeof city.country === 'string' ? city.country : undefined
         }));
         
         setFavorites(prev => ({ ...prev, cities }));
@@ -84,21 +84,41 @@ const Profile = () => {
           
         if (pointsError) throw pointsError;
         
-        const points = pointsData.map(point => ({
-          id: point.id,
-          cityId: point.city || '',
-          type: point.type === 1 ? 'temple' : point.type === 2 ? 'ashram' : point.type === 3 ? 'kund' : 'other',
-          name: point.name || { en: 'Unnamed Point', ru: 'Безымянная точка' },
-          description: point.info || { en: '', ru: '' },
-          media: [],
-          thumbnail: point.images?.[0] || '/placeholder.svg',
-          location: point.coordinates ? {
-            latitude: point.coordinates.lat || 0,
-            longitude: point.coordinates.lng || 0
-          } : { latitude: 0, longitude: 0 },
-          routeIds: [],
-          eventIds: []
-        }));
+        const points: Point[] = pointsData.map(point => {
+          // Extract coordinates from the point.coordinates JSON field
+          let latitude = 0;
+          let longitude = 0;
+          
+          if (point.coordinates && typeof point.coordinates === 'object') {
+            // Try to extract lat/lng or latitude/longitude from coordinates object
+            if ('lat' in point.coordinates && 'lng' in point.coordinates) {
+              latitude = Number(point.coordinates.lat);
+              longitude = Number(point.coordinates.lng);
+            } else if ('latitude' in point.coordinates && 'longitude' in point.coordinates) {
+              latitude = Number(point.coordinates.latitude);
+              longitude = Number(point.coordinates.longitude);
+            }
+          }
+          
+          // Determine the correct point type
+          let pointType: 'temple' | 'ashram' | 'kund' | 'other' = 'other';
+          if (point.type === 1) pointType = 'temple';
+          else if (point.type === 2) pointType = 'ashram';
+          else if (point.type === 3) pointType = 'kund';
+          
+          return {
+            id: point.id,
+            cityId: point.city || '',
+            type: pointType,
+            name: typeof point.name === 'object' ? point.name as Record<Language, string> : { en: 'Unnamed Point', ru: 'Безымянная точка', hi: 'अनाम स्थान' } as Record<Language, string>,
+            description: point.info ? (typeof point.info === 'object' ? point.info as Record<Language, string> : { en: String(point.info), ru: String(point.info), hi: String(point.info) }) : { en: '', ru: '', hi: '' },
+            media: [],
+            thumbnail: Array.isArray(point.images) && point.images.length > 0 ? point.images[0] : '/placeholder.svg',
+            location: { latitude, longitude },
+            routeIds: [],
+            eventIds: []
+          };
+        });
         
         setFavorites(prev => ({ ...prev, points }));
       }
@@ -112,11 +132,11 @@ const Profile = () => {
           
         if (routesError) throw routesError;
         
-        const routes = routesData.map(route => ({
+        const routes: Route[] = routesData.map(route => ({
           id: route.id,
           cityId: '',
-          name: route.name || { en: 'Unnamed Route', ru: 'Безымянный маршрут' },
-          description: { en: '', ru: '' },
+          name: typeof route.name === 'object' ? route.name as Record<Language, string> : { en: 'Unnamed Route', ru: 'Безымянный маршрут', hi: 'अनाम मार्ग' } as Record<Language, string>,
+          description: { en: '', ru: '', hi: '' },
           media: [],
           thumbnail: '/placeholder.svg',
           pointIds: [],
@@ -135,13 +155,13 @@ const Profile = () => {
           
         if (eventsError) throw eventsError;
         
-        const events = eventsData.map(event => ({
+        const events: Event[] = eventsData.map(event => ({
           id: event.id,
           cityId: '',
-          name: event.name || { en: 'Unnamed Event', ru: 'Безымянное событие' },
-          description: event.info || { en: '', ru: '' },
+          name: typeof event.name === 'object' ? event.name as Record<Language, string> : { en: 'Unnamed Event', ru: 'Безымянное событие', hi: 'अनाम कार्यक्रम' } as Record<Language, string>,
+          description: event.info ? (typeof event.info === 'object' ? event.info as Record<Language, string> : { en: String(event.info), ru: String(event.info), hi: String(event.info) }) : { en: '', ru: '', hi: '' },
           media: [],
-          thumbnail: event.images?.[0] || '/placeholder.svg',
+          thumbnail: Array.isArray(event.images) && event.images.length > 0 ? event.images[0] : '/placeholder.svg',
           pointIds: [],
           startDate: event.time || new Date().toISOString(),
           endDate: event.time || new Date().toISOString()

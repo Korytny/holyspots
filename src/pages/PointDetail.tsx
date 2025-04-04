@@ -233,7 +233,6 @@ const PointDetail = () => {
           <div className="p-6">
             <MediaGallery media={mediaItems} />
             
-            {/* Map component */}
             <div className="mt-6 mb-6">
               <h3 className="text-lg font-semibold mb-2">{t('location')}</h3>
               <SpotMap spot={spot} height="400px" />
