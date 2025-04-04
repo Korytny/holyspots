@@ -1,260 +1,343 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Point, Language, GeoPoint } from '../types/models';
-import { Json } from '@/types/supabase';
+import { Point, Language, Json } from '../types/models';
 
-// Helper function to parse JSON safely
-const safeParseJson = (json: Json | null): any => {
-  if (!json) return null;
-  
-  if (typeof json === 'object') return json;
-  
+export interface GeoPoint {
+  type: string;
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
+export const fetchAllPoints = async (): Promise<Point[]> => {
   try {
-    return typeof json === 'string' ? JSON.parse(json) : json;
-  } catch (e) {
-    console.error('Error parsing JSON:', e);
-    return json;
+    const { data, error } = await supabase
+      .from('spots')
+      .select('*');
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log("No points found");
+      return [];
+    }
+    
+    // Transform database records to Point objects
+    const points: Point[] = data.map(item => {
+      let coordinates: { latitude: number; longitude: number } = { latitude: 0, longitude: 0 };
+      let pointData: GeoPoint | undefined;
+      
+      if (item.coordinates && typeof item.coordinates === 'object') {
+        const coords = item.coordinates as { lat?: number; lng?: number };
+        coordinates = {
+          latitude: coords.lat || 0,
+          longitude: coords.lng || 0
+        };
+        
+        pointData = {
+          type: 'Point',
+          coordinates: [coordinates.longitude, coordinates.latitude]
+        };
+      }
+      
+      return {
+        id: item.id,
+        cityId: item.city || '',
+        type: mapTypeToEnum(item.type),
+        name: item.name as Record<Language, string>,
+        description: item.info as Record<Language, string>,
+        media: [],
+        thumbnail: Array.isArray(item.images) && item.images.length > 0 
+          ? item.images[0] 
+          : typeof item.images === 'object' && item.images !== null 
+            ? Object.values(item.images)[0] || '/placeholder.svg'
+            : '/placeholder.svg',
+        images: item.images as string[] || [],
+        location: coordinates,
+        point: pointData,
+        routeIds: [], // These will be populated from spot_route table if needed
+        eventIds: []  // These will be populated from spot_event table if needed
+      };
+    });
+    
+    return points;
+  } catch (error) {
+    console.error('Error fetching points:', error);
+    return [];
   }
 };
 
-export const fetchAllPoints = async (): Promise<Point[]> => {
-  const { data, error } = await supabase
-    .from('spots')
-    .select('*');
-  
-  if (error) throw error;
-  
-  return data?.map(spot => {
-    const nameData = safeParseJson(spot.name) || { en: 'Unknown', ru: 'Неизвестно', hi: 'अज्ञात' };
-    const infoData = safeParseJson(spot.info) || { en: '', ru: '', hi: '' };
-    const imagesData = safeParseJson(spot.images) || [];
-    const coordinatesData = safeParseJson(spot.coordinates) || {};
-
-    // Default fallbacks for coordinates
-    let lat = 0, lng = 0;
-    
-    // Handle different types of coordinates data structure
-    if (coordinatesData && typeof coordinatesData === 'object') {
-      if ('latitude' in coordinatesData) {
-        lat = parseFloat(coordinatesData.latitude) || 0;
-        lng = parseFloat(coordinatesData.longitude) || 0;
-      } else if (Array.isArray(coordinatesData) && coordinatesData.length >= 2) {
-        // If it's an array like [lng, lat]
-        lng = parseFloat(coordinatesData[0]) || 0;
-        lat = parseFloat(coordinatesData[1]) || 0;
-      }
-    }
-    
-    // Create a GeoPoint for the coordinates
-    const point: GeoPoint = {
-      type: 'Point',
-      coordinates: [lng, lat]
-    };
-    
-    // Create a location object for the Point type
-    const location = {
-      latitude: lat,
-      longitude: lng
-    };
-    
-    // Default empty arrays for missing data
-    const routeIds = Array.isArray(spot.routes) ? spot.routes : [];
-    const eventIds = Array.isArray(spot.events) ? spot.events : [];
-    
-    return {
-      id: spot.id,
-      cityId: spot.city || 'unknown',
-      type: spot.type === 1 ? 'temple' : 
-            spot.type === 2 ? 'ashram' : 
-            spot.type === 3 ? 'kund' : 'other',
-      name: nameData as Record<Language, string>,
-      description: infoData as Record<Language, string>,
-      media: Array.isArray(imagesData) ? imagesData.map((url, i) => ({
-        id: `image-${i}`,
-        type: 'image' as const,
-        url: typeof url === 'string' ? url : '',
-        thumbnailUrl: typeof url === 'string' ? url : ''
-      })) : [],
-      thumbnail: Array.isArray(imagesData) && imagesData.length > 0 && typeof imagesData[0] === 'string'
-        ? imagesData[0] 
-        : 'placeholder.svg',
-      images: Array.isArray(imagesData) ? 
-        imagesData.filter(url => typeof url === 'string') as string[] : [],
-      location,
-      point,
-      routeIds,
-      eventIds,
-      ownerId: undefined
-    };
-  }) || [];
+// Helper function to map numeric type to enum string
+const mapTypeToEnum = (type: number | null | undefined): 'temple' | 'ashram' | 'kund' | 'other' => {
+  if (type === 1) return 'temple';
+  if (type === 2) return 'ashram';
+  if (type === 3) return 'kund';
+  return 'other';
 };
 
 export const fetchPointById = async (pointId: string): Promise<Point | null> => {
-  const { data, error } = await supabase
-    .from('spots')
-    .select('*')
-    .eq('id', pointId)
-    .single();
-  
-  if (error) {
-    if (error.code === 'PGRST116') {
-      // Record not found
+  try {
+    const { data, error } = await supabase
+      .from('spots')
+      .select('*')
+      .eq('id', pointId)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        console.log(`No point found with ID ${pointId}`);
+        return null;
+      }
+      throw error;
+    }
+    
+    if (!data) {
+      console.log(`No point found with ID ${pointId}`);
       return null;
     }
-    throw error;
-  }
-  
-  if (!data) return null;
-  
-  const nameData = safeParseJson(data.name) || { en: 'Unknown', ru: 'Неизвестно', hi: 'अज्ञात' };
-  const infoData = safeParseJson(data.info) || { en: '', ru: '', hi: '' };
-  const imagesData = safeParseJson(data.images) || [];
-  const coordinatesData = safeParseJson(data.coordinates) || {};
-  
-  // Default fallbacks for coordinates
-  let lat = 0, lng = 0;
-  
-  // Handle different types of coordinates data structure
-  if (coordinatesData && typeof coordinatesData === 'object') {
-    if ('latitude' in coordinatesData) {
-      lat = parseFloat(coordinatesData.latitude) || 0;
-      lng = parseFloat(coordinatesData.longitude) || 0;
-    } else if (Array.isArray(coordinatesData) && coordinatesData.length >= 2) {
-      // If it's an array like [lng, lat]
-      lng = parseFloat(coordinatesData[0]) || 0;
-      lat = parseFloat(coordinatesData[1]) || 0;
+    
+    let coordinates: { latitude: number; longitude: number } = { latitude: 0, longitude: 0 };
+    let pointData: GeoPoint | undefined;
+    
+    if (data.coordinates && typeof data.coordinates === 'object') {
+      const coords = data.coordinates as { lat?: number; lng?: number };
+      coordinates = {
+        latitude: coords.lat || 0,
+        longitude: coords.lng || 0
+      };
+      
+      pointData = {
+        type: 'Point',
+        coordinates: [coordinates.longitude, coordinates.latitude]
+      };
     }
+    
+    // Transform database record to Point object
+    const point: Point = {
+      id: data.id,
+      cityId: data.city || '',
+      type: mapTypeToEnum(data.type),
+      name: data.name as Record<Language, string>,
+      description: data.info as Record<Language, string>,
+      media: [],
+      thumbnail: Array.isArray(data.images) && data.images.length > 0 
+        ? data.images[0] 
+        : typeof data.images === 'object' && data.images !== null 
+          ? Object.values(data.images)[0] || '/placeholder.svg'
+          : '/placeholder.svg',
+      images: data.images as string[] || [],
+      location: coordinates,
+      point: pointData,
+      routeIds: [], // These will be populated from spot_route table if needed
+      eventIds: []  // These will be populated from spot_event table if needed
+    };
+    
+    return point;
+  } catch (error) {
+    console.error(`Error fetching point with ID ${pointId}:`, error);
+    return null;
   }
-  
-  // Create a GeoPoint for the coordinates
-  const point: GeoPoint = {
-    type: 'Point',
-    coordinates: [lng, lat]
-  };
-  
-  // Create a location object for the Point type
-  const location = {
-    latitude: lat,
-    longitude: lng
-  };
-  
-  // Default empty arrays for missing data
-  const routeIds = Array.isArray(data.routes) ? data.routes : [];
-  const eventIds = Array.isArray(data.events) ? data.events : [];
-  
-  const thumbnail = Array.isArray(imagesData) && imagesData.length > 0 && typeof imagesData[0] === 'string'
-    ? imagesData[0] 
-    : 'placeholder.svg';
-  
-  return {
-    id: data.id,
-    cityId: data.city || 'unknown',
-    type: data.type === 1 ? 'temple' : 
-          data.type === 2 ? 'ashram' : 
-          data.type === 3 ? 'kund' : 'other',
-    name: nameData as Record<Language, string>,
-    description: infoData as Record<Language, string>,
-    media: Array.isArray(imagesData) ? imagesData.map((url, i) => ({
-      id: `image-${i}`,
-      type: 'image' as const,
-      url: typeof url === 'string' ? url : '',
-      thumbnailUrl: typeof url === 'string' ? url : ''
-    })) : [],
-    thumbnail,
-    images: Array.isArray(imagesData) ? 
-      imagesData.filter(url => typeof url === 'string') as string[] : [],
-    location,
-    point,
-    routeIds,
-    eventIds,
-    ownerId: undefined
-  };
 };
 
 export const fetchPointsByCityId = async (cityId: string): Promise<Point[]> => {
-  const { data, error } = await supabase
-    .from('spots')
-    .select('*')
-    .eq('city', cityId);
-  
-  if (error) throw error;
-  
-  return data?.map(spot => {
-    const nameData = safeParseJson(spot.name) || { en: 'Unknown', ru: 'Неизвестно', hi: 'अज्ञात' };
-    const infoData = safeParseJson(spot.info) || { en: '', ru: '', hi: '' };
-    const imagesData = safeParseJson(spot.images) || [];
-    const coordinatesData = safeParseJson(spot.coordinates) || {};
-
-    // Default fallbacks for coordinates
-    let lat = 0, lng = 0;
+  try {
+    const { data, error } = await supabase
+      .from('spots')
+      .select('*')
+      .eq('city', cityId);
     
-    // Handle different types of coordinates data structure
-    if (coordinatesData && typeof coordinatesData === 'object') {
-      if ('latitude' in coordinatesData) {
-        lat = parseFloat(coordinatesData.latitude) || 0;
-        lng = parseFloat(coordinatesData.longitude) || 0;
-      } else if (Array.isArray(coordinatesData) && coordinatesData.length >= 2) {
-        // If it's an array like [lng, lat]
-        lng = parseFloat(coordinatesData[0]) || 0;
-        lat = parseFloat(coordinatesData[1]) || 0;
-      }
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log(`No points found for city ID ${cityId}`);
+      return [];
     }
     
-    // Create a GeoPoint for the coordinates
-    const point: GeoPoint = {
-      type: 'Point',
-      coordinates: [lng, lat]
-    };
+    // Transform database records to Point objects
+    const points: Point[] = data.map(item => {
+      let coordinates: { latitude: number; longitude: number } = { latitude: 0, longitude: 0 };
+      let pointData: GeoPoint | undefined;
+      
+      if (item.coordinates && typeof item.coordinates === 'object') {
+        const coords = item.coordinates as { lat?: number; lng?: number };
+        coordinates = {
+          latitude: coords.lat || 0,
+          longitude: coords.lng || 0
+        };
+        
+        pointData = {
+          type: 'Point',
+          coordinates: [coordinates.longitude, coordinates.latitude]
+        };
+      }
+      
+      return {
+        id: item.id,
+        cityId: item.city || '',
+        type: mapTypeToEnum(item.type),
+        name: item.name as Record<Language, string>,
+        description: item.info as Record<Language, string>,
+        media: [],
+        thumbnail: Array.isArray(item.images) && item.images.length > 0 
+          ? item.images[0] 
+          : typeof item.images === 'object' && item.images !== null 
+            ? Object.values(item.images)[0] || '/placeholder.svg'
+            : '/placeholder.svg',
+        images: item.images as string[] || [],
+        location: coordinates,
+        point: pointData,
+        routeIds: [], // These will be populated from spot_route table if needed
+        eventIds: []  // These will be populated from spot_event table if needed
+      };
+    });
     
-    // Create a location object for the Point type
-    const location = {
-      latitude: lat,
-      longitude: lng
-    };
-    
-    // Default empty arrays for missing data
-    const routeIds = Array.isArray(spot.routes) ? spot.routes : [];
-    const eventIds = Array.isArray(spot.events) ? spot.events : [];
-    
-    const thumbnail = Array.isArray(imagesData) && imagesData.length > 0 && typeof imagesData[0] === 'string'
-      ? imagesData[0] 
-      : 'placeholder.svg';
-    
-    return {
-      id: spot.id,
-      cityId: spot.city || 'unknown',
-      type: spot.type === 1 ? 'temple' : 
-            spot.type === 2 ? 'ashram' : 
-            spot.type === 3 ? 'kund' : 'other',
-      name: nameData as Record<Language, string>,
-      description: infoData as Record<Language, string>,
-      media: Array.isArray(imagesData) ? imagesData.map((url, i) => ({
-        id: `image-${i}`,
-        type: 'image' as const,
-        url: typeof url === 'string' ? url : '',
-        thumbnailUrl: typeof url === 'string' ? url : ''
-      })) : [],
-      thumbnail,
-      images: Array.isArray(imagesData) ? 
-        imagesData.filter(url => typeof url === 'string') as string[] : [],
-      location,
-      point,
-      routeIds,
-      eventIds,
-      ownerId: undefined
-    };
-  }) || [];
+    return points;
+  } catch (error) {
+    console.error(`Error fetching points for city ID ${cityId}:`, error);
+    return [];
+  }
 };
 
 export const fetchPointsByRouteId = async (routeId: string): Promise<Point[]> => {
-  // Here we would need to query for spots that are associated with this route
-  // This would require a function or a query to get spots by route ID
-  // Since this functionality isn't fully implemented, we'll return an empty array for now
-  return [];
+  try {
+    const { data, error } = await supabase
+      .from('spot_route')
+      .select('spot_id')
+      .eq('route_id', routeId);
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log(`No points found for route ID ${routeId}`);
+      return [];
+    }
+    
+    const spotIds = data.map(item => item.spot_id);
+    
+    const { data: spotsData, error: spotsError } = await supabase
+      .from('spots')
+      .select('*')
+      .in('id', spotIds);
+    
+    if (spotsError) throw spotsError;
+    
+    if (!spotsData || spotsData.length === 0) {
+      console.log(`No spots found with IDs ${spotIds.join(', ')}`);
+      return [];
+    }
+    
+    // Transform database records to Point objects
+    const points: Point[] = spotsData.map(item => {
+      let coordinates: { latitude: number; longitude: number } = { latitude: 0, longitude: 0 };
+      let pointData: GeoPoint | undefined;
+      
+      if (item.coordinates && typeof item.coordinates === 'object') {
+        const coords = item.coordinates as { lat?: number; lng?: number };
+        coordinates = {
+          latitude: coords.lat || 0,
+          longitude: coords.lng || 0
+        };
+        
+        pointData = {
+          type: 'Point',
+          coordinates: [coordinates.longitude, coordinates.latitude]
+        };
+      }
+      
+      return {
+        id: item.id,
+        cityId: item.city || '',
+        type: mapTypeToEnum(item.type),
+        name: item.name as Record<Language, string>,
+        description: item.info as Record<Language, string>,
+        media: [],
+        thumbnail: Array.isArray(item.images) && item.images.length > 0 
+          ? item.images[0] 
+          : typeof item.images === 'object' && item.images !== null 
+            ? Object.values(item.images)[0] || '/placeholder.svg'
+            : '/placeholder.svg',
+        images: item.images as string[] || [],
+        location: coordinates,
+        point: pointData,
+        routeIds: [routeId], // Include the current route ID
+        eventIds: []  // These will be populated from spot_event table if needed
+      };
+    });
+    
+    return points;
+  } catch (error) {
+    console.error(`Error fetching points for route ID ${routeId}:`, error);
+    return [];
+  }
 };
 
 export const fetchPointsByEventId = async (eventId: string): Promise<Point[]> => {
-  // Similar to fetchPointsByRouteId, this would require querying spots by event ID
-  // Returning an empty array for now
-  return [];
+  try {
+    const { data, error } = await supabase
+      .from('spot_event')
+      .select('spot_id')
+      .eq('event_id', eventId);
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log(`No points found for event ID ${eventId}`);
+      return [];
+    }
+    
+    const spotIds = data.map(item => item.spot_id);
+    
+    const { data: spotsData, error: spotsError } = await supabase
+      .from('spots')
+      .select('*')
+      .in('id', spotIds);
+    
+    if (spotsError) throw spotsError;
+    
+    if (!spotsData || spotsData.length === 0) {
+      console.log(`No spots found with IDs ${spotIds.join(', ')}`);
+      return [];
+    }
+    
+    // Transform database records to Point objects
+    const points: Point[] = spotsData.map(item => {
+      let coordinates: { latitude: number; longitude: number } = { latitude: 0, longitude: 0 };
+      let pointData: GeoPoint | undefined;
+      
+      if (item.coordinates && typeof item.coordinates === 'object') {
+        const coords = item.coordinates as { lat?: number; lng?: number };
+        coordinates = {
+          latitude: coords.lat || 0,
+          longitude: coords.lng || 0
+        };
+        
+        pointData = {
+          type: 'Point',
+          coordinates: [coordinates.longitude, coordinates.latitude]
+        };
+      }
+      
+      return {
+        id: item.id,
+        cityId: item.city || '',
+        type: mapTypeToEnum(item.type),
+        name: item.name as Record<Language, string>,
+        description: item.info as Record<Language, string>,
+        media: [],
+        thumbnail: Array.isArray(item.images) && item.images.length > 0 
+          ? item.images[0] 
+          : typeof item.images === 'object' && item.images !== null 
+            ? Object.values(item.images)[0] || '/placeholder.svg'
+            : '/placeholder.svg',
+        images: item.images as string[] || [],
+        location: coordinates,
+        point: pointData,
+        routeIds: [], // These will be populated from spot_route table if needed
+        eventIds: [eventId]  // Include the current event ID
+      };
+    });
+    
+    return points;
+  } catch (error) {
+    console.error(`Error fetching points for event ID ${eventId}:`, error);
+    return [];
+  }
 };

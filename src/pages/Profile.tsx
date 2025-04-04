@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +10,7 @@ import { fetchEventById } from '../services/eventsService';
 import ItemCardWrapper from '../components/ItemCardWrapper';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
+import Navigation from '../components/Navigation';
 
 interface FavoritesData {
   cities: City[];
@@ -20,7 +22,7 @@ interface FavoritesData {
 }
 
 const Profile = () => {
-  const { user, signOut, isLoading: authLoading } = useAuth();
+  const { user, signOut, isLoading: authLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { t } = useLanguage();
   
@@ -34,10 +36,11 @@ const Profile = () => {
   });
   
   useEffect(() => {
-    if (!user && !authLoading) {
+    // Only redirect if not authenticated and not still loading
+    if (!isAuthenticated && !authLoading) {
       navigate('/auth');
     }
-  }, [user, navigate, authLoading]);
+  }, [isAuthenticated, navigate, authLoading]);
   
   useEffect(() => {
     if (user) {
@@ -146,109 +149,112 @@ const Profile = () => {
     );
   }
   
-  if (!user) {
+  if (!isAuthenticated) {
     return null;
   }
   
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-4">{t('profile')}</h1>
-      
-      <div className="mb-4">
-        <p>
-          {t('loggedInAs')}: {user.email}
-        </p>
-        <Button onClick={handleSignOut}>{t('signOut')}</Button>
-      </div>
-      
-      <h2 className="text-xl font-semibold mb-2">{t('favorites')}</h2>
-      
-      {favoritesData.isLoading ? (
-        <p>{t('loading')}...</p>
-      ) : favoritesData.error ? (
-        <p className="text-red-500">Error: {favoritesData.error.message}</p>
-      ) : (
-        <>
-          {favoritesData.cities.length > 0 && (
-            <div>
-              <h3 className="text-lg font-medium mb-2">{t('cities')}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {favoritesData.cities.map((city) => (
-                  <ItemCardWrapper
-                    key={city.id}
-                    id={city.id}
-                    type="city"
-                    name={city.name}
-                    description={city.description}
-                    thumbnail={city.thumbnail}
-                  />
-                ))}
+    <div className="min-h-screen bg-muted">
+      <Navigation />
+      <div className="container mx-auto py-8">
+        <h1 className="text-2xl font-bold mb-4">{t('profile')}</h1>
+        
+        <div className="mb-4 bg-white p-4 rounded-md shadow">
+          <p className="mb-2">
+            {t('loggedInAs')}: {user?.email}
+          </p>
+          <Button onClick={handleSignOut}>{t('signOut')}</Button>
+        </div>
+        
+        <h2 className="text-xl font-semibold mb-2">{t('favorites')}</h2>
+        
+        {favoritesData.isLoading ? (
+          <p>{t('loading')}...</p>
+        ) : favoritesData.error ? (
+          <p className="text-red-500">Error: {favoritesData.error.message}</p>
+        ) : (
+          <>
+            {favoritesData.cities.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-medium mb-2">{t('cities')}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {favoritesData.cities.map((city) => (
+                    <ItemCardWrapper
+                      key={city.id}
+                      id={city.id}
+                      type="city"
+                      name={city.name}
+                      description={city.description}
+                      thumbnail={city.thumbnail}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-          
-          {favoritesData.points.length > 0 && (
-            <div>
-              <h3 className="text-lg font-medium mb-2">{t('pointsOfInterest')}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {favoritesData.points.map((point) => (
-                  <ItemCardWrapper
-                    key={point.id}
-                    id={point.id}
-                    type="point"
-                    name={point.name}
-                    description={point.description}
-                    thumbnail={point.thumbnail}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {favoritesData.routes.length > 0 && (
-            <div>
-              <h3 className="text-lg font-medium mb-2">{t('routes')}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {favoritesData.routes.map((route) => (
-                  <ItemCardWrapper
-                    key={route.id}
-                    id={route.id}
-                    type="route"
-                    name={route.name}
-                    description={route.description}
-                    thumbnail={route.thumbnail}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {favoritesData.events.length > 0 && (
-            <div>
-              <h3 className="text-lg font-medium mb-2">{t('events')}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {favoritesData.events.map((event) => (
-                  <ItemCardWrapper
-                    key={event.id}
-                    id={event.id}
-                    type="event"
-                    name={event.name}
-                    description={event.description}
-                    thumbnail={event.thumbnail}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {favoritesData.cities.length === 0 &&
-            favoritesData.points.length === 0 &&
-            favoritesData.routes.length === 0 &&
-            favoritesData.events.length === 0 && (
-              <p>{t('noFavorites')}</p>
             )}
-        </>
-      )}
+            
+            {favoritesData.points.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-medium mb-2">{t('pointsOfInterest')}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {favoritesData.points.map((point) => (
+                    <ItemCardWrapper
+                      key={point.id}
+                      id={point.id}
+                      type="point"
+                      name={point.name}
+                      description={point.description}
+                      thumbnail={point.thumbnail}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {favoritesData.routes.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-medium mb-2">{t('routes')}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {favoritesData.routes.map((route) => (
+                    <ItemCardWrapper
+                      key={route.id}
+                      id={route.id}
+                      type="route"
+                      name={route.name}
+                      description={route.description}
+                      thumbnail={route.thumbnail}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {favoritesData.events.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-medium mb-2">{t('events')}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {favoritesData.events.map((event) => (
+                    <ItemCardWrapper
+                      key={event.id}
+                      id={event.id}
+                      type="event"
+                      name={event.name}
+                      description={event.description}
+                      thumbnail={event.thumbnail}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {favoritesData.cities.length === 0 &&
+              favoritesData.points.length === 0 &&
+              favoritesData.routes.length === 0 &&
+              favoritesData.events.length === 0 && (
+                <p className="bg-white p-4 rounded-md shadow">{t('noFavorites')}</p>
+              )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

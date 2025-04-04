@@ -1,9 +1,10 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { toast } from 'sonner';
 import Navigation from '../components/Navigation';
-import ItemCard from '../components/ItemCard';
+import ItemCardWrapper from '../components/ItemCardWrapper';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { 
@@ -30,7 +31,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { City, Point, Route, Event } from '../types/models';
 import { fetchCities } from '../services/citiesService';
-import { fetchAllSpots } from '../services/spotsService';
+import { fetchAllPoints } from '../services/pointsService';
 import { fetchAllRoutes } from '../services/routesService';
 import { fetchAllEvents } from '../services/eventsService';
 
@@ -72,7 +73,7 @@ const Search = () => {
     error: spotsError
   } = useQuery({
     queryKey: ['spots'],
-    queryFn: () => fetchAllSpots(),
+    queryFn: () => fetchAllPoints(),
   });
 
   const {
@@ -116,18 +117,32 @@ const Search = () => {
     return spots.filter(spot => {
       if (!spot || typeof spot !== 'object') return false;
       
-      const nameMatches = searchTerm === '' || 
-        (spot.name && typeof spot.name === 'object' && 
-         (Object.values(spot.name).some(val => 
-           typeof val === 'string' && val.toLowerCase().includes(searchTerm.toLowerCase())
-         )));
-       
-      const typeMatches = selectedType === 'all' || 
-        (spot.type && spot.type === selectedType);
+      // City filter
+      if (cityFilter !== 'all' && spot.cityId !== cityFilter) {
+        return false;
+      }
       
-      return nameMatches && typeMatches;
+      // Type filter
+      if (typeFilter !== 'all' && spot.type !== typeFilter) {
+        return false;
+      }
+      
+      // Search query filter
+      if (searchQuery === '') return true;
+      
+      const nameMatches = spot.name && typeof spot.name === 'object' && 
+        Object.values(spot.name).some(val => 
+          typeof val === 'string' && val.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      
+      const descMatches = spot.description && typeof spot.description === 'object' && 
+        Object.values(spot.description).some(val => 
+          typeof val === 'string' && val.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      
+      return nameMatches || descMatches;
     });
-  }, [spots, searchTerm, selectedType]);
+  }, [spots, searchQuery, typeFilter, cityFilter]);
 
   const filteredRoutes = routes.filter(route => {
     if (cityFilter !== 'all' && route.cityId !== cityFilter) {
@@ -314,7 +329,7 @@ const Search = () => {
                         </h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                           {filteredCities.map(city => (
-                            <ItemCard
+                            <ItemCardWrapper
                               key={city.id}
                               id={city.id}
                               type="city"
@@ -336,7 +351,7 @@ const Search = () => {
                         </h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                           {filteredSpots.map(spot => (
-                            <ItemCard
+                            <ItemCardWrapper
                               key={spot.id}
                               id={spot.id}
                               type="point"
@@ -359,7 +374,7 @@ const Search = () => {
                         </h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                           {filteredRoutes.map(route => (
-                            <ItemCard
+                            <ItemCardWrapper
                               key={route.id}
                               id={route.id}
                               type="route"
@@ -382,7 +397,7 @@ const Search = () => {
                         </h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                           {filteredEvents.map(event => (
-                            <ItemCard
+                            <ItemCardWrapper
                               key={event.id}
                               id={event.id}
                               type="event"
@@ -409,7 +424,7 @@ const Search = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredCities.length > 0 ? (
                     filteredCities.map(city => (
-                      <ItemCard
+                      <ItemCardWrapper
                         key={city.id}
                         id={city.id}
                         type="city"
@@ -432,7 +447,7 @@ const Search = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredSpots.length > 0 ? (
                     filteredSpots.map(spot => (
-                      <ItemCard
+                      <ItemCardWrapper
                         key={spot.id}
                         id={spot.id}
                         type="point"
@@ -456,7 +471,7 @@ const Search = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredRoutes.length > 0 ? (
                     filteredRoutes.map(route => (
-                      <ItemCard
+                      <ItemCardWrapper
                         key={route.id}
                         id={route.id}
                         type="route"
@@ -480,7 +495,7 @@ const Search = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredEvents.length > 0 ? (
                     filteredEvents.map(event => (
-                      <ItemCard
+                      <ItemCardWrapper
                         key={event.id}
                         id={event.id}
                         type="event"

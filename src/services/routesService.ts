@@ -1,98 +1,130 @@
 
-// Importing the necessary modules
 import { supabase } from '@/integrations/supabase/client';
 import { Route, Language } from '../types/models';
-import { Json } from '@/types/supabase';
 
-// Helper function to parse JSON safely
-const safeParseJson = (json: Json | null): any => {
-  if (!json) return null;
-  
-  if (typeof json === 'object') return json;
-  
+export const fetchAllRoutes = async (): Promise<Route[]> => {
   try {
-    return typeof json === 'string' ? JSON.parse(json) : json;
-  } catch (e) {
-    console.error('Error parsing JSON:', e);
-    return json;
+    const { data, error } = await supabase
+      .from('routes')
+      .select('*');
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log("No routes found");
+      return [];
+    }
+    
+    // Transform database records to Route objects
+    const routes: Route[] = data.map(item => ({
+      id: item.id,
+      cityId: '', // Will need to be populated if routes are associated with cities
+      name: item.name as Record<Language, string>,
+      description: {
+        en: '',
+        ru: '',
+        hi: '',
+        ...((item.name as any)?.description || {})
+      },
+      media: [],
+      thumbnail: '/placeholder.svg', // Default placeholder
+      pointIds: [],
+      eventIds: [], // Initialize with empty array
+      distance: 0,
+      duration: 0
+    }));
+    
+    return routes;
+  } catch (error) {
+    console.error('Error fetching routes:', error);
+    return [];
   }
 };
 
-// Function to fetch all routes
-export const fetchAllRoutes = async (): Promise<Route[]> => {
-  const { data, error } = await supabase
-    .from('routes')
-    .select('*');
-  
-  if (error) throw error;
-  
-  return data?.map(route => {
-    const nameData = safeParseJson(route.name) || { en: 'Unknown', ru: 'Неизвестно', hi: 'अज्ञात' };
+export const fetchRouteById = async (routeId: string): Promise<Route | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('routes')
+      .select('*')
+      .eq('id', routeId)
+      .single();
     
-    return {
-      id: route.id,
-      cityId: 'unknown', // Placeholder
-      name: nameData as Record<Language, string>,
-      description: { en: '', ru: '', hi: '' }, // Default empty description
+    if (error) {
+      if (error.code === 'PGRST116') {
+        console.log(`No route found with ID ${routeId}`);
+        return null;
+      }
+      throw error;
+    }
+    
+    if (!data) {
+      console.log(`No route found with ID ${routeId}`);
+      return null;
+    }
+    
+    // Transform database record to Route object
+    const route: Route = {
+      id: data.id,
+      cityId: '', // Will need to be populated if routes are associated with cities
+      name: data.name as Record<Language, string>,
+      description: {
+        en: '',
+        ru: '',
+        hi: '',
+        ...((data.name as any)?.description || {})
+      },
       media: [],
-      thumbnail: 'placeholder.svg',
+      thumbnail: '/placeholder.svg', // Default placeholder
       pointIds: [],
-      eventIds: [], // Add the missing eventIds property
+      eventIds: [], // Initialize with empty array
       distance: 0,
       duration: 0
     };
-  }) || [];
-};
-
-// Function to fetch a route by ID
-export const fetchRouteById = async (routeId: string): Promise<Route | null> => {
-  const { data, error } = await supabase
-    .from('routes')
-    .select('*')
-    .eq('id', routeId)
-    .single();
-  
-  if (error) {
-    if (error.code === 'PGRST116') {
-      return null;
-    }
-    throw error;
+    
+    return route;
+  } catch (error) {
+    console.error(`Error fetching route with ID ${routeId}:`, error);
+    return null;
   }
-  
-  if (!data) return null;
-  
-  const nameData = safeParseJson(data.name) || { en: 'Unknown', ru: 'Неизвестно', hi: 'अज्ञात' };
-  
-  return {
-    id: data.id,
-    cityId: 'unknown', // Placeholder
-    name: nameData as Record<Language, string>,
-    description: { en: '', ru: '', hi: '' }, // Default empty description
-    media: [],
-    thumbnail: 'placeholder.svg',
-    pointIds: [],
-    eventIds: [], // Add the missing eventIds property
-    distance: 0,
-    duration: 0
-  };
 };
 
-// Function to fetch routes by city ID
 export const fetchRoutesByCityId = async (cityId: string): Promise<Route[]> => {
-  // This would require a query to get routes by city ID
-  // Since this functionality isn't fully implemented, we'll return an empty array for now
-  return [];
+  try {
+    // This would need to be updated based on how routes are associated with cities in your database
+    const { data, error } = await supabase
+      .from('routes')
+      .select('*')
+      .eq('city', cityId);
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log(`No routes found for city ID ${cityId}`);
+      return [];
+    }
+    
+    // Transform database records to Route objects
+    const routes: Route[] = data.map(item => ({
+      id: item.id,
+      cityId: cityId,
+      name: item.name as Record<Language, string>,
+      description: {
+        en: '',
+        ru: '',
+        hi: '',
+        ...((item.name as any)?.description || {})
+      },
+      media: [],
+      thumbnail: '/placeholder.svg', // Default placeholder
+      pointIds: [],
+      eventIds: [], // Initialize with empty array
+      distance: 0,
+      duration: 0
+    }));
+    
+    return routes;
+  } catch (error) {
+    console.error(`Error fetching routes for city ID ${cityId}:`, error);
+    return [];
+  }
 };
-
-// Function to fetch routes by point ID
-export const fetchRoutesByPointId = async (pointId: string): Promise<Route[]> => {
-  // This would require a query to get routes associated with a specific point
-  // Since this functionality isn't fully implemented, we'll return an empty array for now
-  return [];
-};
-
-// Adding these aliases for compatibility
-export const fetchRoutesByCity = fetchRoutesByCityId;
-export const fetchRoutesBySpot = fetchRoutesByPointId;
-export const fetchRoutesByEvent = async () => []; // Placeholder function
-export const fetchSpotsByRoute = async () => []; // Placeholder function

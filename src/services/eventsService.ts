@@ -1,138 +1,179 @@
 
-// Importing the necessary modules
 import { supabase } from '@/integrations/supabase/client';
-import { Event, Language } from '../types/models';
-import { Json } from '@/types/supabase';
+import { Event, Language, Json } from '../types/models';
 
-// Helper function to parse JSON safely
-const safeParseJson = (json: Json | null): any => {
-  if (!json) return null;
-  
-  if (typeof json === 'object') return json;
-  
+export const fetchAllEvents = async (): Promise<Event[]> => {
   try {
-    return typeof json === 'string' ? JSON.parse(json) : json;
-  } catch (e) {
-    console.error('Error parsing JSON:', e);
-    return json;
+    const { data, error } = await supabase
+      .from('events')
+      .select('*');
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log("No events found");
+      return [];
+    }
+    
+    // Transform database records to Event objects
+    const events: Event[] = data.map(item => ({
+      id: item.id,
+      cityId: item.city || '', // Assuming city field matches cityId in the model
+      name: item.name as Record<Language, string>,
+      description: item.info as Record<Language, string>,
+      media: item.images || [],
+      thumbnail: Array.isArray(item.images) && item.images.length > 0 
+        ? item.images[0] 
+        : typeof item.images === 'object' && item.images !== null 
+          ? Object.values(item.images)[0] || '/placeholder.svg'
+          : '/placeholder.svg',
+      pointIds: [],
+      startDate: item.time || new Date().toISOString(),
+      endDate: item.time || new Date().toISOString(),
+      type: item.type
+    }));
+    
+    return events;
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    return [];
   }
 };
 
-// Function to fetch all events
-export const fetchAllEvents = async (): Promise<Event[]> => {
-  const { data, error } = await supabase
-    .from('events')
-    .select('*');
-  
-  if (error) throw error;
-  
-  return data?.map(event => {
-    const nameData = safeParseJson(event.name) || { en: 'Unknown', ru: 'Неизвестно', hi: 'अज्ञात' };
-    const infoData = safeParseJson(event.info) || { en: '', ru: '', hi: '' };
-    const imagesData = safeParseJson(event.images) || [];
-    
-    // Convert images to MediaItems
-    const media = Array.isArray(imagesData) ? imagesData.map((url, i) => ({
-      id: `image-${i}`,
-      type: 'image' as const,
-      url: typeof url === 'string' ? url : '',
-      thumbnailUrl: typeof url === 'string' ? url : ''
-    })) : [];
-    
-    const thumbnail = Array.isArray(imagesData) && imagesData.length > 0 && typeof imagesData[0] === 'string'
-      ? imagesData[0] 
-      : 'placeholder.svg';
-    
-    const time = event.time || new Date().toISOString();
-    
-    return {
-      id: event.id,
-      cityId: event.city || 'unknown',
-      name: nameData as Record<Language, string>,
-      description: infoData as Record<Language, string>,
-      media,
-      thumbnail,
-      pointIds: [], // Default empty array
-      startDate: time,
-      endDate: time,
-      ownerId: undefined,
-      type: event.type
-    };
-  }) || [];
-};
-
-// Function to fetch an event by ID
 export const fetchEventById = async (eventId: string): Promise<Event | null> => {
-  const { data, error } = await supabase
-    .from('events')
-    .select('*')
-    .eq('id', eventId)
-    .single();
-  
-  if (error) {
-    if (error.code === 'PGRST116') {
+  try {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('id', eventId)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        console.log(`No event found with ID ${eventId}`);
+        return null;
+      }
+      throw error;
+    }
+    
+    if (!data) {
+      console.log(`No event found with ID ${eventId}`);
       return null;
     }
-    throw error;
+    
+    // Transform database record to Event object
+    const event: Event = {
+      id: data.id,
+      cityId: data.city || '', // Assuming city field matches cityId in the model
+      name: data.name as Record<Language, string>,
+      description: data.info as Record<Language, string>,
+      media: data.images || [],
+      thumbnail: Array.isArray(data.images) && data.images.length > 0 
+        ? data.images[0] 
+        : typeof data.images === 'object' && data.images !== null 
+          ? Object.values(data.images)[0] || '/placeholder.svg'
+          : '/placeholder.svg',
+      pointIds: [],
+      startDate: data.time || new Date().toISOString(),
+      endDate: data.time || new Date().toISOString(),
+      type: data.type
+    };
+    
+    return event;
+  } catch (error) {
+    console.error(`Error fetching event with ID ${eventId}:`, error);
+    return null;
   }
-  
-  if (!data) return null;
-  
-  const nameData = safeParseJson(data.name) || { en: 'Unknown', ru: 'Неизвестно', hi: 'अज्ञात' };
-  const infoData = safeParseJson(data.info) || { en: '', ru: '', hi: '' };
-  const imagesData = safeParseJson(data.images) || [];
-  
-  // Convert images to MediaItems
-  const media = Array.isArray(imagesData) ? imagesData.map((url, i) => ({
-    id: `image-${i}`,
-    type: 'image' as const,
-    url: typeof url === 'string' ? url : '',
-    thumbnailUrl: typeof url === 'string' ? url : ''
-  })) : [];
-  
-  const thumbnail = Array.isArray(imagesData) && imagesData.length > 0 && typeof imagesData[0] === 'string'
-    ? imagesData[0] 
-    : 'placeholder.svg';
-  
-  const time = data.time || new Date().toISOString();
-  
-  return {
-    id: data.id,
-    cityId: data.city || 'unknown',
-    name: nameData as Record<Language, string>,
-    description: infoData as Record<Language, string>,
-    media,
-    thumbnail,
-    pointIds: [], // Default empty array
-    startDate: time,
-    endDate: time,
-    ownerId: undefined,
-    type: data.type
-  };
 };
 
-// Function to fetch events by city ID
 export const fetchEventsByCityId = async (cityId: string): Promise<Event[]> => {
-  // This would require a query to get events by city ID
-  // Since this functionality isn't fully implemented, we'll return an empty array for now
-  return [];
+  try {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('city', cityId); // Assuming city field matches cityId in the model
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log(`No events found for city ID ${cityId}`);
+      return [];
+    }
+    
+    // Transform database records to Event objects
+    const events: Event[] = data.map(item => ({
+      id: item.id,
+      cityId: item.city || '', // Assuming city field matches cityId in the model
+      name: item.name as Record<Language, string>,
+      description: item.info as Record<Language, string>,
+      media: item.images || [],
+      thumbnail: Array.isArray(item.images) && item.images.length > 0 
+        ? item.images[0] 
+        : typeof item.images === 'object' && item.images !== null 
+          ? Object.values(item.images)[0] || '/placeholder.svg'
+          : '/placeholder.svg',
+      pointIds: [],
+      startDate: item.time || new Date().toISOString(),
+      endDate: item.time || new Date().toISOString(),
+      type: item.type
+    }));
+    
+    return events;
+  } catch (error) {
+    console.error(`Error fetching events for city ID ${cityId}:`, error);
+    return [];
+  }
 };
 
-// Function to fetch events by point ID
-export const fetchEventsByPointId = async (pointId: string): Promise<Event[]> => {
-  // This would require a query to get events associated with a specific point
-  // Since this functionality isn't fully implemented, we'll return an empty array for now
-  return [];
-};
-
-// Function to fetch events by route ID
 export const fetchEventsByRouteId = async (routeId: string): Promise<Event[]> => {
-  // This would require a query to get events associated with a specific route
-  // Since this functionality isn't fully implemented, we'll return an empty array for now
-  return [];
+  try {
+    const { data, error } = await supabase
+      .from('route_event')
+      .select('event_id')
+      .eq('route_id', routeId);
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log(`No events found for route ID ${routeId}`);
+      return [];
+    }
+    
+    const eventIds = data.map(item => item.event_id);
+    
+    const { data: eventsData, error: eventsError } = await supabase
+      .from('events')
+      .select('*')
+      .in('id', eventIds);
+    
+    if (eventsError) throw eventsError;
+    
+    if (!eventsData || eventsData.length === 0) {
+      console.log(`No events found with IDs ${eventIds.join(', ')}`);
+      return [];
+    }
+    
+    // Transform database records to Event objects
+    const events: Event[] = eventsData.map(item => ({
+      id: item.id,
+      cityId: item.city || '', // Assuming city field matches cityId in the model
+      name: item.name as Record<Language, string>,
+      description: item.info as Record<Language, string>,
+      media: item.images || [],
+      thumbnail: Array.isArray(item.images) && item.images.length > 0 
+        ? item.images[0] 
+        : typeof item.images === 'object' && item.images !== null 
+          ? Object.values(item.images)[0] || '/placeholder.svg'
+          : '/placeholder.svg',
+      pointIds: [],
+      startDate: item.time || new Date().toISOString(),
+      endDate: item.time || new Date().toISOString(),
+      type: item.type
+    }));
+    
+    return events;
+  } catch (error) {
+    console.error(`Error fetching events for route ID ${routeId}:`, error);
+    return [];
+  }
 };
-
-// Adding these aliases for compatibility
-export const fetchEventsByCity = fetchEventsByCityId;
-export const fetchEventsBySpot = fetchEventsByPointId;
-export const fetchEventsByRoute = fetchEventsByRouteId;
