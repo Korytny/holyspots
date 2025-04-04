@@ -24,7 +24,7 @@ const Search = () => {
       setIsLoading(true);
       try {
         const spotsData = await fetchAllPoints();
-        const routesData = await fetchRoutes();
+        const routesData = await fetchAllRoutes();
         const eventsData = await fetchEvents();
         
         setSpots(spotsData);

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -17,8 +18,6 @@ interface FavoritesData {
   points: Point[];
   routes: Route[];
   events: Event[];
-  isLoading: boolean;
-  error: Error | null;
 }
 
 const Profile = () => {
@@ -27,13 +26,13 @@ const Profile = () => {
   const { t } = useLanguage();
   const { toast } = useToast();
   
-  const [favoritesData, setFavoritesData] = useState<FavoritesData>({
+  const [isLoadingFavorites, setIsLoadingFavorites] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [favorites, setFavorites] = useState<FavoritesData>({
     cities: [],
     points: [],
     routes: [],
     events: [],
-    isLoading: true,
-    error: null,
   });
   
   useEffect(() => {
@@ -42,16 +41,21 @@ const Profile = () => {
     console.log("Is authenticated:", isAuthenticated);
     console.log("User:", user);
     
+    // Проверяем аутентификацию пользователя
     if (!authLoading) {
       if (!isAuthenticated) {
         console.log("User not authenticated, redirecting to auth page");
         navigate('/auth');
-      } else if (user && isAuthenticated) {
-        console.log("User authenticated, fetching favorites");
-        fetchFavorites();
       }
     }
-  }, [user, isAuthenticated, navigate, authLoading]);
+  }, [isAuthenticated, navigate, authLoading]);
+  
+  // Загрузка избранных элементов
+  useEffect(() => {
+    if (user && isAuthenticated && !authLoading) {
+      fetchFavorites();
+    }
+  }, [user, isAuthenticated, authLoading]);
   
   const handleSignOut = async () => {
     try {
@@ -75,87 +79,80 @@ const Profile = () => {
     try {
       if (!user || !user.favorites) {
         console.log("No user or favorites available");
-        setFavoritesData(prev => ({ ...prev, isLoading: false }));
+        setIsLoadingFavorites(false);
         return;
       }
 
-      setFavoritesData(prev => ({ ...prev, isLoading: true, error: null }));
+      setIsLoadingFavorites(true);
+      setError(null);
       console.log("Fetching favorites for user:", user?.id);
       console.log("User favorites:", user?.favorites);
 
-      if (user?.favorites.cities?.length) {
+      // Загрузка городов
+      if (user.favorites.cities?.length) {
         const citiesPromises = user.favorites.cities.map(cityId => 
           fetchCityById(cityId)
         );
         const citiesResults = await Promise.all(citiesPromises);
         const validCities = citiesResults.filter(city => city !== null) as City[];
         
-        setFavoritesData(prev => ({ 
+        setFavorites(prev => ({ 
           ...prev, 
-          cities: validCities,
-          isLoading: false 
+          cities: validCities
         }));
-      } else {
-        setFavoritesData(prev => ({ ...prev, cities: [], isLoading: false }));
       }
 
-      if (user?.favorites.points?.length) {
+      // Загрузка точек
+      if (user.favorites.points?.length) {
         const pointsPromises = user.favorites.points.map(pointId => 
           fetchPointById(pointId)
         );
         const pointsResults = await Promise.all(pointsPromises);
         const validPoints = pointsResults.filter(point => point !== null) as Point[];
         
-        setFavoritesData(prev => ({ 
+        setFavorites(prev => ({ 
           ...prev, 
-          points: validPoints,
-          isLoading: false 
+          points: validPoints
         }));
-      } else {
-        setFavoritesData(prev => ({ ...prev, points: [], isLoading: false }));
       }
 
-      if (user?.favorites.routes?.length) {
+      // Загрузка маршрутов
+      if (user.favorites.routes?.length) {
         const routesPromises = user.favorites.routes.map(routeId => 
           fetchRouteById(routeId)
         );
         const routesResults = await Promise.all(routesPromises);
         const validRoutes = routesResults.filter(route => route !== null) as Route[];
         
-        setFavoritesData(prev => ({ 
+        setFavorites(prev => ({ 
           ...prev, 
-          routes: validRoutes,
-          isLoading: false 
+          routes: validRoutes
         }));
-      } else {
-        setFavoritesData(prev => ({ ...prev, routes: [], isLoading: false }));
       }
 
-      if (user?.favorites.events?.length) {
+      // Загрузка событий
+      if (user.favorites.events?.length) {
         const eventsPromises = user.favorites.events.map(eventId => 
           fetchEventById(eventId)
         );
         const eventsResults = await Promise.all(eventsPromises);
         const validEvents = eventsResults.filter(event => event !== null) as Event[];
         
-        setFavoritesData(prev => ({ 
+        setFavorites(prev => ({ 
           ...prev, 
-          events: validEvents,
-          isLoading: false 
+          events: validEvents
         }));
-      } else {
-        setFavoritesData(prev => ({ ...prev, events: [], isLoading: false }));
       }
+      
+      setIsLoadingFavorites(false);
     } catch (error) {
       console.error('Error fetching favorites:', error);
-      setFavoritesData(prev => ({ 
-        ...prev, 
-        isLoading: false, 
-        error: error as Error 
-      }));
+      setError(error as Error);
+      setIsLoadingFavorites(false);
     }
   };
   
+  // Показать индикатор загрузки во время проверки аутентификации
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -167,6 +164,7 @@ const Profile = () => {
     );
   }
   
+  // Если пользователь не аутентифицирован, показать индикатор перенаправления
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -193,17 +191,17 @@ const Profile = () => {
         
         <h2 className="text-xl font-semibold mb-2">{t('favorites')}</h2>
         
-        {favoritesData.isLoading ? (
+        {isLoadingFavorites ? (
           <p>{t('loading')}...</p>
-        ) : favoritesData.error ? (
-          <p className="text-red-500">Error: {favoritesData.error.message}</p>
+        ) : error ? (
+          <p className="text-red-500">Error: {error.message}</p>
         ) : (
           <>
-            {favoritesData.cities.length > 0 && (
+            {favorites.cities.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-medium mb-2">{t('cities')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {favoritesData.cities.map((city) => (
+                  {favorites.cities.map((city) => (
                     <ItemCardWrapper
                       key={city.id}
                       id={city.id}
@@ -217,11 +215,11 @@ const Profile = () => {
               </div>
             )}
             
-            {favoritesData.points.length > 0 && (
+            {favorites.points.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-medium mb-2">{t('pointsOfInterest')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {favoritesData.points.map((point) => (
+                  {favorites.points.map((point) => (
                     <ItemCardWrapper
                       key={point.id}
                       id={point.id}
@@ -235,11 +233,11 @@ const Profile = () => {
               </div>
             )}
             
-            {favoritesData.routes.length > 0 && (
+            {favorites.routes.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-medium mb-2">{t('routes')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {favoritesData.routes.map((route) => (
+                  {favorites.routes.map((route) => (
                     <ItemCardWrapper
                       key={route.id}
                       id={route.id}
@@ -253,11 +251,11 @@ const Profile = () => {
               </div>
             )}
             
-            {favoritesData.events.length > 0 && (
+            {favorites.events.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-medium mb-2">{t('events')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {favoritesData.events.map((event) => (
+                  {favorites.events.map((event) => (
                     <ItemCardWrapper
                       key={event.id}
                       id={event.id}
@@ -271,10 +269,10 @@ const Profile = () => {
               </div>
             )}
             
-            {favoritesData.cities.length === 0 &&
-              favoritesData.points.length === 0 &&
-              favoritesData.routes.length === 0 &&
-              favoritesData.events.length === 0 && (
+            {favorites.cities.length === 0 &&
+              favorites.points.length === 0 &&
+              favorites.routes.length === 0 &&
+              favorites.events.length === 0 && (
                 <p className="bg-white p-4 rounded-md shadow">{t('noFavorites')}</p>
               )}
           </>

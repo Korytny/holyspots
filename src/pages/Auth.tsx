@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FcGoogle } from 'react-icons/fc';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const { t } = useLanguage();
@@ -24,8 +23,9 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   
-  // Check if the user is already authenticated
+  // Проверяем, аутентифицирован ли пользователь
   useEffect(() => {
+    console.log('Auth page - Authentication state:', isAuthenticated);
     if (isAuthenticated) {
       navigate('/cities');
     }
@@ -38,7 +38,7 @@ const Auth = () => {
     
     try {
       await signIn(email, password);
-      navigate('/cities');
+      // Навигация будет выполнена автоматически через useEffect при изменении isAuthenticated
     } catch (err: any) {
       setError(err.message || 'Failed to sign in. Please check your credentials.');
       console.error(err);
@@ -58,7 +58,7 @@ const Auth = () => {
         title: "Account created successfully",
         description: "Please check your email for verification instructions.",
       });
-      // Not navigating away immediately after signup as they need to verify email
+      // Не перенаправляем сразу после регистрации, так как пользователю нужно подтвердить email
     } catch (err: any) {
       setError(err.message || 'Failed to sign up. Please try again.');
       console.error(err);
@@ -72,20 +72,9 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
-      const currentUrl = window.location.origin;
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${currentUrl}/cities`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          }
-        }
-      });
-      
-      if (error) throw error;
+      const { googleSignIn } = useAuth();
+      await googleSignIn();
+      // Перенаправление будет выполнено OAuth провайдером
     } catch (err: any) {
       setError(err.message || 'Failed to sign in with Google.');
       console.error(err);
@@ -93,7 +82,7 @@ const Auth = () => {
     }
   };
   
-  // Show loading state during initial auth check
+  // Показать индикатор загрузки во время начальной проверки аутентификации
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -105,7 +94,7 @@ const Auth = () => {
     );
   }
   
-  // If user is authenticated, they will be redirected in the useEffect
+  // Если пользователь аутентифицирован, они будут перенаправлены в useEffect
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
