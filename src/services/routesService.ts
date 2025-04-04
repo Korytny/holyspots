@@ -1,6 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { Route, Language } from '../types/models';
+import { Route, Language, MediaItem } from '../types/models';
+import { Json } from '@/integrations/supabase/types';
 
 export const fetchAllRoutes = async (): Promise<Route[]> => {
   try {
@@ -15,7 +15,6 @@ export const fetchAllRoutes = async (): Promise<Route[]> => {
       return [];
     }
     
-    // Transform database records to Route objects
     const routes: Route[] = data.map(item => ({
       id: item.id,
       cityId: '', // Will need to be populated if routes are associated with cities
@@ -62,7 +61,6 @@ export const fetchRouteById = async (routeId: string): Promise<Route | null> => 
       return null;
     }
     
-    // Transform database record to Route object
     const route: Route = {
       id: data.id,
       cityId: '', // Will need to be populated if routes are associated with cities
@@ -90,7 +88,6 @@ export const fetchRouteById = async (routeId: string): Promise<Route | null> => 
 
 export const fetchRoutesByCityId = async (cityId: string): Promise<Route[]> => {
   try {
-    // This would need to be updated based on how routes are associated with cities in your database
     const { data, error } = await supabase
       .from('routes')
       .select('*')
@@ -103,7 +100,6 @@ export const fetchRoutesByCityId = async (cityId: string): Promise<Route[]> => {
       return [];
     }
     
-    // Transform database records to Route objects
     const routes: Route[] = data.map(item => ({
       id: item.id,
       cityId: cityId,
@@ -129,7 +125,6 @@ export const fetchRoutesByCityId = async (cityId: string): Promise<Route[]> => {
   }
 };
 
-// Aliases to maintain backward compatibility
 export const fetchRoutesByCity = fetchRoutesByCityId;
 
 export const fetchRoutesByEventId = async (eventId: string): Promise<Route[]> => {
@@ -160,24 +155,30 @@ export const fetchRoutesByEventId = async (eventId: string): Promise<Route[]> =>
       return [];
     }
     
-    // Transform database records to Route objects
-    const routes: Route[] = routesData.map(item => ({
-      id: item.id,
-      cityId: '',
-      name: item.name as Record<string, string>, // Fix the type recursion issue
-      description: {
-        en: '',
-        ru: '',
-        hi: '',
-        ...((item.name as any)?.description || {})
-      },
-      media: [],
-      thumbnail: '/placeholder.svg',
-      pointIds: [],
-      eventIds: [eventId],
-      distance: 0,
-      duration: 0
-    }));
+    const routes: Route[] = routesData.map(item => {
+      const name = (typeof item.name === 'object' && item.name !== null) 
+        ? item.name as Record<Language, string>
+        : { en: 'Unnamed Route', ru: 'Безымянный маршрут', hi: 'अनाम मार्ग' };
+      
+      const description = (typeof item.description === 'object' && item.description !== null)
+        ? item.description as Record<Language, string>
+        : { en: '', ru: '', hi: '' };
+      
+      const media: MediaItem[] = [];
+      
+      return {
+        id: item.id,
+        cityId: '',
+        name,
+        description,
+        media,
+        thumbnail: '/placeholder.svg',
+        pointIds: [],
+        eventIds: [],
+        distance: 0,
+        duration: 0
+      };
+    });
     
     return routes;
   } catch (error) {
@@ -186,7 +187,6 @@ export const fetchRoutesByEventId = async (eventId: string): Promise<Route[]> =>
   }
 };
 
-// Ensure this alias is properly defined
 export const fetchRoutesByEvent = fetchRoutesByEventId;
 
 export const fetchRoutesByPointId = async (pointId: string): Promise<Route[]> => {
@@ -217,7 +217,6 @@ export const fetchRoutesByPointId = async (pointId: string): Promise<Route[]> =>
       return [];
     }
     
-    // Transform database records to Route objects
     const routes: Route[] = routesData.map(item => ({
       id: item.id,
       cityId: '', // Will need to be populated if routes are associated with cities
@@ -243,6 +242,4 @@ export const fetchRoutesByPointId = async (pointId: string): Promise<Route[]> =>
   }
 };
 
-// Aliases to maintain backward compatibility
 export const fetchRoutesBySpot = fetchRoutesByPointId;
-

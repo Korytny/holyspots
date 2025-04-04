@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -16,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 
 const EventDetail = () => {
   const { eventId } = useParams<{ eventId: string }>();
-  const { t, currentLanguage } = useLanguage();
+  const { t, language } = useLanguage();
   const [event, setEvent] = useState<Event | null>(null);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [points, setPoints] = useState<Point[]>([]);
@@ -109,10 +110,10 @@ const EventDetail = () => {
         <div className="bg-white p-4 rounded-md shadow mb-4">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className="text-xl font-semibold">{event.name[currentLanguage] || event.name['en']}</h2>
+              <h2 className="text-xl font-semibold">{event.name[language] || event.name['en']}</h2>
               <div className="flex items-center text-gray-600">
                 <Calendar className="mr-2 h-4 w-4" />
-                {event.date ? new Date(event.date).toLocaleDateString(currentLanguage) : t('noDateAvailable')}
+                {event.startDate ? new Date(event.startDate).toLocaleDateString(language) : t('noDateAvailable')}
               </div>
               {event.cityId && (
                 <div className="flex items-center text-gray-600">
@@ -126,7 +127,7 @@ const EventDetail = () => {
             <FavoriteDetailButton itemId={event.id} itemType="event" />
           </div>
           
-          <p className="text-gray-700">{event.description[currentLanguage] || event.description['en']}</p>
+          <p className="text-gray-700">{event.description[language] || event.description['en']}</p>
         </div>
         
         {routes.length > 0 && (

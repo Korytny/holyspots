@@ -1,5 +1,7 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { Event, Language } from '../types/models';
+import { Event, Language, MediaItem } from '../types/models';
+import { Json } from '@/integrations/supabase/types';
 
 export const fetchAllEvents = async (): Promise<Event[]> => {
   try {
@@ -16,22 +18,61 @@ export const fetchAllEvents = async (): Promise<Event[]> => {
     
     // Transform database records to Event objects
     const events: Event[] = data.map(item => {
-      const cityId = typeof item.city === 'string' ? item.city : '';
+      const cityId = ''; // Default empty string as city may not be present
       
+      // Process media items safely
+      let mediaItems: MediaItem[] = [];
+      if (item.images) {
+        if (Array.isArray(item.images)) {
+          mediaItems = item.images.map((url, index) => ({
+            id: `image-${index}`,
+            type: 'image',
+            url: typeof url === 'string' ? url : '',
+            thumbnailUrl: typeof url === 'string' ? url : '',
+          }));
+        } else if (typeof item.images === 'object' && item.images !== null) {
+          Object.values(item.images as Record<string, unknown>).forEach((url, index) => {
+            if (typeof url === 'string') {
+              mediaItems.push({
+                id: `image-${index}`,
+                type: 'image',
+                url,
+                thumbnailUrl: url,
+              });
+            }
+          });
+        }
+      }
+
+      // Get a valid thumbnail from images
+      let thumbnail = '/placeholder.svg';
+      if (Array.isArray(item.images) && item.images.length > 0) {
+        const firstImage = item.images[0];
+        if (typeof firstImage === 'string') {
+          thumbnail = firstImage;
+        }
+      } else if (typeof item.images === 'object' && item.images !== null) {
+        const firstImage = Object.values(item.images as Record<string, unknown>)[0];
+        if (typeof firstImage === 'string') {
+          thumbnail = firstImage as string;
+        }
+      }
+
       return {
         id: item.id,
-        cityId: cityId,
-        name: item.name as Record<string, string>, // Fix type recursion
+        cityId,
+        name: item.name as Record<Language, string>,
         description: {
           en: '',
           ru: '',
           hi: '',
           ...(((item.info as any) || {})?.description || {})
         },
-        date: item.time || '',
-        media: item.images || [],
-        thumbnail: '/placeholder.svg',
+        media: mediaItems,
+        thumbnail,
         pointIds: [],
+        startDate: item.time || new Date().toISOString(),
+        endDate: item.time || new Date().toISOString(),
         type: item.type || false,
       };
     });
@@ -75,7 +116,7 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
           thumbnailUrl: typeof url === 'string' ? url : '',
         }));
       } else if (typeof data.images === 'object' && data.images !== null) {
-        Object.values(data.images).forEach((url, index) => {
+        Object.values(data.images as Record<string, unknown>).forEach((url, index) => {
           if (typeof url === 'string') {
             mediaItems.push({
               id: `image-${index}`,
@@ -96,9 +137,9 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
         thumbnail = firstImage;
       }
     } else if (typeof data.images === 'object' && data.images !== null) {
-      const firstImage = Object.values(data.images)[0];
+      const firstImage = Object.values(data.images as Record<string, unknown>)[0];
       if (typeof firstImage === 'string') {
-        thumbnail = firstImage;
+        thumbnail = firstImage as string;
       }
     }
     
@@ -139,20 +180,59 @@ export const fetchEventsByCity = async (cityId: string): Promise<Event[]> => {
     
     // Transform database records to Event objects
     const events: Event[] = data.map(item => {
+      // Process media items safely
+      let mediaItems: MediaItem[] = [];
+      if (item.images) {
+        if (Array.isArray(item.images)) {
+          mediaItems = item.images.map((url, index) => ({
+            id: `image-${index}`,
+            type: 'image',
+            url: typeof url === 'string' ? url : '',
+            thumbnailUrl: typeof url === 'string' ? url : '',
+          }));
+        } else if (typeof item.images === 'object' && item.images !== null) {
+          Object.values(item.images as Record<string, unknown>).forEach((url, index) => {
+            if (typeof url === 'string') {
+              mediaItems.push({
+                id: `image-${index}`,
+                type: 'image',
+                url,
+                thumbnailUrl: url,
+              });
+            }
+          });
+        }
+      }
+
+      // Get a valid thumbnail from images
+      let thumbnail = '/placeholder.svg';
+      if (Array.isArray(item.images) && item.images.length > 0) {
+        const firstImage = item.images[0];
+        if (typeof firstImage === 'string') {
+          thumbnail = firstImage;
+        }
+      } else if (typeof item.images === 'object' && item.images !== null) {
+        const firstImage = Object.values(item.images as Record<string, unknown>)[0];
+        if (typeof firstImage === 'string') {
+          thumbnail = firstImage as string;
+        }
+      }
+
       return {
         id: item.id,
         cityId: cityId, 
-        name: item.name as Record<string, string>, // Fix type recursion
+        name: item.name as Record<string, string>,
         description: {
           en: '',
           ru: '',
           hi: '',
           ...(((item.info as any) || {})?.description || {})
         },
-        date: item.time || '',
-        media: item.images || [],
-        thumbnail: '/placeholder.svg',
+        media: mediaItems,
+        thumbnail,
         pointIds: [],
+        startDate: item.time || new Date().toISOString(),
+        endDate: item.time || new Date().toISOString(),
         type: item.type || false,
       };
     });
@@ -164,6 +244,7 @@ export const fetchEventsByCity = async (cityId: string): Promise<Event[]> => {
   }
 };
 
+// Let's add an alias for consistency
 export const fetchEventsByCityId = fetchEventsByCity;
 
 export const fetchEventsByRouteId = async (routeId: string): Promise<Event[]> => {
