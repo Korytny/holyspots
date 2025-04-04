@@ -67,13 +67,14 @@ const Auth = () => {
     }
   };
   
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     setError(null);
     setIsLoading(true);
     
     try {
-      googleSignIn();
-      // Redirect will be handled by the OAuth provider
+      // Call the googleSignIn function from the AuthContext
+      await googleSignIn();
+      // Redirect is handled by the OAuth provider and the AuthContext
     } catch (err: any) {
       setError(err.message || 'Failed to sign in with Google.');
       console.error(err);
