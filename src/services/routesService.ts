@@ -1,6 +1,17 @@
 
 import { supabase } from '../lib/supabase';
-import { Route, Point } from '../types/models';
+import { Route, Point, Language } from '../types/models';
+
+// Properly define the database route type to match what's in the database
+interface RouteData {
+  id: string;
+  name: any;
+  info?: any;
+  city?: string;
+  spots?: string[] | null;
+  distance?: number;
+  duration?: number;
+}
 
 // Function to fetch all routes with proper parsing
 export const fetchAllRoutes = async (): Promise<Route[]> => {
@@ -13,25 +24,25 @@ export const fetchAllRoutes = async (): Promise<Route[]> => {
     throw error;
   }
   
-  return data.map((routeData): Route => {
-    // Parse JSON data
-    let parsedName = {};
+  return data.map((routeData: RouteData): Route => {
+    // Parse JSON data for name
+    let parsedName: Record<Language, string> = { en: 'Unknown route', ru: 'Неизвестный маршрут', hi: 'अज्ञात मार्ग' };
     try {
       parsedName = typeof routeData.name === 'string' 
         ? JSON.parse(routeData.name) 
-        : (routeData.name || { en: 'Unknown route', ru: 'Неизвестный маршрут', hi: 'अज्ञात मार्ग' });
+        : (routeData.name || parsedName);
     } catch (e) {
-      parsedName = { en: routeData.name || 'Unknown route', ru: routeData.name || 'Неизвестный маршрут', hi: routeData.name || 'अज्ञात मार्ग' };
+      console.warn('Could not parse route name:', e);
     }
     
     // Parse description - use info field from the database if it exists
-    let parsedDescription = {};
+    let parsedDescription: Record<Language, string> = { en: '', ru: '', hi: '' };
     try {
       parsedDescription = typeof routeData.info === 'string' 
         ? JSON.parse(routeData.info) 
-        : (routeData.info || { en: '', ru: '', hi: '' });
+        : (routeData.info || parsedDescription);
     } catch (e) {
-      parsedDescription = { en: '', ru: '', hi: '' };
+      console.warn('Could not parse route description:', e);
     }
     
     // Parse point IDs from spots array
@@ -41,7 +52,7 @@ export const fetchAllRoutes = async (): Promise<Route[]> => {
         ? routeData.spots 
         : (typeof routeData.spots === 'string' ? JSON.parse(routeData.spots) : []);
     } catch (e) {
-      pointIds = [];
+      console.warn('Could not parse route points:', e);
     }
     
     return {
@@ -74,47 +85,49 @@ export const fetchRouteById = async (routeId: string): Promise<Route | null> => 
   
   if (!data) return null;
   
-  // Parse JSON data
-  let parsedName = {};
+  const routeData = data as RouteData;
+  
+  // Parse JSON data for name
+  let parsedName: Record<Language, string> = { en: 'Unknown route', ru: 'Неизвестный маршрут', hi: 'अज्ञात मार्ग' };
   try {
-    parsedName = typeof data.name === 'string' 
-      ? JSON.parse(data.name) 
-      : (data.name || { en: 'Unknown route', ru: 'Неизвестный маршрут', hi: 'अज्ञात मार्ग' });
+    parsedName = typeof routeData.name === 'string' 
+      ? JSON.parse(routeData.name) 
+      : (routeData.name || parsedName);
   } catch (e) {
-    parsedName = { en: data.name || 'Unknown route', ru: data.name || 'Неизвестный маршрут', hi: data.name || 'अज्ञात मार्ग' };
+    console.warn('Could not parse route name:', e);
   }
   
   // Parse description - use info field from database
-  let parsedDescription = {};
+  let parsedDescription: Record<Language, string> = { en: '', ru: '', hi: '' };
   try {
-    parsedDescription = typeof data.info === 'string' 
-      ? JSON.parse(data.info) 
-      : (data.info || { en: '', ru: '', hi: '' });
+    parsedDescription = typeof routeData.info === 'string' 
+      ? JSON.parse(routeData.info) 
+      : (routeData.info || parsedDescription);
   } catch (e) {
-    parsedDescription = { en: '', ru: '', hi: '' };
+    console.warn('Could not parse route description:', e);
   }
   
   // Parse point IDs
   let pointIds: string[] = [];
   try {
-    pointIds = Array.isArray(data.spots) 
-      ? data.spots 
-      : (typeof data.spots === 'string' ? JSON.parse(data.spots) : []);
+    pointIds = Array.isArray(routeData.spots) 
+      ? routeData.spots 
+      : (typeof routeData.spots === 'string' ? JSON.parse(routeData.spots) : []);
   } catch (e) {
-    pointIds = [];
+    console.warn('Could not parse route points:', e);
   }
   
   return {
-    id: data.id,
-    cityId: data.city || '',
+    id: routeData.id,
+    cityId: routeData.city || '',
     name: parsedName,
     description: parsedDescription,
     media: [], // This would need to be fetched separately
     thumbnail: '/placeholder.svg', // Default thumbnail
     pointIds: pointIds,
     eventIds: [],
-    distance: data.distance || 0,
-    duration: data.duration || 0
+    distance: routeData.distance || 0,
+    duration: routeData.duration || 0
   };
 };
 
@@ -138,34 +151,37 @@ export const fetchRoutePoints = async (routeId: string): Promise<Point[]> => {
   }
   
   return data.map(point => {
-    // Parse JSON data
-    let parsedName = {};
+    // Parse JSON data for name
+    let parsedName: Record<Language, string> = { en: 'Unknown point', ru: 'Неизвестная точка', hi: 'अज्ञात बिंदु' };
     try {
       parsedName = typeof point.name === 'string' 
         ? JSON.parse(point.name) 
-        : (point.name || { en: 'Unknown point', ru: 'Неизвестная точка', hi: 'अज्ञात बिंदु' });
+        : (point.name || parsedName);
     } catch (e) {
-      parsedName = { en: point.name || 'Unknown point', ru: point.name || 'Неизвестная точка', hi: point.name || 'अज्ञात बिंदु' };
+      console.warn('Could not parse point name:', e);
     }
     
     // Parse description
-    let parsedDescription = {};
+    let parsedDescription: Record<Language, string> = { en: '', ru: '', hi: '' };
     try {
       parsedDescription = typeof point.info === 'string' 
         ? JSON.parse(point.info) 
-        : (point.info || { en: '', ru: '', hi: '' });
+        : (point.info || parsedDescription);
     } catch (e) {
-      parsedDescription = { en: '', ru: '', hi: '' };
+      console.warn('Could not parse point description:', e);
     }
     
     // Parse location data
     let location = { latitude: 0, longitude: 0 };
-    if (point.point && point.point.coordinates) {
-      // GeoJSON format: [longitude, latitude]
-      location = {
-        longitude: point.point.coordinates[0],
-        latitude: point.point.coordinates[1]
-      };
+    if (point.point && typeof point.point === 'object') {
+      const coordinates = point.point?.coordinates;
+      if (Array.isArray(coordinates) && coordinates.length >= 2) {
+        // GeoJSON format: [longitude, latitude]
+        location = {
+          longitude: coordinates[0],
+          latitude: coordinates[1]
+        };
+      }
     }
     
     return {
@@ -183,7 +199,7 @@ export const fetchRoutePoints = async (routeId: string): Promise<Point[]> => {
   });
 };
 
-// Function to fetch routes by city (added to fix import error)
+// Function to fetch routes by city
 export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
   const { data, error } = await supabase
     .from('routes')
@@ -195,25 +211,25 @@ export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
     throw error;
   }
   
-  return data.map((routeData): Route => {
-    // Parse JSON data
-    let parsedName = {};
+  return data.map((routeData: RouteData): Route => {
+    // Parse JSON data for name
+    let parsedName: Record<Language, string> = { en: 'Unknown route', ru: 'Неизвестный маршрут', hi: 'अज्ञात मार्ग' };
     try {
       parsedName = typeof routeData.name === 'string' 
         ? JSON.parse(routeData.name) 
-        : (routeData.name || { en: 'Unknown route', ru: 'Неизвестный маршрут', hi: 'अज्ञात मार्ग' });
+        : (routeData.name || parsedName);
     } catch (e) {
-      parsedName = { en: routeData.name || 'Unknown route', ru: routeData.name || 'Неизвестный маршрут', hi: routeData.name || 'अज्ञात मार्ग' };
+      console.warn('Could not parse route name:', e);
     }
     
     // Parse description - use info field from database
-    let parsedDescription = {};
+    let parsedDescription: Record<Language, string> = { en: '', ru: '', hi: '' };
     try {
       parsedDescription = typeof routeData.info === 'string' 
         ? JSON.parse(routeData.info) 
-        : (routeData.info || { en: '', ru: '', hi: '' });
+        : (routeData.info || parsedDescription);
     } catch (e) {
-      parsedDescription = { en: '', ru: '', hi: '' };
+      console.warn('Could not parse route description:', e);
     }
     
     // Parse point IDs
@@ -223,7 +239,7 @@ export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
         ? routeData.spots 
         : (typeof routeData.spots === 'string' ? JSON.parse(routeData.spots) : []);
     } catch (e) {
-      pointIds = [];
+      console.warn('Could not parse route points:', e);
     }
     
     return {
@@ -241,7 +257,7 @@ export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
   });
 };
 
-// Function to fetch routes by event (added to fix import error)
+// Function to fetch routes by event
 export const fetchRoutesByEvent = async (eventId: string): Promise<Route[]> => {
   // First get routes associated with this event from junction table
   const { data: junctionData, error: junctionError } = await supabase
@@ -272,25 +288,24 @@ export const fetchRoutesByEvent = async (eventId: string): Promise<Route[]> => {
     throw error;
   }
 
-  return data.map((routeData): Route => {
+  return data.map((routeData: RouteData): Route => {
     // Parse name and other fields
-    // ... Same parsing logic as above
-    let parsedName = {};
+    let parsedName: Record<Language, string> = { en: 'Unknown route', ru: 'Неизвестный маршрут', hi: 'अज्ञात मार्ग' };
     try {
       parsedName = typeof routeData.name === 'string' 
         ? JSON.parse(routeData.name) 
-        : (routeData.name || { en: 'Unknown route', ru: 'Неизвестный маршрут', hi: 'अज्ञात मार्ग' });
+        : (routeData.name || parsedName);
     } catch (e) {
-      parsedName = { en: routeData.name || 'Unknown route', ru: routeData.name || 'Неизвестный маршрут', hi: routeData.name || 'अज्ञात मार्ग' };
+      console.warn('Could not parse route name:', e);
     }
     
-    let parsedDescription = {};
+    let parsedDescription: Record<Language, string> = { en: '', ru: '', hi: '' };
     try {
       parsedDescription = typeof routeData.info === 'string' 
         ? JSON.parse(routeData.info) 
-        : (routeData.info || { en: '', ru: '', hi: '' });
+        : (routeData.info || parsedDescription);
     } catch (e) {
-      parsedDescription = { en: '', ru: '', hi: '' };
+      console.warn('Could not parse route description:', e);
     }
     
     let pointIds: string[] = [];
@@ -299,7 +314,7 @@ export const fetchRoutesByEvent = async (eventId: string): Promise<Route[]> => {
         ? routeData.spots 
         : (typeof routeData.spots === 'string' ? JSON.parse(routeData.spots) : []);
     } catch (e) {
-      pointIds = [];
+      console.warn('Could not parse route points:', e);
     }
     
     return {
@@ -317,7 +332,7 @@ export const fetchRoutesByEvent = async (eventId: string): Promise<Route[]> => {
   });
 };
 
-// Function to fetch routes by point ID (added to fix import error)
+// Function to fetch routes by point ID
 export const fetchRoutesByPoint = async (pointId: string): Promise<Route[]> => {
   // First check if there's a junction table between spots and routes
   const { data: junctionData, error: junctionError } = await supabase
@@ -339,7 +354,7 @@ export const fetchRoutesByPoint = async (pointId: string): Promise<Route[]> => {
     }
     
     // Filter routes that contain this point ID
-    const filteredRoutes = routesData.filter(route => {
+    const filteredRoutes = routesData.filter((route: RouteData) => {
       if (!route.spots) return false;
       
       try {
@@ -354,24 +369,23 @@ export const fetchRoutesByPoint = async (pointId: string): Promise<Route[]> => {
     });
     
     // Map to Route objects
-    return filteredRoutes.map((routeData): Route => {
-      // Parse name and other fields (same as above)
-      let parsedName = {};
+    return filteredRoutes.map((routeData: RouteData): Route => {
+      let parsedName: Record<Language, string> = { en: 'Unknown route', ru: 'Неизвестный маршрут', hi: 'अज्ञात मार्ग' };
       try {
         parsedName = typeof routeData.name === 'string' 
           ? JSON.parse(routeData.name) 
-          : (routeData.name || { en: 'Unknown route', ru: 'Неизвестный маршрут', hi: 'अज्ञात मार्ग' });
+          : (routeData.name || parsedName);
       } catch (e) {
-        parsedName = { en: routeData.name || 'Unknown route', ru: routeData.name || 'Неизвестный маршрут', hi: routeData.name || 'अज्ञात मार्ग' };
+        console.warn('Could not parse route name:', e);
       }
       
-      let parsedDescription = {};
+      let parsedDescription: Record<Language, string> = { en: '', ru: '', hi: '' };
       try {
         parsedDescription = typeof routeData.info === 'string' 
           ? JSON.parse(routeData.info) 
-          : (routeData.info || { en: '', ru: '', hi: '' });
+          : (routeData.info || parsedDescription);
       } catch (e) {
-        parsedDescription = { en: '', ru: '', hi: '' };
+        console.warn('Could not parse route description:', e);
       }
       
       let pointIds: string[] = [];
@@ -380,7 +394,7 @@ export const fetchRoutesByPoint = async (pointId: string): Promise<Route[]> => {
           ? routeData.spots 
           : (typeof routeData.spots === 'string' ? JSON.parse(routeData.spots) : []);
       } catch (e) {
-        pointIds = [];
+        console.warn('Could not parse route points:', e);
       }
       
       return {
@@ -416,24 +430,23 @@ export const fetchRoutesByPoint = async (pointId: string): Promise<Route[]> => {
     throw error;
   }
 
-  return data.map((routeData): Route => {
-    // Parse name and other fields (same as above)
-    let parsedName = {};
+  return data.map((routeData: RouteData): Route => {
+    let parsedName: Record<Language, string> = { en: 'Unknown route', ru: 'Неизвестный маршрут', hi: 'अज्ञात मार्ग' };
     try {
       parsedName = typeof routeData.name === 'string' 
         ? JSON.parse(routeData.name) 
-        : (routeData.name || { en: 'Unknown route', ru: 'Неизвестный маршрут', hi: 'अज्ञात मार्ग' });
+        : (routeData.name || parsedName);
     } catch (e) {
-      parsedName = { en: routeData.name || 'Unknown route', ru: routeData.name || 'Неизвестный маршрут', hi: routeData.name || 'अज्ञात मार्ग' };
+      console.warn('Could not parse route name:', e);
     }
     
-    let parsedDescription = {};
+    let parsedDescription: Record<Language, string> = { en: '', ru: '', hi: '' };
     try {
       parsedDescription = typeof routeData.info === 'string' 
         ? JSON.parse(routeData.info) 
-        : (routeData.info || { en: '', ru: '', hi: '' });
+        : (routeData.info || parsedDescription);
     } catch (e) {
-      parsedDescription = { en: '', ru: '', hi: '' };
+      console.warn('Could not parse route description:', e);
     }
     
     let pointIds: string[] = [];
@@ -442,7 +455,7 @@ export const fetchRoutesByPoint = async (pointId: string): Promise<Route[]> => {
         ? routeData.spots 
         : (typeof routeData.spots === 'string' ? JSON.parse(routeData.spots) : []);
     } catch (e) {
-      pointIds = [];
+      console.warn('Could not parse route points:', e);
     }
     
     return {

@@ -4,7 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { fetchAllPoints } from '../services/pointsService';
 import { fetchAllRoutes } from "../services/routesService";
 import { fetchEvents } from "../services/eventsService";
-import { fetchCities } from "../services/citiesService"; // Fixed import
+import { fetchCities } from "../services/citiesService";
 import { Point, Route, Event, City } from '../types/models';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,7 +28,6 @@ const Search = () => {
   const [cities, setCities] = useState<City[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Initialize from URL params
   useEffect(() => {
     const term = searchParams.get('q') || '';
     const city = searchParams.get('city') || '';
@@ -46,7 +45,7 @@ const Search = () => {
       setIsLoading(true);
       try {
         const [citiesData, spotsData, routesData, eventsData] = await Promise.all([
-          fetchCities(), // Using the correct import
+          fetchCities(),
           fetchAllPoints(),
           fetchAllRoutes(),
           fetchEvents()
