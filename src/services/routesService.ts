@@ -1,45 +1,45 @@
 
-import { supabase } from '../integrations/supabase/client';
-import { Route } from '../types/models';
-import { Json } from '../types/supabase';
+import { supabase } from '@/integrations/supabase/client';
+import { Route, Language, MediaItem } from '../types/models';
 
-// Function to fetch all routes
 export const fetchRoutes = async (): Promise<Route[]> => {
   try {
     const { data, error } = await supabase
       .from('routes')
       .select('*');
     
-    if (error) {
-      console.error('Error fetching routes:', error);
-      throw error;
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log("No routes found");
+      return [];
     }
     
-    // Transform the raw data into Route objects
-    const routes: Route[] = data.map(route => ({
-      id: route.id,
-      name: route.name as Record<string, string>,
-      description: route.info as Record<string, string> || {},
-      cityId: route.city || null,
-      duration: route.duration || null,
-      difficulty: route.difficulty as string || null,
-      distance: route.distance || null,
-      thumbnail: Array.isArray(route.images) && route.images.length > 0 
-        ? route.images[0] as string 
-        : 'placeholder.svg',
-      media: route.images || [],
-      pointIds: route.points as string[] || [],
-      eventIds: [] // Add empty eventIds array
-    }));
+    // Transform database records to Route objects
+    const routes: Route[] = data.map(item => {
+      // Get a valid thumbnail
+      let thumbnail = '/placeholder.svg';
+      let media: MediaItem[] = [];
+
+      return {
+        id: item.id,
+        name: item.name as Record<Language, string>,
+        description: {} as Record<Language, string>,
+        cityId: '',
+        thumbnail,
+        media,
+        pointIds: [],
+        eventIds: []
+      };
+    });
     
     return routes;
   } catch (error) {
-    console.error('Failed to fetch routes:', error);
+    console.error('Error fetching routes:', error);
     return [];
   }
 };
 
-// Function to fetch a route by ID
 export const fetchRouteById = async (routeId: string): Promise<Route | null> => {
   try {
     const { data, error } = await supabase
@@ -49,169 +49,212 @@ export const fetchRouteById = async (routeId: string): Promise<Route | null> => 
       .single();
     
     if (error) {
-      console.error(`Error fetching route ${routeId}:`, error);
-      return null;
+      if (error.code === 'PGRST116') {
+        console.log(`No route found with ID ${routeId}`);
+        return null;
+      }
+      throw error;
     }
     
     if (!data) {
+      console.log(`No route found with ID ${routeId}`);
       return null;
     }
     
-    // Transform the raw data into a Route object
+    // Get a valid thumbnail
+    let thumbnail = '/placeholder.svg';
+    let media: MediaItem[] = [];
+
     const route: Route = {
       id: data.id,
-      name: data.name as Record<string, string>,
-      description: data.info as Record<string, string> || {},
-      cityId: data.city || null,
-      duration: data.duration || null,
-      difficulty: data.difficulty as string || null,
-      distance: data.distance || null,
-      thumbnail: Array.isArray(data.images) && data.images.length > 0 
-        ? data.images[0] as string 
-        : 'placeholder.svg',
-      media: data.images || [],
-      pointIds: data.points as string[] || [],
-      eventIds: [] // Add empty eventIds array
+      name: data.name as Record<Language, string>,
+      description: {} as Record<Language, string>,
+      cityId: '',
+      thumbnail,
+      media,
+      pointIds: [],
+      eventIds: []
     };
     
     return route;
   } catch (error) {
-    console.error(`Failed to fetch route ${routeId}:`, error);
+    console.error(`Error fetching route with ID ${routeId}:`, error);
     return null;
   }
 };
 
-// Function to fetch routes by city ID
 export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
   try {
+    // Query to get all routes that contain spots from this city
+    const { data: spots, error: spotsError } = await supabase
+      .from('spots')
+      .select('id, routes')
+      .eq('city', cityId);
+    
+    if (spotsError) throw spotsError;
+    
+    if (!spots || spots.length === 0) {
+      console.log(`No spots found for city ID ${cityId}`);
+      return [];
+    }
+    
+    // Extract unique route IDs from all spots
+    const routeIds = new Set<string>();
+    spots.forEach(spot => {
+      if (spot.routes && Array.isArray(spot.routes)) {
+        spot.routes.forEach((routeId: string) => routeIds.add(routeId));
+      }
+    });
+    
+    if (routeIds.size === 0) {
+      console.log(`No routes found for city ID ${cityId}`);
+      return [];
+    }
+    
+    // Fetch the routes by their IDs
     const { data, error } = await supabase
       .from('routes')
       .select('*')
-      .eq('city', cityId);
+      .in('id', Array.from(routeIds));
     
-    if (error) {
-      console.error(`Error fetching routes for city ${cityId}:`, error);
-      throw error;
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log(`No routes found with IDs ${Array.from(routeIds).join(', ')}`);
+      return [];
     }
     
-    // Transform the raw data into Route objects
-    const routes: Route[] = data.map(route => ({
-      id: route.id,
-      name: route.name as Record<string, string>,
-      description: route.info as Record<string, string> || {},
-      cityId: route.city || null,
-      duration: route.duration || null,
-      difficulty: route.difficulty as string || null,
-      distance: route.distance || null,
-      thumbnail: Array.isArray(route.images) && route.images.length > 0 
-        ? route.images[0] as string 
-        : 'placeholder.svg',
-      media: route.images || [],
-      pointIds: route.points as string[] || [],
-      eventIds: [] // Add empty eventIds array
-    }));
+    // Transform database records to Route objects
+    const routes: Route[] = data.map(item => {
+      // Get a valid thumbnail
+      let thumbnail = '/placeholder.svg';
+      let media: MediaItem[] = [];
+      
+      return {
+        id: item.id,
+        name: item.name as Record<Language, string>,
+        description: {} as Record<Language, string>,
+        cityId,
+        thumbnail,
+        media,
+        pointIds: [],
+        eventIds: []
+      };
+    });
     
     return routes;
   } catch (error) {
-    console.error(`Failed to fetch routes for city ${cityId}:`, error);
+    console.error(`Error fetching routes for city ID ${cityId}:`, error);
     return [];
   }
 };
 
-// Function to fetch routes by point ID
 export const fetchRoutesByPoint = async (pointId: string): Promise<Route[]> => {
   try {
-    const { data: spotRouteData, error: spotRouteError } = await supabase
+    // Query the join table to get routes associated with this spot
+    const { data, error } = await supabase
       .from('spot_route')
       .select('route_id')
       .eq('spot_id', pointId);
     
-    if (spotRouteError || !spotRouteData || spotRouteData.length === 0) {
-      console.error(`Error fetching routes for point ${pointId}:`, spotRouteError);
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log(`No routes found for spot ID ${pointId}`);
       return [];
     }
     
-    const routeIds = spotRouteData.map(item => item.route_id);
+    const routeIds = data.map(item => item.route_id);
     
-    const { data, error } = await supabase
+    // Fetch the routes by their IDs
+    const { data: routesData, error: routesError } = await supabase
       .from('routes')
       .select('*')
       .in('id', routeIds);
     
-    if (error) {
-      console.error(`Error fetching routes with IDs ${routeIds.join(', ')}:`, error);
+    if (routesError) throw routesError;
+    
+    if (!routesData || routesData.length === 0) {
+      console.log(`No routes found with IDs ${routeIds.join(', ')}`);
       return [];
     }
     
-    // Transform the raw data into Route objects
-    const routes: Route[] = data.map(route => ({
-      id: route.id,
-      name: route.name as Record<string, string>,
-      description: route.info as Record<string, string> || {},
-      cityId: route.city || null,
-      duration: route.duration || null,
-      difficulty: route.difficulty as string || null,
-      distance: route.distance || null,
-      thumbnail: Array.isArray(route.images) && route.images.length > 0 
-        ? route.images[0] as string 
-        : 'placeholder.svg',
-      media: route.images || [],
-      pointIds: route.points as string[] || [],
-      eventIds: [] // Add empty eventIds array
-    }));
+    // Transform database records to Route objects
+    const routes: Route[] = routesData.map(item => {
+      // Get a valid thumbnail
+      let thumbnail = '/placeholder.svg';
+      let media: MediaItem[] = [];
+      
+      return {
+        id: item.id,
+        name: item.name as Record<Language, string>,
+        description: {} as Record<Language, string>,
+        cityId: '',
+        thumbnail,
+        media,
+        pointIds: [pointId],
+        eventIds: []
+      };
+    });
     
     return routes;
   } catch (error) {
-    console.error(`Failed to fetch routes for point ${pointId}:`, error);
+    console.error(`Error fetching routes for spot ID ${pointId}:`, error);
     return [];
   }
 };
 
-// Function to fetch routes by event ID
-export const fetchRoutesByEventId = async (eventId: string): Promise<Route[]> => {
+export const fetchRoutesByEvent = async (eventId: string): Promise<Route[]> => {
   try {
-    const { data: routeEventData, error: routeEventError } = await supabase
+    // Query the join table to get routes associated with this event
+    const { data, error } = await supabase
       .from('route_event')
       .select('route_id')
       .eq('event_id', eventId);
     
-    if (routeEventError || !routeEventData || routeEventData.length === 0) {
-      console.error(`Error fetching routes for event ${eventId}:`, routeEventError);
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log(`No routes found for event ID ${eventId}`);
       return [];
     }
     
-    const routeIds = routeEventData.map(item => item.route_id);
+    const routeIds = data.map(item => item.route_id);
     
-    const { data, error } = await supabase
+    // Fetch the routes by their IDs
+    const { data: routesData, error: routesError } = await supabase
       .from('routes')
       .select('*')
       .in('id', routeIds);
     
-    if (error) {
-      console.error(`Error fetching routes with IDs ${routeIds.join(', ')}:`, error);
+    if (routesError) throw routesError;
+    
+    if (!routesData || routesData.length === 0) {
+      console.log(`No routes found with IDs ${routeIds.join(', ')}`);
       return [];
     }
     
-    // Transform the raw data into Route objects
-    const routes: Route[] = data.map(route => ({
-      id: route.id,
-      name: route.name as Record<string, string>,
-      description: route.info as Record<string, string> || {},
-      cityId: route.city || null,
-      duration: route.duration || null,
-      difficulty: route.difficulty as string || null,
-      distance: route.distance || null,
-      thumbnail: Array.isArray(route.images) && route.images.length > 0 
-        ? route.images[0] as string 
-        : 'placeholder.svg',
-      media: route.images || [],
-      pointIds: route.points as string[] || [],
-      eventIds: [eventId] // Include the event ID
-    }));
+    // Transform database records to Route objects
+    const routes: Route[] = routesData.map(item => {
+      // Get a valid thumbnail
+      let thumbnail = '/placeholder.svg';
+      let media: MediaItem[] = [];
+      
+      return {
+        id: item.id,
+        name: item.name as Record<Language, string>,
+        description: {} as Record<Language, string>,
+        cityId: '',
+        thumbnail,
+        media,
+        pointIds: [],
+        eventIds: [eventId]
+      };
+    });
     
     return routes;
   } catch (error) {
-    console.error(`Failed to fetch routes for event ${eventId}:`, error);
+    console.error(`Error fetching routes for event ID ${eventId}:`, error);
     return [];
   }
 };

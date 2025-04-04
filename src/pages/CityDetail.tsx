@@ -1,347 +1,218 @@
-import { useState, useEffect } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useLanguage } from '../contexts/LanguageContext';
-import Navigation from '../components/Navigation';
-import MediaGallery from '../components/MediaGallery';
-import CityMap from '../components/city/CityMap';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  MapPin, 
-  Navigation as NavigationIcon, 
-  Calendar,
-  ArrowLeft,
-  Globe,
-} from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { fetchCityById } from '../services/citiesService';
-import { fetchSpotsByCity } from '../services/spotsService';
+import { fetchPointsByCity } from '../services/pointsService';
 import { fetchRoutesByCity } from '../services/routesService';
 import { fetchEventsByCity } from '../services/eventsService';
-import { MediaItem, Point } from '../types/models';
+import { City, Point, Route, Event, GeoPoint } from '../types/models';
+import { useLanguage } from '../contexts/LanguageContext';
+import CityMap from '../components/city/CityMap';
 import CitySpots from '../components/city/CitySpots';
 import CityRoutes from '../components/city/CityRoutes';
 import CityEvents from '../components/city/CityEvents';
-import SelectedSpotDetails from '../components/city/SelectedSpotDetails';
-import FavoriteDetailButton from '../components/FavoriteDetailButton';
+import Navigation from '../components/Navigation';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
+import { fetchRoutesByPoint } from '../services/routesService';
+import { fetchEventsByPoint } from '../services/eventsService';
 
 const CityDetail = () => {
   const { cityId } = useParams<{ cityId: string }>();
-  const { language, t } = useLanguage();
   const navigate = useNavigate();
+  const { language, t } = useLanguage();
+  const { toast } = useToast();
   
-  const [activeTab, setActiveTab] = useState('spots');
-  const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
-  const [spotRoutes, setSpotRoutes] = useState<any[]>([]);
-  const [spotEvents, setSpotEvents] = useState<any[]>([]);
-  
-  const { 
-    data: city,
-    isLoading: isLoadingCity,
-    error: cityError
-  } = useQuery({
-    queryKey: ['city', cityId],
-    queryFn: () => fetchCityById(cityId as string),
-    enabled: !!cityId,
-  });
-  
-  const {
-    data: spots = [],
-    isLoading: isLoadingSpots,
-    error: spotsError
-  } = useQuery({
-    queryKey: ['spots', cityId],
-    queryFn: () => fetchSpotsByCity(cityId as string),
-    enabled: !!cityId,
-  });
-  
-  const shouldFetchRoutes = activeTab === 'routes';
-  const shouldFetchEvents = activeTab === 'events';
-  
-  const {
-    data: routes = [],
-    isLoading: isLoadingRoutes,
-    error: routesError
-  } = useQuery({
-    queryKey: ['routes', cityId],
-    queryFn: () => fetchRoutesByCity(cityId as string),
-    enabled: !!cityId && shouldFetchRoutes,
-  });
-  
-  const {
-    data: events = [],
-    isLoading: isLoadingEvents,
-    error: eventsError
-  } = useQuery({
-    queryKey: ['events', cityId],
-    queryFn: () => fetchEventsByCity(cityId as string),
-    enabled: !!cityId && shouldFetchEvents,
-  });
+  const [city, setCity] = useState<City | null>(null);
+  const [points, setPoints] = useState<Point[]>([]);
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedSpot, setSelectedSpot] = useState<Point | null>(null);
+  const [selectedSpotRoutes, setSelectedSpotRoutes] = useState<Route[]>([]);
+  const [selectedSpotEvents, setSelectedSpotEvents] = useState<Event[]>([]);
+  const [centerPoint, setCenterPoint] = useState<GeoPoint | null>(null);
+  const [isSpotDetailsOpen, setIsSpotDetailsOpen] = useState(false);
   
   useEffect(() => {
-    const fetchSpotRelatedData = async () => {
-      if (selectedSpot) {
-        try {
-          const spotRoutesData = await fetchRoutesByPoint(selectedSpot);
-          setSpotRoutes(spotRoutesData);
-          
-          const spotEventsData = await fetchEventsByPoint(selectedSpot);
-          setSpotEvents(spotEventsData);
-        } catch (error) {
-          console.error("Error fetching spot related data:", error);
+    if (!cityId) {
+      toast({
+        title: "Error",
+        description: "City ID is missing",
+        variant: "destructive"
+      });
+      navigate('/cities');
+      return;
+    }
+    
+    const loadCityData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch city details
+        const cityData = await fetchCityById(cityId);
+        
+        if (!cityData) {
+          toast({
+            title: "Error",
+            description: "City not found",
+            variant: "destructive"
+          });
+          navigate('/cities');
+          return;
         }
-      } else {
-        setSpotRoutes([]);
-        setSpotEvents([]);
+        
+        setCity(cityData);
+        
+        // Fetch spots, routes, and events for this city
+        const [spotsData, routesData, eventsData] = await Promise.all([
+          fetchPointsByCity(cityId),
+          fetchRoutesByCity(cityId),
+          fetchEventsByCity(cityId)
+        ]);
+        
+        setPoints(spotsData);
+        setRoutes(routesData);
+        setEvents(eventsData);
+        
+        // If there are spots, set the center point to the first spot's location
+        if (spotsData.length > 0 && spotsData[0].location) {
+          setCenterPoint(spotsData[0].location);
+        }
+      } catch (error) {
+        console.error('Error loading city data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load city data",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
     
-    fetchSpotRelatedData();
-  }, [selectedSpot]);
+    loadCityData();
+  }, [cityId, navigate, toast]);
   
-  const handleRouteClick = (routeId: string) => {
-    navigate(`/routes/${routeId}`);
-  };
-  
-  const handleEventClick = (eventId: string) => {
-    navigate(`/events/${eventId}`);
-  };
-
-  if (isLoadingCity) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <Navigation />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-pulse-gentle">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-  
-  if (!city || cityError) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <Navigation />
-        <div className="flex-1 container mx-auto px-4 py-6">
-          <Button variant="ghost" onClick={() => navigate('/cities')}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            {t('cities')}
-          </Button>
-          <div className="mt-8 text-center">
-            <h2 className="text-2xl font-bold text-muted-foreground">
-              {cityError ? 'Error loading city data' : 'City not found'}
-            </h2>
-            {cityError && <p className="mt-2 text-red-500">{(cityError as Error).message}</p>}
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  const getCityName = () => {
-    if (!city || !city.name) return 'Unknown City';
+  const handleSpotClick = async (spot: Point) => {
+    setSelectedSpot(spot);
+    setCenterPoint(spot.location);
+    setIsSpotDetailsOpen(true);
     
-    if (typeof city.name === 'object') {
-      return city.name[language] || city.name.en || 'Unknown City';
+    try {
+      const [spotRoutes, spotEvents] = await Promise.all([
+        fetchRoutesByPoint(spot.id),
+        fetchEventsByPoint(spot.id)
+      ]);
+      
+      setSelectedSpotRoutes(spotRoutes);
+      setSelectedSpotEvents(spotEvents);
+    } catch (error) {
+      console.error('Error loading spot details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load spot details",
+        variant: "destructive"
+      });
     }
-    
-    return typeof city.name === 'string' ? city.name : 'Unknown City';
   };
   
-  const getCityDescription = () => {
-    if (!city) return '';
-    
-    if (city.description && typeof city.description === 'object') {
-      return city.description[language] || city.description.en || '';
-    }
-    
-    if (!city.description && city.info && typeof city.info === 'object') {
-      return city.info[language] || city.info.en || '';
-    }
-    
-    return '';
-  };
-  
-  const getCityInfo = () => {
-    if (!city || !city.info) return '';
-    
-    if (typeof city.info === 'object') {
-      return city.info[language] || city.info.en || '';
-    }
-    
-    return typeof city.info === 'string' ? city.info : '';
-  };
-  
-  const cityName = getCityName();
-  const cityDescription = getCityDescription();
-  
-  const mediaItems: MediaItem[] = Array.isArray(city?.images) ? city.images.map((url: string, index: number) => {
-    const isVideo = typeof url === 'string' && (url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.mov'));
-    return {
-      id: `media-${index}`,
-      type: isVideo ? 'video' as const : 'image' as const,
-      url: url,
-      thumbnailUrl: isVideo ? undefined : url,
-    };
-  }) : (city?.media || []);
-
-  const handleSpotClick = (spotId: string) => {
-    navigate(`/points/${spotId}`);
-  };
-  
-  const clearSelectedSpot = () => {
+  const handleCloseSpotDetails = () => {
+    setIsSpotDetailsOpen(false);
     setSelectedSpot(null);
+    setSelectedSpotRoutes([]);
+    setSelectedSpotEvents([]);
   };
   
-  const selectedSpotObject = selectedSpot ? spots.find(spot => spot.id === selectedSpot) : null;
-
-  const renderCityStats = () => {
+  if (isLoading) {
     return (
-      <div className="flex flex-wrap gap-2">
-        <div className="inline-flex items-center px-2 py-1 text-sm bg-secondary rounded-full">
-          <MapPin className="h-4 w-4 mr-1" />
-          {city.spots_count || spots.length || 0}
-        </div>
-        
-        <div className="inline-flex items-center px-2 py-1 text-sm bg-secondary rounded-full">
-          <NavigationIcon className="h-4 w-4 mr-1" />
-          {city.routes_count || routes.length || 0}
-        </div>
-        
-        <div className="inline-flex items-center px-2 py-1 text-sm bg-secondary rounded-full">
-          <Calendar className="h-4 w-4 mr-1" />
-          {city.events_count || events.length || 0}
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading city details...</p>
         </div>
       </div>
     );
-  };
+  }
+  
+  if (!city) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="text-center">
+          <p className="text-muted-foreground">City not found</p>
+          <Button onClick={() => navigate('/cities')} className="mt-4">
+            Go back to cities
+          </Button>
+        </div>
+      </div>
+    );
+  }
   
   return (
-    <div className="flex flex-col min-h-screen bg-muted">
+    <div className="min-h-screen bg-muted">
       <Navigation />
       
-      <main className="flex-1 container mx-auto px-4 py-6">
-        <Button variant="ghost" onClick={() => navigate('/cities')} className="mb-4">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {t('cities')}
-        </Button>
+      <div className="container mx-auto py-8">
+        <header className="mb-6">
+          <h1 className="text-3xl font-bold">
+            {typeof city.name === 'object' 
+              ? city.name[language] || city.name.en || 'Unknown City'
+              : city.name || 'Unknown City'}
+          </h1>
+          
+          {city.description && (
+            <p className="mt-2 text-muted-foreground">
+              {typeof city.description === 'object' 
+                ? city.description[language] || city.description.en || ''
+                : city.description || ''}
+            </p>
+          )}
+        </header>
         
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="bg-secondary/20 p-6">
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-              <div className="flex-grow">
-                <h1 className="text-3xl font-bold">{cityName}</h1>
-                <p className="text-muted-foreground mt-3">{cityDescription}</p>
-              </div>
-              
-              <div className="md:ml-4 bg-white p-4 rounded-lg shadow-sm min-w-[220px] flex flex-col gap-2">
-                {city.country && (
-                  <div className="flex items-center text-sm">
-                    <Globe className="h-4 w-4 mr-2 text-primary" />
-                    <span className="font-medium">{city.country}</span>
-                  </div>
-                )}
-                
-                <div className="flex items-center text-sm">
-                  <MapPin className="h-4 w-4 mr-2 text-primary" />
-                  <span><span className="font-medium">{city.spots_count || spots.length || 0}</span> {t('spots')}</span>
-                </div>
-                
-                <div className="flex items-center text-sm">
-                  <NavigationIcon className="h-4 w-4 mr-2 text-primary" />
-                  <span><span className="font-medium">{city.routes_count || routes.length || 0}</span> {t('routes')}</span>
-                </div>
-                
-                <div className="flex items-center text-sm">
-                  <Calendar className="h-4 w-4 mr-2 text-primary" />
-                  <span><span className="font-medium">{city.events_count || events.length || 0}</span> {t('events')}</span>
-                </div>
-                
-                <div className="mt-2">
-                  <FavoriteDetailButton
-                    itemId={city.id}
-                    itemType="city"
-                    size="sm"
-                    className="w-full"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-            
-          <div className="p-6">
-            <MediaGallery media={mediaItems} />
-            
-            {spots.length > 0 && (
-              <div className="mt-6">
-                <CityMap 
-                  points={spots} 
-                  cityLocation={city.location ? city.location : undefined} 
-                  height="500px"
-                />
-              </div>
-            )}
-            
-            <div className="mt-6">
-              {selectedSpot && (
-                <SelectedSpotDetails 
-                  selectedSpot={selectedSpotObject}
-                  spotRoutes={spotRoutes}
-                  spotEvents={spotEvents}
-                  onClearSelectedSpot={clearSelectedSpot}
-                  onRouteClick={handleRouteClick}
-                  onEventClick={handleEventClick}
-                />
-              )}
-
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="w-full grid grid-cols-3">
-                  <TabsTrigger value="spots" className="flex items-center">
-                    <MapPin className="mr-1 h-4 w-4" />
-                    {t('spots')}
-                  </TabsTrigger>
-                  <TabsTrigger value="routes" className="flex items-center">
-                    <NavigationIcon className="mr-1 h-4 w-4" />
-                    {t('routes')}
-                  </TabsTrigger>
-                  <TabsTrigger value="events" className="flex items-center">
-                    <Calendar className="mr-1 h-4 w-4" />
-                    {t('events')}
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="spots" className="pt-4">
-                  <CitySpots 
-                    spots={spots}
-                    isLoading={isLoadingSpots}
-                    error={spotsError as Error | null}
-                    selectedSpot={selectedSpot}
-                    onSpotClick={handleSpotClick}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="routes" className="pt-4">
-                  <CityRoutes 
-                    routes={routes}
-                    isLoading={shouldFetchRoutes && isLoadingRoutes}
-                    error={routesError as Error | null}
-                    onRouteClick={handleRouteClick}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="events" className="pt-4">
-                  <CityEvents
-                    events={events}
-                    isLoading={shouldFetchEvents && isLoadingEvents}
-                    error={eventsError as Error | null}
-                    onEventClick={handleEventClick}
-                  />
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
-        </div>
-      </main>
+        <Tabs defaultValue="map" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="map">Map</TabsTrigger>
+            <TabsTrigger value="spots">
+              {t('pointsOfInterest')} ({points.length})
+            </TabsTrigger>
+            <TabsTrigger value="routes">
+              {t('routes')} ({routes.length})
+            </TabsTrigger>
+            <TabsTrigger value="events">
+              {t('events')} ({events.length})
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="map" className="p-0">
+            <CityMap 
+              spots={points}
+              selectedSpot={selectedSpot}
+              onSpotClick={handleSpotClick}
+              centerPoint={centerPoint}
+              onCenterPointChange={setCenterPoint}
+              isSpotDetailsOpen={isSpotDetailsOpen}
+              onCloseSpotDetails={handleCloseSpotDetails}
+              selectedSpotRoutes={selectedSpotRoutes}
+              selectedSpotEvents={selectedSpotEvents}
+            />
+          </TabsContent>
+          
+          <TabsContent value="spots">
+            <CitySpots 
+              spots={points} 
+              onSpotClick={handleSpotClick} 
+            />
+          </TabsContent>
+          
+          <TabsContent value="routes">
+            <CityRoutes routes={routes} />
+          </TabsContent>
+          
+          <TabsContent value="events">
+            <CityEvents events={events} />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };

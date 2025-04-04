@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -8,6 +9,7 @@ import { Point, Route, Event } from '../types/models';
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import ItemCardWrapper from '../components/ItemCardWrapper';
+import Navigation from '../components/Navigation';
 
 const Search = () => {
   const { t, language } = useLanguage();
@@ -43,21 +45,6 @@ const Search = () => {
   };
   
   // Filter spots, routes, and events based on the search term
-  const filterItems = (items: any[], term: string) => {
-    if (!Array.isArray(items)) {
-      return [];
-    }
-    
-    const lowerTerm = term.toLowerCase();
-    
-    return items.filter(item => {
-      const name = item.name?.[language]?.toLowerCase() || item.name?.en?.toLowerCase() || '';
-      const description = item.description?.[language]?.toLowerCase() || item.description?.en?.toLowerCase() || '';
-      
-      return name.includes(lowerTerm) || description.includes(lowerTerm);
-    });
-  };
-  
   const filteredSpots = Array.isArray(spots) ? spots.filter((spot) => {
     const name = spot.name?.[language]?.toLowerCase() || spot.name?.en?.toLowerCase() || '';
     const description = spot.description?.[language]?.toLowerCase() || spot.description?.en?.toLowerCase() || '';
@@ -78,6 +65,7 @@ const Search = () => {
   
   return (
     <div className="min-h-screen bg-muted">
+      <Navigation />
       <div className="container mx-auto py-8">
         <h1 className="text-2xl font-bold mb-4">{t('search')}</h1>
         

@@ -39,26 +39,13 @@ const Profile = () => {
   
   useEffect(() => {
     // Check authentication status when component mounts
-    const checkAuth = () => {
-      if (!authLoading && !isAuthenticated) {
-        console.log("User not authenticated, redirecting to auth page");
-        navigate('/auth');
-      }
-    };
-    
-    checkAuth();
-    
-    // We want to run this check whenever auth state changes
-    const interval = setInterval(checkAuth, 1000);
-    
-    return () => clearInterval(interval);
-  }, [isAuthenticated, navigate, authLoading]);
-  
-  useEffect(() => {
-    if (user && isAuthenticated) {
+    if (!authLoading && !isAuthenticated) {
+      console.log("User not authenticated, redirecting to auth page");
+      navigate('/auth');
+    } else if (user && isAuthenticated) {
       fetchFavorites();
     }
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, navigate, authLoading]);
   
   const handleSignOut = async () => {
     try {
@@ -84,7 +71,7 @@ const Profile = () => {
       console.log("Fetching favorites for user:", user?.id);
       console.log("User favorites:", user?.favorites);
 
-      if (user?.favorites.cities.length) {
+      if (user?.favorites.cities?.length) {
         const citiesPromises = user.favorites.cities.map(cityId => 
           fetchCityById(cityId)
         );
@@ -100,7 +87,7 @@ const Profile = () => {
         setFavoritesData(prev => ({ ...prev, cities: [], isLoading: false }));
       }
 
-      if (user?.favorites.points.length) {
+      if (user?.favorites.points?.length) {
         const pointsPromises = user.favorites.points.map(pointId => 
           fetchPointById(pointId)
         );
@@ -116,7 +103,7 @@ const Profile = () => {
         setFavoritesData(prev => ({ ...prev, points: [], isLoading: false }));
       }
 
-      if (user?.favorites.routes.length) {
+      if (user?.favorites.routes?.length) {
         const routesPromises = user.favorites.routes.map(routeId => 
           fetchRouteById(routeId)
         );
@@ -132,7 +119,7 @@ const Profile = () => {
         setFavoritesData(prev => ({ ...prev, routes: [], isLoading: false }));
       }
 
-      if (user?.favorites.events.length) {
+      if (user?.favorites.events?.length) {
         const eventsPromises = user.favorites.events.map(eventId => 
           fetchEventById(eventId)
         );

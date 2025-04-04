@@ -1,31 +1,31 @@
 
-import { supabase } from '../integrations/supabase/client';
-import { Event, MediaItem } from '../types/models';
-import { Json } from '../types/supabase';
+import { supabase } from '@/integrations/supabase/client';
+import { Event, Language, MediaItem, Json } from '../types/models';
 
-// Function to fetch all events
 export const fetchEvents = async (): Promise<Event[]> => {
   try {
     const { data, error } = await supabase
       .from('events')
       .select('*');
     
-    if (error) {
-      console.error('Error fetching events:', error);
-      throw error;
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log("No events found");
+      return [];
     }
     
-    // Transform the raw data into Event objects
-    const events: Event[] = data.map(event => {
+    // Transform database records to Event objects
+    const events: Event[] = data.map(item => {
       // Create media items from images
       let mediaItems: MediaItem[] = [];
       let imageArray: string[] = [];
       
-      if (event.images) {
-        if (Array.isArray(event.images)) {
-          imageArray = event.images.filter(img => typeof img === 'string') as string[];
-        } else if (typeof event.images === 'object' && event.images !== null) {
-          imageArray = Object.values(event.images)
+      if (item.images) {
+        if (Array.isArray(item.images)) {
+          imageArray = item.images.filter(img => typeof img === 'string') as string[];
+        } else if (typeof item.images === 'object' && item.images !== null) {
+          imageArray = Object.values(item.images)
             .filter(img => typeof img === 'string') as string[];
         }
         
@@ -37,30 +37,33 @@ export const fetchEvents = async (): Promise<Event[]> => {
         }));
       }
       
+      // Get a valid thumbnail
+      let thumbnail = '/placeholder.svg';
+      if (imageArray.length > 0) {
+        thumbnail = imageArray[0];
+      }
+      
       return {
-        id: event.id,
-        cityId: event.city || null,
-        name: event.name as Record<string, string> || { en: 'Unnamed Event' },
-        description: event.info as Record<string, string> || {},
-        startDate: event.time || null,
-        endDate: event.end_time || null,
+        id: item.id,
+        cityId: '',
+        name: item.name as Record<Language, string>,
+        description: item.info as Record<Language, string>,
+        startDate: item.time,
+        endDate: '',
         media: mediaItems,
-        thumbnail: Array.isArray(imageArray) && imageArray.length > 0 
-          ? imageArray[0] 
-          : 'placeholder.svg',
-        pointIds: event.points as string[] || [],
-        type: event.type || false
+        thumbnail,
+        pointIds: [],
+        type: item.type
       };
     });
     
     return events;
   } catch (error) {
-    console.error('Failed to fetch events:', error);
+    console.error('Error fetching events:', error);
     return [];
   }
 };
 
-// Function to fetch an event by ID
 export const fetchEventById = async (eventId: string): Promise<Event | null> => {
   try {
     const { data, error } = await supabase
@@ -70,11 +73,15 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
       .single();
     
     if (error) {
-      console.error(`Error fetching event ${eventId}:`, error);
-      return null;
+      if (error.code === 'PGRST116') {
+        console.log(`No event found with ID ${eventId}`);
+        return null;
+      }
+      throw error;
     }
     
     if (!data) {
+      console.log(`No event found with ID ${eventId}`);
       return null;
     }
     
@@ -98,183 +105,163 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
       }));
     }
     
-    // Transform the raw data into an Event object
+    // Get a valid thumbnail
+    let thumbnail = '/placeholder.svg';
+    if (imageArray.length > 0) {
+      thumbnail = imageArray[0];
+    }
+    
     const event: Event = {
       id: data.id,
-      cityId: data.city || null,
-      name: data.name as Record<string, string> || { en: 'Unnamed Event' },
-      description: data.info as Record<string, string> || {},
-      startDate: data.time || null,
-      endDate: data.end_time || null,
+      cityId: '',
+      name: data.name as Record<Language, string>,
+      description: data.info as Record<Language, string>,
+      startDate: data.time,
+      endDate: '',
       media: mediaItems,
-      thumbnail: Array.isArray(imageArray) && imageArray.length > 0 
-        ? imageArray[0] 
-        : 'placeholder.svg',
-      pointIds: data.points as string[] || [],
-      type: data.type || false
+      thumbnail,
+      pointIds: [],
+      type: data.type
     };
     
     return event;
   } catch (error) {
-    console.error(`Failed to fetch event ${eventId}:`, error);
+    console.error(`Error fetching event with ID ${eventId}:`, error);
     return null;
   }
 };
 
-// Function to fetch events by city ID
 export const fetchEventsByCity = async (cityId: string): Promise<Event[]> => {
   try {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
+    // Query to get all events that contain spots from this city
+    const { data: spots, error: spotsError } = await supabase
+      .from('spots')
+      .select('id, events')
       .eq('city', cityId);
     
-    if (error) {
-      console.error(`Error fetching events for city ${cityId}:`, error);
-      throw error;
-    }
+    if (spotsError) throw spotsError;
     
-    // Transform the raw data into Event objects
-    const events: Event[] = data.map(event => {
-      // Create media items from images
-      let mediaItems: MediaItem[] = [];
-      let imageArray: string[] = [];
-      
-      if (event.images) {
-        if (Array.isArray(event.images)) {
-          imageArray = event.images.filter(img => typeof img === 'string') as string[];
-        } else if (typeof event.images === 'object' && event.images !== null) {
-          imageArray = Object.values(event.images)
-            .filter(img => typeof img === 'string') as string[];
-        }
-        
-        mediaItems = imageArray.map((url, index) => ({
-          id: `image-${index}`,
-          type: 'image',
-          url,
-          thumbnailUrl: url,
-        }));
-      }
-      
-      return {
-        id: event.id,
-        cityId: event.city || null,
-        name: event.name as Record<string, string> || { en: 'Unnamed Event' },
-        description: event.info as Record<string, string> || {},
-        startDate: event.time || null,
-        endDate: event.end_time || null,
-        media: mediaItems,
-        thumbnail: Array.isArray(imageArray) && imageArray.length > 0 
-          ? imageArray[0] 
-          : 'placeholder.svg',
-        pointIds: event.points as string[] || [],
-        type: event.type || false
-      };
-    });
-    
-    return events;
-  } catch (error) {
-    console.error(`Failed to fetch events for city ${cityId}:`, error);
-    return [];
-  }
-};
-
-// Function to fetch events by point ID
-export const fetchEventsByPoint = async (pointId: string): Promise<Event[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .contains('points', [pointId]);
-    
-    if (error) {
-      console.error(`Error fetching events for point ${pointId}:`, error);
-      throw error;
-    }
-    
-    // Transform the raw data into Event objects
-    const events: Event[] = data.map(event => {
-      // Create media items from images
-      let mediaItems: MediaItem[] = [];
-      let imageArray: string[] = [];
-      
-      if (event.images) {
-        if (Array.isArray(event.images)) {
-          imageArray = event.images.filter(img => typeof img === 'string') as string[];
-        } else if (typeof event.images === 'object' && event.images !== null) {
-          imageArray = Object.values(event.images)
-            .filter(img => typeof img === 'string') as string[];
-        }
-        
-        mediaItems = imageArray.map((url, index) => ({
-          id: `image-${index}`,
-          type: 'image',
-          url,
-          thumbnailUrl: url,
-        }));
-      }
-      
-      return {
-        id: event.id,
-        cityId: event.city || null,
-        name: event.name as Record<string, string> || { en: 'Unnamed Event' },
-        description: event.info as Record<string, string> || {},
-        startDate: event.time || null,
-        endDate: event.end_time || null,
-        media: mediaItems,
-        thumbnail: Array.isArray(imageArray) && imageArray.length > 0 
-          ? imageArray[0] 
-          : 'placeholder.svg',
-        pointIds: event.points as string[] || [],
-        type: event.type || false
-      };
-    });
-    
-    return events;
-  } catch (error) {
-    console.error(`Failed to fetch events for point ${pointId}:`, error);
-    return [];
-  }
-};
-
-// Function to fetch events by route ID
-export const fetchEventsByRoute = async (routeId: string): Promise<Event[]> => {
-  try {
-    // Query for events related to a specific route
-    const { data: routeEventData, error: routeEventError } = await supabase
-      .from('route_event')
-      .select('event_id')
-      .eq('route_id', routeId);
-    
-    if (routeEventError || !routeEventData || routeEventData.length === 0) {
-      console.error(`Error fetching events for route ${routeId}:`, routeEventError);
+    if (!spots || spots.length === 0) {
+      console.log(`No spots found for city ID ${cityId}`);
       return [];
     }
     
-    const eventIds = routeEventData.map(item => item.event_id);
+    // Extract unique event IDs from all spots
+    const eventIds = new Set<string>();
+    spots.forEach(spot => {
+      if (spot.events && Array.isArray(spot.events)) {
+        spot.events.forEach((eventId: string) => eventIds.add(eventId));
+      }
+    });
     
-    // Fetch the events with those IDs
+    if (eventIds.size === 0) {
+      console.log(`No events found for city ID ${cityId}`);
+      return [];
+    }
+    
+    // Fetch the events by their IDs
     const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .in('id', Array.from(eventIds));
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log(`No events found with IDs ${Array.from(eventIds).join(', ')}`);
+      return [];
+    }
+    
+    // Transform database records to Event objects
+    const events: Event[] = data.map(item => {
+      // Create media items from images
+      let mediaItems: MediaItem[] = [];
+      let imageArray: string[] = [];
+      
+      if (item.images) {
+        if (Array.isArray(item.images)) {
+          imageArray = item.images.filter(img => typeof img === 'string') as string[];
+        } else if (typeof item.images === 'object' && item.images !== null) {
+          imageArray = Object.values(item.images)
+            .filter(img => typeof img === 'string') as string[];
+        }
+        
+        mediaItems = imageArray.map((url, index) => ({
+          id: `image-${index}`,
+          type: 'image',
+          url,
+          thumbnailUrl: url,
+        }));
+      }
+      
+      // Get a valid thumbnail
+      let thumbnail = '/placeholder.svg';
+      if (imageArray.length > 0) {
+        thumbnail = imageArray[0];
+      }
+      
+      return {
+        id: item.id,
+        cityId,
+        name: item.name as Record<Language, string>,
+        description: item.info as Record<Language, string>,
+        startDate: item.time,
+        endDate: '',
+        media: mediaItems,
+        thumbnail,
+        pointIds: [],
+        type: item.type
+      };
+    });
+    
+    return events;
+  } catch (error) {
+    console.error(`Error fetching events for city ID ${cityId}:`, error);
+    return [];
+  }
+};
+
+export const fetchEventsByPoint = async (pointId: string): Promise<Event[]> => {
+  try {
+    // Query the join table to get events associated with this spot
+    const { data, error } = await supabase
+      .from('spot_event')
+      .select('event_id')
+      .eq('spot_id', pointId);
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log(`No events found for spot ID ${pointId}`);
+      return [];
+    }
+    
+    const eventIds = data.map(item => item.event_id);
+    
+    // Fetch the events by their IDs
+    const { data: eventsData, error: eventsError } = await supabase
       .from('events')
       .select('*')
       .in('id', eventIds);
     
-    if (error) {
-      console.error(`Error fetching events with IDs ${eventIds.join(', ')}:`, error);
+    if (eventsError) throw eventsError;
+    
+    if (!eventsData || eventsData.length === 0) {
+      console.log(`No events found with IDs ${eventIds.join(', ')}`);
       return [];
     }
     
-    // Transform the raw data into Event objects
-    const events: Event[] = data.map(event => {
+    // Transform database records to Event objects
+    const events: Event[] = eventsData.map(item => {
       // Create media items from images
       let mediaItems: MediaItem[] = [];
       let imageArray: string[] = [];
       
-      if (event.images) {
-        if (Array.isArray(event.images)) {
-          imageArray = event.images.filter(img => typeof img === 'string') as string[];
-        } else if (typeof event.images === 'object' && event.images !== null) {
-          imageArray = Object.values(event.images)
+      if (item.images) {
+        if (Array.isArray(item.images)) {
+          imageArray = item.images.filter(img => typeof img === 'string') as string[];
+        } else if (typeof item.images === 'object' && item.images !== null) {
+          imageArray = Object.values(item.images)
             .filter(img => typeof img === 'string') as string[];
         }
         
@@ -286,45 +273,108 @@ export const fetchEventsByRoute = async (routeId: string): Promise<Event[]> => {
         }));
       }
       
+      // Get a valid thumbnail
+      let thumbnail = '/placeholder.svg';
+      if (imageArray.length > 0) {
+        thumbnail = imageArray[0];
+      }
+      
       return {
-        id: event.id,
-        cityId: event.city || null,
-        name: event.name as Record<string, string> || { en: 'Unnamed Event' },
-        description: event.info as Record<string, string> || {},
-        startDate: event.time || null,
-        endDate: event.end_time || null,
+        id: item.id,
+        cityId: '',
+        name: item.name as Record<Language, string>,
+        description: item.info as Record<Language, string>,
+        startDate: item.time,
+        endDate: '',
         media: mediaItems,
-        thumbnail: Array.isArray(imageArray) && imageArray.length > 0 
-          ? imageArray[0] 
-          : 'placeholder.svg',
-        pointIds: event.points as string[] || [],
-        type: event.type || false
+        thumbnail,
+        pointIds: [pointId],
+        type: item.type
       };
     });
     
     return events;
   } catch (error) {
-    console.error(`Failed to fetch events for route ${routeId}:`, error);
+    console.error(`Error fetching events for spot ID ${pointId}:`, error);
     return [];
   }
 };
 
-// Function to fetch points by event ID
-export const fetchPointsByEventId = async (eventId: string): Promise<string[]> => {
+export const fetchEventsByRoute = async (routeId: string): Promise<Event[]> => {
   try {
+    // Query the join table to get events associated with this route
     const { data, error } = await supabase
-      .from('spot_event')
-      .select('spot_id')
-      .eq('event_id', eventId);
+      .from('route_event')
+      .select('event_id')
+      .eq('route_id', routeId);
     
-    if (error || !data) {
-      console.error(`Error fetching points for event ${eventId}:`, error);
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      console.log(`No events found for route ID ${routeId}`);
       return [];
     }
     
-    return data.map(item => item.spot_id);
+    const eventIds = data.map(item => item.event_id);
+    
+    // Fetch the events by their IDs
+    const { data: eventsData, error: eventsError } = await supabase
+      .from('events')
+      .select('*')
+      .in('id', eventIds);
+    
+    if (eventsError) throw eventsError;
+    
+    if (!eventsData || eventsData.length === 0) {
+      console.log(`No events found with IDs ${eventIds.join(', ')}`);
+      return [];
+    }
+    
+    // Transform database records to Event objects
+    const events: Event[] = eventsData.map(item => {
+      // Create media items from images
+      let mediaItems: MediaItem[] = [];
+      let imageArray: string[] = [];
+      
+      if (item.images) {
+        if (Array.isArray(item.images)) {
+          imageArray = item.images.filter(img => typeof img === 'string') as string[];
+        } else if (typeof item.images === 'object' && item.images !== null) {
+          imageArray = Object.values(item.images)
+            .filter(img => typeof img === 'string') as string[];
+        }
+        
+        mediaItems = imageArray.map((url, index) => ({
+          id: `image-${index}`,
+          type: 'image',
+          url,
+          thumbnailUrl: url,
+        }));
+      }
+      
+      // Get a valid thumbnail
+      let thumbnail = '/placeholder.svg';
+      if (imageArray.length > 0) {
+        thumbnail = imageArray[0];
+      }
+      
+      return {
+        id: item.id,
+        cityId: '',
+        name: item.name as Record<Language, string>,
+        description: item.info as Record<Language, string>,
+        startDate: item.time,
+        endDate: '',
+        media: mediaItems,
+        thumbnail,
+        pointIds: [],
+        type: item.type
+      };
+    });
+    
+    return events;
   } catch (error) {
-    console.error(`Failed to fetch points for event ${eventId}:`, error);
+    console.error(`Error fetching events for route ID ${routeId}:`, error);
     return [];
   }
 };
