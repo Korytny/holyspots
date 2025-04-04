@@ -233,7 +233,7 @@ export type Database = {
       spots: {
         Row: {
           city: string | null
-          cityeng: string | null
+          cityeng_old: string | null
           coordinates: Json | null
           created_at: string | null
           id: string
@@ -246,7 +246,7 @@ export type Database = {
         }
         Insert: {
           city?: string | null
-          cityeng?: string | null
+          cityeng_old?: string | null
           coordinates?: Json | null
           created_at?: string | null
           id?: string
@@ -259,7 +259,7 @@ export type Database = {
         }
         Update: {
           city?: string | null
-          cityeng?: string | null
+          cityeng_old?: string | null
           coordinates?: Json | null
           created_at?: string | null
           id?: string

@@ -15,6 +15,9 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Cities from "./pages/Cities";
 import CityDetail from "./pages/CityDetail";
+import PointDetail from "./pages/PointDetail";
+import RouteDetail from "./pages/RouteDetail";
+import EventDetail from "./pages/EventDetail";
 import Profile from "./pages/Profile";
 import Search from "./pages/Search";
 
@@ -33,12 +36,11 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/cities" element={<Cities />} />
               <Route path="/cities/:cityId" element={<CityDetail />} />
+              <Route path="/points/:pointId" element={<PointDetail />} />
+              <Route path="/routes/:routeId" element={<RouteDetail />} />
+              <Route path="/events/:eventId" element={<EventDetail />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/search" element={<Search />} />
-              {/* Add other routes as they are developed */}
-              {/* <Route path="/points/:pointId" element={<PointDetail />} /> */}
-              {/* <Route path="/routes/:routeId" element={<RouteDetail />} /> */}
-              {/* <Route path="/events/:eventId" element={<EventDetail />} /> */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
@@ -49,4 +51,3 @@ const App = () => (
 );
 
 export default App;
-

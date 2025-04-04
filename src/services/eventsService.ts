@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { Event } from '../types/models';
 
@@ -59,7 +58,6 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
   };
 };
 
-// New function to fetch events by spot ID
 export const fetchEventsBySpot = async (spotId: string): Promise<Event[]> => {
   console.log('Fetching events for spot:', spotId);
   
@@ -74,6 +72,35 @@ export const fetchEventsBySpot = async (spotId: string): Promise<Event[]> => {
   }
   
   console.log(`Retrieved ${data.length} events for spot ${spotId}`);
+  
+  return data.map((eventData): Event => ({
+    id: eventData.id,
+    cityId: eventData.city || '',
+    name: eventData.name as Record<string, string>,
+    description: eventData.info as Record<string, string>,
+    media: eventData.media || [],
+    thumbnail: eventData.images && eventData.images.length > 0 ? eventData.images[0] : '/placeholder.svg',
+    pointIds: eventData.spot || [],
+    startDate: eventData.time || '',
+    endDate: eventData.time || '',
+    ownerId: eventData.ownerId,
+  }));
+};
+
+export const fetchEventsByRoute = async (routeId: string): Promise<Event[]> => {
+  console.log('Fetching events for route:', routeId);
+  
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .contains('routes', [routeId]);
+  
+  if (error) {
+    console.error('Error fetching events for route:', error);
+    throw error;
+  }
+  
+  console.log(`Retrieved ${data.length} events for route ${routeId}`);
   
   return data.map((eventData): Event => ({
     id: eventData.id,
