@@ -50,11 +50,10 @@ const EventDetail = () => {
         
         setEvent(eventData);
         
-        // Fetch related routes with the eventId parameter
+        // Fetch related routes and points with the eventId parameter
         const routesData = await fetchRoutesByEvent(eventId);
         setRoutes(routesData);
         
-        // Fetch related points with the eventId parameter
         const pointsData = await fetchPointsByEventId(eventId);
         setPoints(pointsData);
       } catch (error) {

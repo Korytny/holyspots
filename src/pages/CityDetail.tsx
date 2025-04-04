@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchCityById } from '../services/citiesService';
@@ -68,7 +67,7 @@ const CityDetail = () => {
         
         // Fetch spots, routes, and events for this city
         const [spotsData, routesData, eventsData] = await Promise.all([
-          fetchPointsByCityId(cityId),
+          fetchPointsByCity(cityId),
           fetchRoutesByCity(cityId),
           fetchEventsByCity(cityId)
         ]);
