@@ -32,9 +32,12 @@ const ItemCardWrapper: React.FC<ItemCardWrapperProps> = (props) => {
       : (props.description || { en: '', ru: '', hi: '' }) as Record<Language, string>
   };
   
+  // Remove onClick from normalizedProps if ItemCard doesn't accept it
+  const { onClick, ...itemCardProps } = normalizedProps;
+  
   return (
-    <div className="relative group">
-      <ItemCard {...normalizedProps} />
+    <div className="relative group" onClick={onClick}>
+      <ItemCard {...itemCardProps} />
       <div className="absolute top-2 right-2 opacity-80 group-hover:opacity-100 transition-opacity">
         <FavoriteButton itemId={id} itemType={type} />
       </div>

@@ -1,239 +1,143 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '../contexts/LanguageContext';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import Navigation from '../components/Navigation';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Heart, LogOut } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { City, Point, Route, Event } from '../types/models';
+import { fetchCityById } from '../services/citiesService';
+import { fetchPointById } from '../services/pointsService';
+import { fetchRouteById } from '../services/routesService';
+import { fetchEventById } from '../services/eventsService';
 import ItemCardWrapper from '../components/ItemCardWrapper';
-import { City, Point, Route, Event, Language } from '../types/models';
+import { useLanguage } from '../contexts/LanguageContext';
+import { Button } from '@/components/ui/button';
+
+interface FavoritesData {
+  cities: City[];
+  points: Point[];
+  routes: Route[];
+  events: Event[];
+  isLoading: boolean;
+  error: Error | null;
+}
 
 const Profile = () => {
-  const { t, language } = useLanguage();
   const { user, signOut, isLoading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState('cities');
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { t } = useLanguage();
   
-  const [favorites, setFavorites] = useState<{
-    cities: City[];
-    points: Point[];
-    routes: Route[];
-    events: Event[];
-    isLoading: boolean;
-    error: Error | null;
-  }>({
+  const [favoritesData, setFavoritesData] = useState<FavoritesData>({
     cities: [],
     points: [],
     routes: [],
     events: [],
-    isLoading: false,
-    error: null
+    isLoading: true,
+    error: null,
   });
   
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!user && !authLoading) {
       navigate('/auth');
     }
-    
+  }, [user, navigate, authLoading]);
+  
+  useEffect(() => {
     if (user) {
       fetchFavorites();
     }
-  }, [user, authLoading, navigate]);
+  }, [user]);
   
-  const fetchFavorites = async () => {
-    if (!user) return;
-    
-    setFavorites(prev => ({ ...prev, isLoading: true, error: null }));
-    
-    try {
-      // Fetch favorite cities
-      if (user.favorites.cities.length > 0) {
-        const { data: citiesData, error: citiesError } = await supabase
-          .from('cities')
-          .select('*')
-          .in('id', user.favorites.cities);
-          
-        if (citiesError) throw citiesError;
-        
-        const cities: City[] = citiesData.map(city => ({
-          id: city.id,
-          name: typeof city.name === 'object' ? city.name as Record<Language, string> : { en: city.name, ru: city.name, hi: city.name } as Record<Language, string>,
-          description: city.info ? (typeof city.info === 'object' ? city.info as Record<Language, string> : { en: String(city.info), ru: String(city.info), hi: String(city.info) }) : { en: '', ru: '', hi: '' },
-          thumbnail: Array.isArray(city.images) && city.images.length > 0 ? city.images[0] : '/placeholder.svg',
-          pointIds: [],
-          routeIds: [],
-          eventIds: [],
-          location: { latitude: 0, longitude: 0 },
-          country: typeof city.country === 'string' ? city.country : undefined
-        }));
-        
-        setFavorites(prev => ({ ...prev, cities }));
-      }
-      
-      // Fetch favorite spots (points)
-      if (user.favorites.points.length > 0) {
-        const { data: pointsData, error: pointsError } = await supabase
-          .from('spots')
-          .select('*')
-          .in('id', user.favorites.points);
-          
-        if (pointsError) throw pointsError;
-        
-        const points: Point[] = pointsData.map(point => {
-          // Extract coordinates from the point.coordinates JSON field
-          let latitude = 0;
-          let longitude = 0;
-          
-          if (point.coordinates && typeof point.coordinates === 'object') {
-            // Try to extract lat/lng or latitude/longitude from coordinates object
-            if ('lat' in point.coordinates && 'lng' in point.coordinates) {
-              latitude = Number(point.coordinates.lat);
-              longitude = Number(point.coordinates.lng);
-            } else if ('latitude' in point.coordinates && 'longitude' in point.coordinates) {
-              latitude = Number(point.coordinates.latitude);
-              longitude = Number(point.coordinates.longitude);
-            }
-          }
-          
-          // Determine the correct point type
-          let pointType: 'temple' | 'ashram' | 'kund' | 'other' = 'other';
-          if (point.type === 1) pointType = 'temple';
-          else if (point.type === 2) pointType = 'ashram';
-          else if (point.type === 3) pointType = 'kund';
-          
-          return {
-            id: point.id,
-            cityId: point.city || '',
-            type: pointType,
-            name: typeof point.name === 'object' ? point.name as Record<Language, string> : { en: 'Unnamed Point', ru: 'Безымянная точка', hi: 'अनाम स्थान' } as Record<Language, string>,
-            description: point.info ? (typeof point.info === 'object' ? point.info as Record<Language, string> : { en: String(point.info), ru: String(point.info), hi: String(point.info) }) : { en: '', ru: '', hi: '' },
-            media: [],
-            thumbnail: Array.isArray(point.images) && point.images.length > 0 ? point.images[0] : '/placeholder.svg',
-            location: { latitude, longitude },
-            routeIds: [],
-            eventIds: []
-          };
-        });
-        
-        setFavorites(prev => ({ ...prev, points }));
-      }
-      
-      // Fetch favorite routes
-      if (user.favorites.routes.length > 0) {
-        const { data: routesData, error: routesError } = await supabase
-          .from('routes')
-          .select('*')
-          .in('id', user.favorites.routes);
-          
-        if (routesError) throw routesError;
-        
-        const routes: Route[] = routesData.map(route => ({
-          id: route.id,
-          cityId: '',
-          name: typeof route.name === 'object' ? route.name as Record<Language, string> : { en: 'Unnamed Route', ru: 'Безымянный маршрут', hi: 'अनाम मार्ग' } as Record<Language, string>,
-          description: { en: '', ru: '', hi: '' },
-          media: [],
-          thumbnail: '/placeholder.svg',
-          pointIds: [],
-          eventIds: []
-        }));
-        
-        setFavorites(prev => ({ ...prev, routes }));
-      }
-      
-      // Fetch favorite events
-      if (user.favorites.events.length > 0) {
-        const { data: eventsData, error: eventsError } = await supabase
-          .from('events')
-          .select('*')
-          .in('id', user.favorites.events);
-          
-        if (eventsError) throw eventsError;
-        
-        const events: Event[] = eventsData.map(event => ({
-          id: event.id,
-          cityId: '',
-          name: typeof event.name === 'object' ? event.name as Record<Language, string> : { en: 'Unnamed Event', ru: 'Безымянное событие', hi: 'अनाम कार्यक्रम' } as Record<Language, string>,
-          description: event.info ? (typeof event.info === 'object' ? event.info as Record<Language, string> : { en: String(event.info), ru: String(event.info), hi: String(event.info) }) : { en: '', ru: '', hi: '' },
-          media: [],
-          thumbnail: Array.isArray(event.images) && event.images.length > 0 ? event.images[0] : '/placeholder.svg',
-          pointIds: [],
-          startDate: event.time || new Date().toISOString(),
-          endDate: event.time || new Date().toISOString()
-        }));
-        
-        setFavorites(prev => ({ ...prev, events }));
-      }
-    } catch (error) {
-      console.error('Error fetching favorites:', error);
-      setFavorites(prev => ({ 
-        ...prev, 
-        error: error instanceof Error ? error : new Error('Failed to fetch favorites') 
-      }));
-      
-      toast({
-        title: "Error",
-        description: "Failed to fetch your favorites. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setFavorites(prev => ({ ...prev, isLoading: false }));
-    }
-  };
-  
-  const handleLogout = async () => {
+  const handleSignOut = async () => {
     try {
       await signOut();
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out.",
-      });
       navigate('/auth');
     } catch (error) {
-      console.error('Logout error:', error);
-      toast({
-        title: "Logout failed",
-        description: "Failed to log out. Please try again.",
-        variant: "destructive"
-      });
+      console.error('Failed to sign out', error);
     }
   };
 
-  const handleCityClick = (cityId: string) => {
-    navigate(`/cities/${cityId}`);
+  const fetchFavorites = async () => {
+    try {
+      setFavoritesData(prev => ({ ...prev, isLoading: true, error: null }));
+
+      // Fetch cities
+      if (user?.favorites.cities.length) {
+        const citiesPromises = user.favorites.cities.map(cityId => 
+          fetchCityById(cityId)
+        );
+        const citiesResults = await Promise.all(citiesPromises);
+        const validCities = citiesResults.filter(city => city !== null) as City[];
+        
+        setFavoritesData(prev => ({ 
+          ...prev, 
+          cities: validCities,
+          isLoading: false 
+        }));
+      } else {
+        setFavoritesData(prev => ({ ...prev, cities: [], isLoading: false }));
+      }
+
+      // Fetch points
+      if (user?.favorites.points.length) {
+        const pointsPromises = user.favorites.points.map(pointId => 
+          fetchPointById(pointId)
+        );
+        const pointsResults = await Promise.all(pointsPromises);
+        const validPoints = pointsResults.filter(point => point !== null) as Point[];
+        
+        setFavoritesData(prev => ({ 
+          ...prev, 
+          points: validPoints,
+          isLoading: false 
+        }));
+      } else {
+        setFavoritesData(prev => ({ ...prev, points: [], isLoading: false }));
+      }
+
+      // Fetch routes
+      if (user?.favorites.routes.length) {
+        const routesPromises = user.favorites.routes.map(routeId => 
+          fetchRouteById(routeId)
+        );
+        const routesResults = await Promise.all(routesPromises);
+        const validRoutes = routesResults.filter(route => route !== null) as Route[];
+        
+        setFavoritesData(prev => ({ 
+          ...prev, 
+          routes: validRoutes,
+          isLoading: false 
+        }));
+      } else {
+        setFavoritesData(prev => ({ ...prev, routes: [], isLoading: false }));
+      }
+
+      // Fetch events
+      if (user?.favorites.events.length) {
+        const eventsPromises = user.favorites.events.map(eventId => 
+          fetchEventById(eventId)
+        );
+        const eventsResults = await Promise.all(eventsPromises);
+        const validEvents = eventsResults.filter(event => event !== null) as Event[];
+        
+        setFavoritesData(prev => ({ 
+          ...prev, 
+          events: validEvents,
+          isLoading: false 
+        }));
+      } else {
+        setFavoritesData(prev => ({ ...prev, events: [], isLoading: false }));
+      }
+    } catch (error) {
+      console.error('Error fetching favorites:', error);
+      setFavoritesData(prev => ({ 
+        ...prev, 
+        isLoading: false, 
+        error: error as Error 
+      }));
+    }
   };
-  
-  const handlePointClick = (pointId: string) => {
-    navigate(`/points/${pointId}`);
-  };
-  
-  const handleRouteClick = (routeId: string) => {
-    navigate(`/routes/${routeId}`);
-  };
-  
-  const handleEventClick = (eventId: string) => {
-    navigate(`/events/${eventId}`);
-  };
-  
-  const getCounts = () => {
-    return {
-      cities: favorites.cities.length || 0,
-      points: favorites.points.length || 0,
-      routes: favorites.routes.length || 0,
-      events: favorites.events.length || 0
-    };
-  };
-  
-  const counts = getCounts();
   
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-muted-foreground">{t('loading')}</p>
@@ -247,166 +151,104 @@ const Profile = () => {
   }
   
   return (
-    <div className="flex flex-col min-h-screen bg-muted">
-      <Navigation />
+    <div className="container mx-auto py-8">
+      <h1 className="text-2xl font-bold mb-4">{t('profile')}</h1>
       
-      <main className="container mx-auto px-4 py-6 flex-grow">
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex flex-col sm:flex-row items-center">
-            <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
-              <AvatarImage src={user.avatarUrl || ''} alt={user.name} />
-              <AvatarFallback>{user.name?.split(' ').map(n => n[0]).join('') || user.email.substring(0, 2).toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <div className="mt-4 sm:mt-0 sm:ml-6 text-center sm:text-left">
-              <h1 className="text-2xl font-bold">{user.name}</h1>
-              <p className="text-muted-foreground">{user.email}</p>
+      <div className="mb-4">
+        <p>
+          {t('loggedInAs')}: {user.email}
+        </p>
+        <Button onClick={handleSignOut}>{t('signOut')}</Button>
+      </div>
+      
+      <h2 className="text-xl font-semibold mb-2">{t('favorites')}</h2>
+      
+      {favoritesData.isLoading ? (
+        <p>{t('loading')}...</p>
+      ) : favoritesData.error ? (
+        <p className="text-red-500">Error: {favoritesData.error.message}</p>
+      ) : (
+        <>
+          {favoritesData.cities.length > 0 && (
+            <div>
+              <h3 className="text-lg font-medium mb-2">{t('cities')}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {favoritesData.cities.map((city) => (
+                  <ItemCardWrapper
+                    key={city.id}
+                    id={city.id}
+                    type="city"
+                    name={city.name}
+                    description={city.description}
+                    thumbnail={city.thumbnail}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="mt-4 sm:mt-0 sm:ml-auto">
-              <Button variant="outline" className="flex items-center" onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                {t('logOut')}
-              </Button>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <h2 className="text-xl font-bold p-6 border-b flex items-center">
-            <Heart className="mr-2 h-5 w-5 text-burgundy" />
-            {t('favorites')}
-          </h2>
+          )}
           
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-4 w-full">
-              <TabsTrigger value="cities" className="flex justify-center items-center space-x-2">
-                <MapPin className="h-4 w-4" />
-                <span>{t('cities')} ({counts.cities})</span>
-              </TabsTrigger>
-              <TabsTrigger value="points" className="flex justify-center items-center space-x-2">
-                <MapPin className="h-4 w-4" />
-                <span>{t('points')} ({counts.points})</span>
-              </TabsTrigger>
-              <TabsTrigger value="routes" className="flex justify-center items-center space-x-2">
-                <MapPin className="h-4 w-4" />
-                <span>{t('routes')} ({counts.routes})</span>
-              </TabsTrigger>
-              <TabsTrigger value="events" className="flex justify-center items-center space-x-2">
-                <MapPin className="h-4 w-4" />
-                <span>{t('events')} ({counts.events})</span>
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="cities" className="p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {favorites.isLoading ? (
-                  Array(3).fill(0).map((_, index) => (
-                    <div key={index} className="animate-pulse bg-muted h-64 rounded-lg"></div>
-                  ))
-                ) : favorites.cities.length > 0 ? (
-                  favorites.cities.map(city => (
-                    <ItemCardWrapper
-                      key={city.id}
-                      id={city.id}
-                      type="city"
-                      name={city.name}
-                      description={city.description}
-                      thumbnail={city.thumbnail}
-                      location={`${city.name[language] || city.name.en}`}
-                      onClick={() => handleCityClick(city.id)}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-full text-center py-12">
-                    <p className="text-muted-foreground mb-2">{t('noFavoriteCities')}</p>
-                  </div>
-                )}
+          {favoritesData.points.length > 0 && (
+            <div>
+              <h3 className="text-lg font-medium mb-2">{t('pointsOfInterest')}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {favoritesData.points.map((point) => (
+                  <ItemCardWrapper
+                    key={point.id}
+                    id={point.id}
+                    type="point"
+                    name={point.name}
+                    description={point.description}
+                    thumbnail={point.thumbnail}
+                  />
+                ))}
               </div>
-            </TabsContent>
-            
-            <TabsContent value="points" className="p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {favorites.isLoading ? (
-                  Array(3).fill(0).map((_, index) => (
-                    <div key={index} className="animate-pulse bg-muted h-64 rounded-lg"></div>
-                  ))
-                ) : favorites.points.length > 0 ? (
-                  favorites.points.map(point => (
-                    <ItemCardWrapper
-                      key={point.id}
-                      id={point.id}
-                      type="point"
-                      name={point.name}
-                      description={point.description}
-                      thumbnail={point.thumbnail}
-                      location={`${point.name[language] || point.name.en}`}
-                      spotType={point.type}
-                      onClick={() => handlePointClick(point.id)}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-full text-center py-12">
-                    <p className="text-muted-foreground mb-2">{t('noFavoritePoints')}</p>
-                  </div>
-                )}
+            </div>
+          )}
+          
+          {favoritesData.routes.length > 0 && (
+            <div>
+              <h3 className="text-lg font-medium mb-2">{t('routes')}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {favoritesData.routes.map((route) => (
+                  <ItemCardWrapper
+                    key={route.id}
+                    id={route.id}
+                    type="route"
+                    name={route.name}
+                    description={route.description}
+                    thumbnail={route.thumbnail}
+                  />
+                ))}
               </div>
-            </TabsContent>
-            
-            <TabsContent value="routes" className="p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {favorites.isLoading ? (
-                  Array(3).fill(0).map((_, index) => (
-                    <div key={index} className="animate-pulse bg-muted h-64 rounded-lg"></div>
-                  ))
-                ) : favorites.routes.length > 0 ? (
-                  favorites.routes.map(route => (
-                    <ItemCardWrapper
-                      key={route.id}
-                      id={route.id}
-                      type="route"
-                      name={route.name}
-                      description={route.description}
-                      thumbnail={route.thumbnail}
-                      pointCount={route.pointIds?.length}
-                      onClick={() => handleRouteClick(route.id)}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-full text-center py-12">
-                    <p className="text-muted-foreground mb-2">{t('noFavoriteRoutes')}</p>
-                  </div>
-                )}
+            </div>
+          )}
+          
+          {favoritesData.events.length > 0 && (
+            <div>
+              <h3 className="text-lg font-medium mb-2">{t('events')}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {favoritesData.events.map((event) => (
+                  <ItemCardWrapper
+                    key={event.id}
+                    id={event.id}
+                    type="event"
+                    name={event.name}
+                    description={event.description}
+                    thumbnail={event.thumbnail}
+                  />
+                ))}
               </div>
-            </TabsContent>
-            
-            <TabsContent value="events" className="p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {favorites.isLoading ? (
-                  Array(3).fill(0).map((_, index) => (
-                    <div key={index} className="animate-pulse bg-muted h-64 rounded-lg"></div>
-                  ))
-                ) : favorites.events.length > 0 ? (
-                  favorites.events.map(event => (
-                    <ItemCardWrapper
-                      key={event.id}
-                      id={event.id}
-                      type="event"
-                      name={event.name}
-                      description={event.description}
-                      thumbnail={event.thumbnail}
-                      date={event.startDate ? new Date(event.startDate).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU') : undefined}
-                      onClick={() => handleEventClick(event.id)}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-full text-center py-12">
-                    <p className="text-muted-foreground mb-2">{t('noFavoriteEvents')}</p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </main>
+            </div>
+          )}
+          
+          {favoritesData.cities.length === 0 &&
+            favoritesData.points.length === 0 &&
+            favoritesData.routes.length === 0 &&
+            favoritesData.events.length === 0 && (
+              <p>{t('noFavorites')}</p>
+            )}
+        </>
+      )}
     </div>
   );
 };

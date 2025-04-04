@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '../types/models';
@@ -30,6 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Fetch user favorites from Supabase
   const fetchUserFavorites = async (userId: string) => {
     try {
+      console.log("Fetching favorites for user:", userId);
       const { data, error } = await supabase
         .from('user_favorites')
         .select('item_id, item_type')
@@ -49,6 +49,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           events: [] as string[]
         };
         
+        console.log("Favorites data from DB:", data);
+        
         data.forEach(fav => {
           switch (fav.item_type) {
             case 'city':
@@ -66,7 +68,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         });
         
-        // Update user with favorites
+        console.log("Processed favorites:", favorites);
+        
+        // Update user with favorites - ensure we're not overwriting other user data
         setUser(prev => prev ? { ...prev, favorites } : null);
       }
     } catch (error) {
