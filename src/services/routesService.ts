@@ -37,6 +37,7 @@ export const fetchAllRoutes = async (): Promise<Route[]> => {
       media: [],
       thumbnail: 'placeholder.svg',
       pointIds: [],
+      eventIds: [], // Add the missing eventIds property
       distance: 0,
       duration: 0
     };
@@ -70,6 +71,7 @@ export const fetchRouteById = async (routeId: string): Promise<Route | null> => 
     media: [],
     thumbnail: 'placeholder.svg',
     pointIds: [],
+    eventIds: [], // Add the missing eventIds property
     distance: 0,
     duration: 0
   };

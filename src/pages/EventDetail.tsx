@@ -57,7 +57,7 @@ const EventDetail = () => {
     error: routesError
   } = useQuery({
     queryKey: ['event-routes', eventId],
-    queryFn: () => fetchRoutesByEvent(eventId as string),
+    queryFn: () => fetchRoutesByEvent(),
     enabled: !!eventId,
   });
 

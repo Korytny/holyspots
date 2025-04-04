@@ -52,6 +52,11 @@ export interface City {
   country?: string;
 }
 
+export interface GeoPoint {
+  type: string;
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
 export interface Point {
   id: string;
   cityId: string;
@@ -68,10 +73,7 @@ export interface Point {
   routeIds: string[];
   eventIds: string[];
   ownerId?: string;
-  point?: {
-    type: string;
-    coordinates: [number, number]; // [longitude, latitude]
-  };
+  point?: GeoPoint;
 }
 
 export interface Route {

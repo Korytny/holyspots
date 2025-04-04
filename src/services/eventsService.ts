@@ -31,18 +31,32 @@ export const fetchAllEvents = async (): Promise<Event[]> => {
     const infoData = safeParseJson(event.info) || { en: '', ru: '', hi: '' };
     const imagesData = safeParseJson(event.images) || [];
     
+    // Convert images to MediaItems
+    const media = Array.isArray(imagesData) ? imagesData.map((url, i) => ({
+      id: `image-${i}`,
+      type: 'image' as const,
+      url: typeof url === 'string' ? url : '',
+      thumbnailUrl: typeof url === 'string' ? url : ''
+    })) : [];
+    
+    const thumbnail = Array.isArray(imagesData) && imagesData.length > 0 && typeof imagesData[0] === 'string'
+      ? imagesData[0] 
+      : 'placeholder.svg';
+    
+    const time = event.time || new Date().toISOString();
+    
     return {
       id: event.id,
-      cityId: 'unknown', // Placeholder as cityId is not directly available in the data
+      cityId: event.city || 'unknown',
       name: nameData as Record<Language, string>,
       description: infoData as Record<Language, string>,
-      media: imagesData,
-      thumbnail: Array.isArray(imagesData) && imagesData.length > 0 
-        ? imagesData[0] 
-        : 'placeholder.svg',
-      date: event.time || new Date().toISOString(),
-      pointIds: [],
-      ownerId: 'unknown'
+      media,
+      thumbnail,
+      pointIds: [], // Default empty array
+      startDate: time,
+      endDate: time,
+      ownerId: undefined,
+      type: event.type
     };
   }) || [];
 };
@@ -64,22 +78,36 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
   
   if (!data) return null;
   
-  const nameData = safeParseJson(data.name) || { en: 'Unknown', ru: 'Неизвестно', hi: 'अज्ञат' };
+  const nameData = safeParseJson(data.name) || { en: 'Unknown', ru: 'Неизвестно', hi: 'अज्ञात' };
   const infoData = safeParseJson(data.info) || { en: '', ru: '', hi: '' };
   const imagesData = safeParseJson(data.images) || [];
   
+  // Convert images to MediaItems
+  const media = Array.isArray(imagesData) ? imagesData.map((url, i) => ({
+    id: `image-${i}`,
+    type: 'image' as const,
+    url: typeof url === 'string' ? url : '',
+    thumbnailUrl: typeof url === 'string' ? url : ''
+  })) : [];
+  
+  const thumbnail = Array.isArray(imagesData) && imagesData.length > 0 && typeof imagesData[0] === 'string'
+    ? imagesData[0] 
+    : 'placeholder.svg';
+  
+  const time = data.time || new Date().toISOString();
+  
   return {
     id: data.id,
-    cityId: 'unknown', // Placeholder for missing data
+    cityId: data.city || 'unknown',
     name: nameData as Record<Language, string>,
     description: infoData as Record<Language, string>,
-    media: imagesData,
-    thumbnail: Array.isArray(imagesData) && imagesData.length > 0 
-      ? imagesData[0] 
-      : 'placeholder.svg',
-    date: data.time || new Date().toISOString(),
-    pointIds: [],
-    ownerId: 'unknown'
+    media,
+    thumbnail,
+    pointIds: [], // Default empty array
+    startDate: time,
+    endDate: time,
+    ownerId: undefined,
+    type: data.type
   };
 };
 
@@ -107,3 +135,4 @@ export const fetchEventsByRouteId = async (routeId: string): Promise<Event[]> =>
 // Adding these aliases for compatibility
 export const fetchEventsByCity = fetchEventsByCityId;
 export const fetchEventsBySpot = fetchEventsByPointId;
+export const fetchEventsByRoute = fetchEventsByRouteId;

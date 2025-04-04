@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { toast } from 'sonner';
@@ -35,7 +34,6 @@ import { fetchAllSpots } from '../services/spotsService';
 import { fetchAllRoutes } from '../services/routesService';
 import { fetchAllEvents } from '../services/eventsService';
 
-// Define a helper function to match search term against multilingual text
 const matchesSearchTerm = (text: string | Record<string, string> | undefined, searchTerm: string): boolean => {
   if (!text) return false;
   if (typeof text === 'string') {
@@ -59,115 +57,111 @@ const Search = () => {
   const [cityFilter, setCityFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   
-  // Fetch data using react-query
-  const { data: cities = [], isLoading: isLoadingCities } = useQuery({
+  const {
+    data: cities = [],
+    isLoading: isLoadingCities,
+    error: citiesError
+  } = useQuery({
     queryKey: ['cities'],
     queryFn: fetchCities,
   });
 
-  const { data: spots = [], isLoading: isLoadingSpots } = useQuery({
-    queryKey: ['allSpots'],
-    queryFn: fetchAllSpots,
+  const {
+    data: spots = [],
+    isLoading: isLoadingSpots,
+    error: spotsError
+  } = useQuery({
+    queryKey: ['spots'],
+    queryFn: () => fetchAllSpots(),
   });
 
-  const { data: routes = [], isLoading: isLoadingRoutes } = useQuery({
+  const {
+    data: routes = [],
+    isLoading: isLoadingRoutes,
+    error: routesError
+  } = useQuery({
     queryKey: ['allRoutes'],
     queryFn: fetchAllRoutes,
   });
 
-  const { data: events = [], isLoading: isLoadingEvents } = useQuery({
+  const {
+    data: events = [],
+    isLoading: isLoadingEvents,
+    error: eventsError
+  } = useQuery({
     queryKey: ['allEvents'],
     queryFn: fetchAllEvents,
   });
 
   const isLoading = isLoadingCities || isLoadingSpots || isLoadingRoutes || isLoadingEvents;
 
-  // Filter items based on search and filters
   const filteredCities = cities.filter(city => {
-    // If city filter is active and doesn't match this city, filter it out
     if (cityFilter !== 'all' && city.id !== cityFilter) {
       return false;
     }
     
-    // If search query is empty, include the city
     if (!searchQuery) return true;
     
-    // Check if name matches search query in any language
     const nameMatches = matchesSearchTerm(city.name, searchQuery);
     
-    // Check if description matches search query in any language
     const descMatches = matchesSearchTerm(city.description, searchQuery) || 
                         matchesSearchTerm(city.info, searchQuery);
     
     return nameMatches || descMatches;
   });
 
-  const filteredSpots = spots.filter(spot => {
-    // If city filter is active and doesn't match this spot's city, filter it out
-    if (cityFilter !== 'all' && spot.cityId !== cityFilter) {
-      return false;
-    }
+  const filteredSpots = useMemo(() => {
+    if (!spots || !Array.isArray(spots)) return [];
     
-    // If spot type filter is active and doesn't match this spot, filter it out
-    if (typeFilter !== 'all' && spot.type !== typeFilter) {
-      return false;
-    }
-    
-    // If search query is empty, include the spot
-    if (!searchQuery) return true;
-    
-    // Check if name matches search query in any language
-    const nameMatches = matchesSearchTerm(spot.name, searchQuery);
-    
-    // Check if description matches search query in any language
-    const descMatches = matchesSearchTerm(spot.description, searchQuery);
-    
-    return nameMatches || descMatches;
-  });
+    return spots.filter(spot => {
+      if (!spot || typeof spot !== 'object') return false;
+      
+      const nameMatches = searchTerm === '' || 
+        (spot.name && typeof spot.name === 'object' && 
+         (Object.values(spot.name).some(val => 
+           typeof val === 'string' && val.toLowerCase().includes(searchTerm.toLowerCase())
+         )));
+       
+      const typeMatches = selectedType === 'all' || 
+        (spot.type && spot.type === selectedType);
+      
+      return nameMatches && typeMatches;
+    });
+  }, [spots, searchTerm, selectedType]);
 
   const filteredRoutes = routes.filter(route => {
-    // If city filter is active and doesn't match this route's city, filter it out
     if (cityFilter !== 'all' && route.cityId !== cityFilter) {
       return false;
     }
     
-    // If search query is empty, include the route
     if (!searchQuery) return true;
     
-    // Check if name matches search query in any language
     const nameMatches = matchesSearchTerm(route.name, searchQuery);
     
-    // Check if description matches search query in any language
     const descMatches = matchesSearchTerm(route.description, searchQuery);
     
     return nameMatches || descMatches;
   });
 
   const filteredEvents = events.filter(event => {
-    // If city filter is active and doesn't match this event's city, filter it out
     if (cityFilter !== 'all' && event.cityId !== cityFilter) {
       return false;
     }
     
-    // If search query is empty, include the event
     if (!searchQuery) return true;
     
-    // Check if name matches search query in any language
     const nameMatches = matchesSearchTerm(event.name, searchQuery);
     
-    // Check if description matches search query in any language
     const descMatches = matchesSearchTerm(event.description, searchQuery);
     
     return nameMatches || descMatches;
   });
 
-  // Get unique city options for filter
   const cityOptions = cities.map(city => ({
     id: city.id,
     name: typeof city.name === 'object' ? (city.name[language] || city.name.en || '') : city.name
   }));
 
-  // Get unique spot types for filter
   const spotTypeOptions = [
     { id: 'temple', name: t('temple') || 'Temple' },
     { id: 'ashram', name: t('ashram') || 'Ashram' },
@@ -177,7 +171,6 @@ const Search = () => {
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Search functionality is handled by the filters above
     toast.success(t('searchComplete') || 'Search complete');
   };
   
@@ -201,7 +194,6 @@ const Search = () => {
     navigate(`/events/${eventId}`);
   };
   
-  // Get result count for each category
   const getCounts = () => {
     return {
       all: filteredCities.length + filteredSpots.length + 

@@ -51,30 +51,40 @@ export const fetchAllPoints = async (): Promise<Point[]> => {
       coordinates: [lng, lat]
     };
     
-    // Create a location string for display purposes
-    const location = `${lng.toFixed(6)}, ${lat.toFixed(6)}`;
+    // Create a location object for the Point type
+    const location = {
+      latitude: lat,
+      longitude: lng
+    };
     
-    // Default to empty arrays if not present
-    const routes = [] as string[];
-    const events = [] as string[];
+    // Default empty arrays for missing data
+    const routeIds = Array.isArray(spot.routes) ? spot.routes : [];
+    const eventIds = Array.isArray(spot.events) ? spot.events : [];
     
     return {
       id: spot.id,
-      cityId: spot.city,
+      cityId: spot.city || 'unknown',
       type: spot.type === 1 ? 'temple' : 
             spot.type === 2 ? 'ashram' : 
             spot.type === 3 ? 'kund' : 'other',
       name: nameData as Record<Language, string>,
       description: infoData as Record<Language, string>,
-      media: imagesData,
-      thumbnail: Array.isArray(imagesData) && imagesData.length > 0 
+      media: Array.isArray(imagesData) ? imagesData.map((url, i) => ({
+        id: `image-${i}`,
+        type: 'image' as const,
+        url: typeof url === 'string' ? url : '',
+        thumbnailUrl: typeof url === 'string' ? url : ''
+      })) : [],
+      thumbnail: Array.isArray(imagesData) && imagesData.length > 0 && typeof imagesData[0] === 'string'
         ? imagesData[0] 
         : 'placeholder.svg',
-      images: Array.isArray(imagesData) ? imagesData : [],
+      images: Array.isArray(imagesData) ? 
+        imagesData.filter(url => typeof url === 'string') as string[] : [],
       location,
       point,
-      routes,
-      events
+      routeIds,
+      eventIds,
+      ownerId: undefined
     };
   }) || [];
 };
@@ -122,32 +132,42 @@ export const fetchPointById = async (pointId: string): Promise<Point | null> => 
     coordinates: [lng, lat]
   };
   
-  // Create a location string for display purposes
-  const location = `${lng.toFixed(6)}, ${lat.toFixed(6)}`;
+  // Create a location object for the Point type
+  const location = {
+    latitude: lat,
+    longitude: lng
+  };
   
-  // Default to empty arrays if not present
-  const routes = [] as string[];
-  const events = [] as string[];
+  // Default empty arrays for missing data
+  const routeIds = Array.isArray(data.routes) ? data.routes : [];
+  const eventIds = Array.isArray(data.events) ? data.events : [];
   
-  const thumbnail = Array.isArray(imagesData) && imagesData.length > 0 
+  const thumbnail = Array.isArray(imagesData) && imagesData.length > 0 && typeof imagesData[0] === 'string'
     ? imagesData[0] 
     : 'placeholder.svg';
   
   return {
     id: data.id,
-    cityId: data.city,
+    cityId: data.city || 'unknown',
     type: data.type === 1 ? 'temple' : 
           data.type === 2 ? 'ashram' : 
           data.type === 3 ? 'kund' : 'other',
     name: nameData as Record<Language, string>,
     description: infoData as Record<Language, string>,
-    media: imagesData,
+    media: Array.isArray(imagesData) ? imagesData.map((url, i) => ({
+      id: `image-${i}`,
+      type: 'image' as const,
+      url: typeof url === 'string' ? url : '',
+      thumbnailUrl: typeof url === 'string' ? url : ''
+    })) : [],
     thumbnail,
-    images: Array.isArray(imagesData) ? imagesData : [],
+    images: Array.isArray(imagesData) ? 
+      imagesData.filter(url => typeof url === 'string') as string[] : [],
     location,
     point,
-    routes,
-    events
+    routeIds,
+    eventIds,
+    ownerId: undefined
   };
 };
 
@@ -186,32 +206,42 @@ export const fetchPointsByCityId = async (cityId: string): Promise<Point[]> => {
       coordinates: [lng, lat]
     };
     
-    // Create a location string for display purposes
-    const location = `${lng.toFixed(6)}, ${lat.toFixed(6)}`;
+    // Create a location object for the Point type
+    const location = {
+      latitude: lat,
+      longitude: lng
+    };
     
-    // Default to empty arrays if not present
-    const routes = [] as string[];
-    const events = [] as string[];
+    // Default empty arrays for missing data
+    const routeIds = Array.isArray(spot.routes) ? spot.routes : [];
+    const eventIds = Array.isArray(spot.events) ? spot.events : [];
     
-    const thumbnail = Array.isArray(imagesData) && imagesData.length > 0 
+    const thumbnail = Array.isArray(imagesData) && imagesData.length > 0 && typeof imagesData[0] === 'string'
       ? imagesData[0] 
       : 'placeholder.svg';
     
     return {
       id: spot.id,
-      cityId: spot.city,
+      cityId: spot.city || 'unknown',
       type: spot.type === 1 ? 'temple' : 
             spot.type === 2 ? 'ashram' : 
             spot.type === 3 ? 'kund' : 'other',
       name: nameData as Record<Language, string>,
       description: infoData as Record<Language, string>,
-      media: imagesData,
+      media: Array.isArray(imagesData) ? imagesData.map((url, i) => ({
+        id: `image-${i}`,
+        type: 'image' as const,
+        url: typeof url === 'string' ? url : '',
+        thumbnailUrl: typeof url === 'string' ? url : ''
+      })) : [],
       thumbnail,
-      images: Array.isArray(imagesData) ? imagesData : [],
+      images: Array.isArray(imagesData) ? 
+        imagesData.filter(url => typeof url === 'string') as string[] : [],
       location,
       point,
-      routes,
-      events
+      routeIds,
+      eventIds,
+      ownerId: undefined
     };
   }) || [];
 };
