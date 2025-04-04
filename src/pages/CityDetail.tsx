@@ -52,6 +52,7 @@ const CityDetail = () => {
       setIsLoading(true);
       setLoadingError(null);
       try {
+        console.log('Fetching city data for ID:', cityId);
         const cityData = await fetchCityById(cityId);
         
         if (!cityData) {
@@ -66,25 +67,41 @@ const CityDetail = () => {
         
         setCity(cityData);
         
-        const [spotsData, routesData, eventsData] = await Promise.all([
-          fetchPointsByCity(cityId),
-          fetchRoutesByCity(cityId),
-          fetchEventsByCity(cityId)
-        ]);
-        
-        setPoints(spotsData);
-        setRoutes(routesData);
-        setEvents(eventsData);
-        
-        if (spotsData.length > 0 && spotsData[0].location) {
-          const firstPoint = spotsData[0].location;
+        // Загружаем связанные данные параллельно
+        try {
+          console.log('Fetching city points...');
+          const spotsData = await fetchPointsByCity(cityId);
+          setPoints(spotsData);
           
-          const geoPoint: GeoPoint = {
-            type: "Point",
-            coordinates: [firstPoint.longitude, firstPoint.latitude]
-          };
-          
-          setCenterPoint(geoPoint);
+          // Установка центральной точки для карты
+          if (spotsData.length > 0 && spotsData[0].location) {
+            const firstPoint = spotsData[0].location;
+            
+            const geoPoint: GeoPoint = {
+              type: "Point",
+              coordinates: [firstPoint.longitude, firstPoint.latitude]
+            };
+            
+            setCenterPoint(geoPoint);
+          }
+        } catch (spotsError) {
+          console.error('Error loading city spots:', spotsError);
+        }
+        
+        try {
+          console.log('Fetching city routes...');
+          const routesData = await fetchRoutesByCity(cityId);
+          setRoutes(routesData);
+        } catch (routesError) {
+          console.error('Error loading city routes:', routesError);
+        }
+        
+        try {
+          console.log('Fetching city events...');
+          const eventsData = await fetchEventsByCity(cityId);
+          setEvents(eventsData);
+        } catch (eventsError) {
+          console.error('Error loading city events:', eventsError);
         }
       } catch (error) {
         console.error('Error loading city data:', error);

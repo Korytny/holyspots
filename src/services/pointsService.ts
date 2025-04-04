@@ -2,100 +2,103 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Point, Language, MediaItem, GeoPoint } from '../types/models';
 
-// Define the main functions first to avoid circular references
-export const fetchPointsByCity = async (cityId: string): Promise<Point[]> => {
+// Функция преобразования данных из БД в модель Point
+const transformSpotToPoint = (spotData: any): Point => {
+  // Обработка имени
+  let parsedName: Record<Language, string> = { en: 'Unknown spot', ru: 'Неизвестная точка', hi: 'अज्ञात स्थान' };
   try {
-    const { data, error } = await supabase
-      .from('spots')
-      .select('*')
-      .eq('city', cityId);
-    
-    if (error) throw error;
-    
-    if (!data || data.length === 0) {
-      console.log(`No points found for city ID ${cityId}`);
-      return [];
+    if (typeof spotData.name === 'string') {
+      parsedName = JSON.parse(spotData.name);
+    } else if (spotData.name && typeof spotData.name === 'object') {
+      parsedName = spotData.name;
     }
-    
-    // Transform database records to Point objects
-    const points: Point[] = data.map(item => transformSpotToPoint(item));
-    
-    return points;
-  } catch (error) {
-    console.error(`Error fetching points for city ID ${cityId}:`, error);
-    return [];
+  } catch (e) {
+    console.warn('Could not parse spot name:', e);
   }
-};
-
-// Helper function to transform spot data to Point type
-const transformSpotToPoint = (item: any): Point => {
-  // Create media items from images
+  
+  // Обработка описания
+  let parsedDescription: Record<Language, string> = { en: '', ru: '', hi: '' };
+  try {
+    if (typeof spotData.info === 'string') {
+      parsedDescription = JSON.parse(spotData.info);
+    } else if (spotData.info && typeof spotData.info === 'object') {
+      parsedDescription = spotData.info;
+    }
+  } catch (e) {
+    console.warn('Could not parse spot description:', e);
+  }
+  
+  // Обработка медиа и картинок
   let mediaItems: MediaItem[] = [];
   let imageArray: string[] = [];
-  
-  if (item.images) {
-    if (Array.isArray(item.images)) {
-      imageArray = item.images.filter(img => typeof img === 'string') as string[];
-    } else if (typeof item.images === 'object' && item.images !== null) {
-      imageArray = Object.values(item.images)
-        .filter(img => typeof img === 'string') as string[];
-    }
-    
-    mediaItems = imageArray.map((url, index) => ({
-      id: `image-${index}`,
-      type: 'image',
-      url,
-      thumbnailUrl: url,
-    }));
-  }
-  
-  // Get a valid thumbnail
   let thumbnail = '/placeholder.svg';
-  if (imageArray.length > 0) {
-    thumbnail = imageArray[0];
-  }
   
-  // Parse location from coordinates or point
-  let location = { latitude: 0, longitude: 0 };
-  
-  if (item.coordinates && typeof item.coordinates === 'object') {
-    if (item.coordinates.latitude !== undefined && item.coordinates.longitude !== undefined) {
-      location = {
-        latitude: Number(item.coordinates.latitude),
-        longitude: Number(item.coordinates.longitude)
-      };
+  if (spotData.images) {
+    try {
+      if (Array.isArray(spotData.images)) {
+        imageArray = spotData.images.filter(img => typeof img === 'string');
+      } else if (typeof spotData.images === 'string') {
+        imageArray = JSON.parse(spotData.images);
+      }
+      
+      if (imageArray.length > 0) {
+        thumbnail = imageArray[0];
+        
+        mediaItems = imageArray.map((url, index) => ({
+          id: `image-${index}`,
+          type: 'image',
+          url,
+          thumbnailUrl: url,
+        }));
+      }
+    } catch (e) {
+      console.warn('Could not parse spot images:', e);
     }
   }
   
+  // Обработка координат
+  let location = { latitude: 0, longitude: 0 };
   let geoPoint: GeoPoint = {
     type: "Point",
     coordinates: [0, 0]
   };
   
-  if (item.point && typeof item.point === 'object' && 
-      item.point.coordinates && Array.isArray(item.point.coordinates)) {
+  if (spotData.point && typeof spotData.point === 'object') {
+    // Если есть геоточка
+    if (spotData.point.coordinates && Array.isArray(spotData.point.coordinates)) {
+      geoPoint = {
+        type: "Point",
+        coordinates: [
+          Number(spotData.point.coordinates[0]), 
+          Number(spotData.point.coordinates[1])
+        ]
+      };
+      location = {
+        longitude: Number(spotData.point.coordinates[0]),
+        latitude: Number(spotData.point.coordinates[1])
+      };
+    }
+  } else if (spotData.coordinates && typeof spotData.coordinates === 'object') {
+    // Простые координаты
     location = {
-      latitude: Number(item.point.coordinates[1]),
-      longitude: Number(item.point.coordinates[0])
+      latitude: Number(spotData.coordinates.latitude || 0),
+      longitude: Number(spotData.coordinates.longitude || 0)
     };
     
-    geoPoint = {
-      type: "Point",
-      coordinates: [Number(item.point.coordinates[0]), Number(item.point.coordinates[1])]
-    };
-  } else if (location.latitude !== 0 || location.longitude !== 0) {
-    geoPoint = {
-      type: "Point",
-      coordinates: [location.longitude, location.latitude]
-    };
+    if (location.latitude !== 0 || location.longitude !== 0) {
+      geoPoint = {
+        type: "Point",
+        coordinates: [location.longitude, location.latitude]
+      };
+    }
   }
   
   return {
-    id: item.id,
-    cityId: item.city || '',
-    type: item.type ? 'temple' : 'other',
-    name: item.name as Record<Language, string>,
-    description: item.info as Record<Language, string>,
+    id: spotData.id,
+    cityId: spotData.city || '',
+    type: spotData.type ? 'temple' : 'other',
+    name: parsedName,
+    description: parsedDescription,
     media: mediaItems,
     thumbnail,
     location,
@@ -105,6 +108,7 @@ const transformSpotToPoint = (item: any): Point => {
   };
 };
 
+// Получение всех точек
 export const fetchAllPoints = async (): Promise<Point[]> => {
   try {
     const { data, error } = await supabase
@@ -112,22 +116,14 @@ export const fetchAllPoints = async (): Promise<Point[]> => {
       .select('*');
     
     if (error) throw error;
-    
-    if (!data || data.length === 0) {
-      console.log("No points found");
-      return [];
-    }
-    
-    // Transform database records to Point objects
-    const points: Point[] = data.map(item => transformSpotToPoint(item));
-    
-    return points;
+    return (data || []).map(transformSpotToPoint);
   } catch (error) {
     console.error('Error fetching all points:', error);
     return [];
   }
 };
 
+// Получение точки по ID
 export const fetchPointById = async (pointId: string): Promise<Point | null> => {
   try {
     const { data, error } = await supabase
@@ -137,11 +133,7 @@ export const fetchPointById = async (pointId: string): Promise<Point | null> => 
       .maybeSingle();
     
     if (error) throw error;
-    
-    if (!data) {
-      console.log(`No point found with ID ${pointId}`);
-      return null;
-    }
+    if (!data) return null;
     
     return transformSpotToPoint(data);
   } catch (error) {
@@ -150,108 +142,106 @@ export const fetchPointById = async (pointId: string): Promise<Point | null> => 
   }
 };
 
-export const fetchPointsByRouteId = async (routeId: string): Promise<Point[]> => {
+// Получение точек города
+export const fetchPointsByCity = async (cityId: string): Promise<Point[]> => {
   try {
-    // First query the join table to get point IDs
-    const { data: joinData, error: joinError } = await supabase
-      .from('spot_route')
-      .select('spot_id')
-      .eq('route_id', routeId);
-    
-    if (joinError) throw joinError;
-    
-    if (!joinData || joinData.length === 0) {
-      console.log(`No points found for route ID ${routeId}`);
-      return [];
-    }
-    
-    // Extract the point IDs
-    const pointIds = joinData.map(item => item.spot_id);
-    
-    // Get the points data
     const { data, error } = await supabase
       .from('spots')
       .select('*')
-      .in('id', pointIds);
+      .eq('city', cityId);
     
     if (error) throw error;
+    return (data || []).map(transformSpotToPoint);
+  } catch (error) {
+    console.error(`Error fetching points for city ID ${cityId}:`, error);
+    return [];
+  }
+};
+
+// Получение точек маршрута
+export const fetchPointsByRouteId = async (routeId: string): Promise<Point[]> => {
+  try {
+    // Сначала получаем маршрут, чтобы узнать ID точек
+    const { data: routeData, error: routeError } = await supabase
+      .from('routes')
+      .select('spots')
+      .eq('id', routeId)
+      .maybeSingle();
     
-    if (!data || data.length === 0) {
-      console.log(`No points found with IDs ${pointIds.join(', ')}`);
+    if (routeError) throw routeError;
+    if (!routeData || !routeData.spots) return [];
+    
+    let spotIds: string[] = [];
+    try {
+      if (Array.isArray(routeData.spots)) {
+        spotIds = routeData.spots;
+      } else if (typeof routeData.spots === 'string') {
+        spotIds = JSON.parse(routeData.spots);
+      }
+    } catch (e) {
+      console.warn('Could not parse route spots:', e);
       return [];
     }
     
-    // Transform database records to Point objects and add the routeId
-    const points: Point[] = data.map(item => {
-      const point = transformSpotToPoint(item);
-      point.routeIds = [routeId];
-      return point;
-    });
+    if (spotIds.length === 0) return [];
     
-    return points;
+    // Получаем сами точки
+    const { data, error } = await supabase
+      .from('spots')
+      .select('*')
+      .in('id', spotIds);
+    
+    if (error) throw error;
+    return (data || []).map(transformSpotToPoint);
   } catch (error) {
     console.error(`Error fetching points for route ID ${routeId}:`, error);
     return [];
   }
 };
 
+// Получение точек события
 export const fetchPointsByEventId = async (eventId: string): Promise<Point[]> => {
   try {
-    // First query the join table to get point IDs
-    const { data: joinData, error: joinError } = await supabase
+    const { data: junctions, error: junctionError } = await supabase
       .from('spot_event')
       .select('spot_id')
       .eq('event_id', eventId);
     
-    if (joinError) throw joinError;
+    if (junctionError) throw junctionError;
+    if (!junctions || junctions.length === 0) return [];
     
-    if (!joinData || joinData.length === 0) {
-      console.log(`No points found for event ID ${eventId}`);
-      return [];
-    }
+    const spotIds = junctions.map(j => j.spot_id);
     
-    // Extract the point IDs
-    const pointIds = joinData.map(item => item.spot_id);
-    
-    // Get the points data
     const { data, error } = await supabase
       .from('spots')
       .select('*')
-      .in('id', pointIds);
+      .in('id', spotIds);
     
     if (error) throw error;
-    
-    if (!data || data.length === 0) {
-      console.log(`No points found with IDs ${pointIds.join(', ')}`);
-      return [];
-    }
-    
-    // Transform database records to Point objects and add the eventId
-    const points: Point[] = data.map(item => {
-      const point = transformSpotToPoint(item);
-      point.eventIds = [eventId];
-      return point;
-    });
-    
-    return points;
+    return (data || []).map(transformSpotToPoint);
   } catch (error) {
     console.error(`Error fetching points for event ID ${eventId}:`, error);
     return [];
   }
 };
 
-// For backward compatibility
+// Для обратной совместимости
 export const fetchPointsByCityId = fetchPointsByCity;
 
-// Add this helper function to fetch points by IDs
+// Вспомогательная функция для получения точек по списку ID
 export const fetchPointsByIds = async (pointIds: string[]): Promise<Point[]> => {
   if (!pointIds.length) return [];
   
-  const points = [];
-  for (const id of pointIds) {
-    const point = await fetchPointById(id);
-    if (point) points.push(point);
+  try {
+    const { data, error } = await supabase
+      .from('spots')
+      .select('*')
+      .in('id', pointIds);
+    
+    if (error) throw error;
+    return (data || []).map(transformSpotToPoint);
+  } catch (error) {
+    console.error('Error fetching points by IDs:', error);
+    return [];
   }
-  
-  return points;
 };
