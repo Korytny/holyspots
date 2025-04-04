@@ -19,7 +19,7 @@ interface ItemCardWrapperProps {
 }
 
 const ItemCardWrapper: React.FC<ItemCardWrapperProps> = (props) => {
-  const { id, type } = props;
+  const { id, type, onClick } = props;
   
   // Ensure name is always a Record<string, string> as required by ItemCard
   const normalizedProps = {
@@ -29,15 +29,13 @@ const ItemCardWrapper: React.FC<ItemCardWrapperProps> = (props) => {
       : props.name as Record<Language, string>,
     description: typeof props.description === 'string'
       ? { en: props.description, ru: props.description, hi: props.description } as Record<Language, string>
-      : (props.description || { en: '', ru: '', hi: '' }) as Record<Language, string>
+      : (props.description || { en: '', ru: '', hi: '' }) as Record<Language, string>,
+    onClick: () => {} // Add a default empty function for onClick
   };
-  
-  // Remove onClick from normalizedProps if ItemCard doesn't accept it
-  const { onClick, ...itemCardProps } = normalizedProps;
   
   return (
     <div className="relative group" onClick={onClick}>
-      <ItemCard {...itemCardProps} />
+      <ItemCard {...normalizedProps} />
       <div className="absolute top-2 right-2 opacity-80 group-hover:opacity-100 transition-opacity">
         <FavoriteButton itemId={id} itemType={type} />
       </div>

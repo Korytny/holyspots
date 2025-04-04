@@ -3,6 +3,8 @@
 
 export type Language = 'ru' | 'en' | 'hi';
 
+export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
+
 export interface User {
   id: string;
   email: string;
@@ -57,7 +59,7 @@ export interface Point {
   name: Record<Language, string>;
   description: Record<Language, string>;
   media: MediaItem[];
-  images?: string[]; // Array of image URLs
+  images?: string[];
   thumbnail: string;
   location: {
     latitude: number;

@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 import { Route } from '../types/models';
 
@@ -51,18 +52,33 @@ export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
   
   console.log(`Retrieved ${data?.length || 0} routes for city ${cityId} through spots`);
   
-  return data.map((routeData): Route => ({
-    id: routeData.id,
-    cityId: routeData.city || '',
-    name: routeData.name as Record<string, string>,
-    description: routeData.info as Record<string, string>,
-    media: routeData.media || [],
-    thumbnail: routeData.images && routeData.images.length > 0 ? routeData.images[0] : '/placeholder.svg',
-    pointIds: routeData.spots || [],
-    eventIds: [],
-    distance: routeData.distance,
-    duration: routeData.duration,
-  }));
+  return data.map((routeData): Route => {
+    // Parse the name
+    let parsedName = {};
+    try {
+      parsedName = typeof routeData.name === 'string' 
+        ? JSON.parse(routeData.name) 
+        : (routeData.name || { en: 'Unnamed Route', ru: 'Маршрут без названия', hi: 'अनामांकित मार्ग' });
+    } catch (e) {
+      parsedName = { en: 'Unnamed Route', ru: 'Маршрут без названия', hi: 'अनामांकित मार्ग' };
+    }
+    
+    // Default empty description
+    const defaultDescription = { en: '', ru: '', hi: '' };
+    
+    return {
+      id: routeData.id,
+      cityId: '', // Will be populated from relationship or set manually
+      name: parsedName as Record<string, string>,
+      description: defaultDescription,
+      media: [],
+      thumbnail: '/placeholder.svg',
+      pointIds: [],
+      eventIds: [],
+      distance: 0,
+      duration: 0
+    };
+  });
 };
 
 export const fetchRouteById = async (routeId: string): Promise<Route | null> => {
@@ -79,17 +95,30 @@ export const fetchRouteById = async (routeId: string): Promise<Route | null> => 
   
   if (!data) return null;
   
+  // Parse the name
+  let parsedName = {};
+  try {
+    parsedName = typeof data.name === 'string' 
+      ? JSON.parse(data.name) 
+      : (data.name || { en: 'Unnamed Route', ru: 'Маршрут без названия', hi: 'अनामांकित मार्ग' });
+  } catch (e) {
+    parsedName = { en: 'Unnamed Route', ru: 'Маршрут без названия', hi: 'अनामांकित मार्ग' };
+  }
+  
+  // Default empty description
+  const defaultDescription = { en: '', ru: '', hi: '' };
+  
   return {
     id: data.id,
-    cityId: data.city || '',
-    name: data.name as Record<string, string>,
-    description: data.info as Record<string, string>,
-    media: data.media || [],
-    thumbnail: data.images && data.images.length > 0 ? data.images[0] : '/placeholder.svg',
-    pointIds: data.spots || [],
+    cityId: '', // Will be populated from relationship or set manually
+    name: parsedName as Record<string, string>,
+    description: defaultDescription,
+    media: [],
+    thumbnail: '/placeholder.svg',
+    pointIds: [],
     eventIds: [],
-    distance: data.distance,
-    duration: data.duration,
+    distance: 0,
+    duration: 0
   };
 };
 

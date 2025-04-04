@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { Event } from '../types/models';
 
@@ -52,18 +51,50 @@ export const fetchEventsByCity = async (cityId: string): Promise<Event[]> => {
   
   console.log(`Retrieved ${data?.length || 0} events for city ${cityId} through spots`);
   
-  return data.map((eventData): Event => ({
-    id: eventData.id,
-    cityId: eventData.city || '',
-    name: eventData.name as Record<string, string>,
-    description: eventData.info as Record<string, string>,
-    media: eventData.media || [],
-    thumbnail: eventData.images && eventData.images.length > 0 ? eventData.images[0] : '/placeholder.svg',
-    pointIds: eventData.spots || [],
-    startDate: eventData.time || '',
-    endDate: eventData.time || '',
-    ownerId: eventData.ownerId,
-  }));
+  return data.map((eventData): Event => {
+    // Parse name
+    let parsedName = {};
+    try {
+      parsedName = typeof eventData.name === 'string' 
+        ? JSON.parse(eventData.name) 
+        : (eventData.name || { en: 'Unnamed Event', ru: 'Событие без названия', hi: 'अनामांकित घटना' });
+    } catch (e) {
+      parsedName = { en: 'Unnamed Event', ru: 'Событие без названия', hi: 'अनामांकित घटना' };
+    }
+    
+    // Parse info for description
+    let parsedInfo = {};
+    try {
+      parsedInfo = typeof eventData.info === 'string' 
+        ? JSON.parse(eventData.info) 
+        : (eventData.info || { en: '', ru: '', hi: '' });
+    } catch (e) {
+      parsedInfo = { en: '', ru: '', hi: '' };
+    }
+    
+    // Parse images
+    let images: string[] = [];
+    try {
+      images = Array.isArray(eventData.images) 
+        ? eventData.images 
+        : (typeof eventData.images === 'string' ? JSON.parse(eventData.images) : []);
+    } catch (e) {
+      images = [];
+    }
+    
+    return {
+      id: eventData.id,
+      cityId: '', // Will be populated from relationship or set manually
+      name: parsedName as Record<string, string>,
+      description: parsedInfo as Record<string, string>,
+      media: [],
+      thumbnail: images && images.length > 0 ? images[0] : '/placeholder.svg',
+      pointIds: [],
+      startDate: eventData.time || '',
+      endDate: eventData.time || '',
+      type: eventData.type
+    };
+  });
 };
 
 export const fetchEventById = async (eventId: string): Promise<Event | null> => {
@@ -80,17 +111,47 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
   
   if (!data) return null;
   
+  // Parse name
+  let parsedName = {};
+  try {
+    parsedName = typeof data.name === 'string' 
+      ? JSON.parse(data.name) 
+      : (data.name || { en: 'Unnamed Event', ru: 'Событие без названия', hi: 'अनामांकित घटना' });
+  } catch (e) {
+    parsedName = { en: 'Unnamed Event', ru: 'Событие без названия', hi: 'अनामांकित घटना' };
+  }
+  
+  // Parse info for description
+  let parsedInfo = {};
+  try {
+    parsedInfo = typeof data.info === 'string' 
+      ? JSON.parse(data.info) 
+      : (data.info || { en: '', ru: '', hi: '' });
+  } catch (e) {
+    parsedInfo = { en: '', ru: '', hi: '' };
+  }
+  
+  // Parse images
+  let images: string[] = [];
+  try {
+    images = Array.isArray(data.images) 
+      ? data.images 
+      : (typeof data.images === 'string' ? JSON.parse(data.images) : []);
+  } catch (e) {
+    images = [];
+  }
+  
   return {
     id: data.id,
-    cityId: data.city || '',
-    name: data.name as Record<string, string>,
-    description: data.info as Record<string, string>,
-    media: data.media || [],
-    thumbnail: data.images && data.images.length > 0 ? data.images[0] : '/placeholder.svg',
-    pointIds: data.spots || [],
+    cityId: '', // Will be populated from relationship or set manually
+    name: parsedName as Record<string, string>,
+    description: parsedInfo as Record<string, string>,
+    media: [],
+    thumbnail: images && images.length > 0 ? images[0] : '/placeholder.svg',
+    pointIds: [],
     startDate: data.time || '',
     endDate: data.time || '',
-    ownerId: data.ownerId,
+    type: data.type
   };
 };
 
