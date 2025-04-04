@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -38,12 +37,19 @@ const Profile = () => {
   });
   
   useEffect(() => {
-    // Check authentication status when component mounts
-    if (!authLoading && !isAuthenticated) {
-      console.log("User not authenticated, redirecting to auth page");
-      navigate('/auth');
-    } else if (user && isAuthenticated) {
-      fetchFavorites();
+    console.log("Profile component mounted");
+    console.log("Auth loading:", authLoading);
+    console.log("Is authenticated:", isAuthenticated);
+    console.log("User:", user);
+    
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        console.log("User not authenticated, redirecting to auth page");
+        navigate('/auth');
+      } else if (user && isAuthenticated) {
+        console.log("User authenticated, fetching favorites");
+        fetchFavorites();
+      }
     }
   }, [user, isAuthenticated, navigate, authLoading]);
   
@@ -67,6 +73,12 @@ const Profile = () => {
 
   const fetchFavorites = async () => {
     try {
+      if (!user || !user.favorites) {
+        console.log("No user or favorites available");
+        setFavoritesData(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
+
       setFavoritesData(prev => ({ ...prev, isLoading: true, error: null }));
       console.log("Fetching favorites for user:", user?.id);
       console.log("User favorites:", user?.favorites);
@@ -156,7 +168,6 @@ const Profile = () => {
   }
   
   if (!isAuthenticated) {
-    // Redirect handled in useEffect
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
