@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -243,14 +244,12 @@ const CityDetail = () => {
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="p-6">
-            <div className="flex flex-col md:flex-row md:items-start justify-between mb-4">
+            <div className="flex flex-col md:flex-row md:items-start justify-between mb-6">
               <div>
                 <h1 className="text-3xl font-bold mb-2">{cityName}</h1>
                 {renderCityStats()}
               </div>
             </div>
-            
-            <p className="text-muted-foreground mb-6">{cityDescription}</p>
             
             <MediaGallery media={mediaItems} />
             
@@ -307,6 +306,16 @@ const CityDetail = () => {
                 <TabsContent value="info" className="pt-4">
                   {cityInfo ? (
                     <div className="prose max-w-none">
+                      {cityDescription && (
+                        <div className="mb-4">
+                          <h3 className="text-lg font-medium mb-2">{t('description')}</h3>
+                          {cityDescription.split('\n').map((paragraph, index) => (
+                            <p key={index} className="mb-4">{paragraph}</p>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <h3 className="text-lg font-medium mb-2">{t('info')}</h3>
                       {cityInfo.split('\n').map((paragraph, index) => (
                         <p key={index} className="mb-4">{paragraph}</p>
                       ))}

@@ -149,7 +149,7 @@ const PointDetail = () => {
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="p-6">
-            <div className="flex flex-col md:flex-row md:items-start justify-between mb-4">
+            <div className="flex flex-col md:flex-row md:items-start justify-between mb-6">
               <div>
                 <div className="flex items-center">
                   <MapPin className="h-5 w-5 mr-2 text-primary" />
@@ -158,8 +158,6 @@ const PointDetail = () => {
                 {renderSpotStats()}
               </div>
             </div>
-            
-            <p className="text-muted-foreground mb-6">{spotDescription}</p>
             
             <MediaGallery media={mediaItems} />
             
@@ -182,9 +180,11 @@ const PointDetail = () => {
                 
                 <TabsContent value="info" className="pt-4">
                   <div className="prose max-w-none">
+                    <h3 className="text-lg font-medium mb-2">{t('description')}</h3>
                     {spotDescription.split('\n').map((paragraph, index) => (
                       <p key={index} className="mb-4">{paragraph}</p>
                     ))}
+                    
                     {spot.type && (
                       <div className="mt-4">
                         <h3 className="text-lg font-medium mb-2">{t('type')}:</h3>
