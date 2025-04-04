@@ -30,7 +30,7 @@ const ItemCardWrapper: React.FC<ItemCardWrapperProps> = (props) => {
     description: typeof props.description === 'string'
       ? { en: props.description, ru: props.description, hi: props.description } as Record<Language, string>
       : (props.description || { en: '', ru: '', hi: '' }) as Record<Language, string>,
-    onClick: () => {} // Add a default empty function for onClick
+    onClick: onClick || (() => {}) // Add a default empty function for onClick
   };
   
   return (

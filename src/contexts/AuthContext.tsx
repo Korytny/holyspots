@@ -26,7 +26,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const { toast } = useToast();
 
-  // Fetch user favorites from Supabase
   const fetchUserFavorites = async (userId: string) => {
     try {
       console.log("Fetching favorites for user:", userId);
@@ -41,7 +40,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (data && user) {
-        // Process and organize favorites by type
         const favorites = {
           cities: [] as string[],
           points: [] as string[],
@@ -70,7 +68,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         console.log("Processed favorites:", favorites);
         
-        // Update user with favorites - ensure we're not overwriting other user data
         setUser(prev => prev ? { ...prev, favorites } : null);
       }
     } catch (error) {
@@ -79,14 +76,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         console.log("Auth state changed:", event, currentSession);
         setSession(currentSession);
         
         if (currentSession?.user) {
-          // Convert Supabase user to our User model
           const appUser: User = {
             id: currentSession.user.id,
             email: currentSession.user.email || '',
@@ -107,8 +102,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           setUser(appUser);
           
-          // We fetch additional user data from our database
-          // Using setTimeout to avoid potential auth deadlocks
           setTimeout(() => {
             fetchUserFavorites(appUser.id);
           }, 0);
@@ -120,12 +113,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       setSession(initialSession);
       
       if (initialSession?.user) {
-        // Convert Supabase user to our User model
         const appUser: User = {
           id: initialSession.user.id,
           email: initialSession.user.email || '',
@@ -146,7 +137,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setUser(appUser);
         
-        // Fetch user favorites
         setTimeout(() => {
           fetchUserFavorites(appUser.id);
         }, 0);
@@ -155,16 +145,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     });
 
-    // Check for hash fragment in URL (for OAuth redirects)
     const handleHashChange = () => {
       const hash = window.location.hash;
       if (hash && hash.includes('access_token')) {
-        // Clear the hash from the URL without reloading
         window.history.replaceState(null, document.title, window.location.pathname);
       }
     };
 
-    // Handle hash on initial load
     handleHashChange();
 
     return () => {
@@ -172,7 +159,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Add an item to favorites
   const addFavorite = async (itemId: string, itemType: 'city' | 'point' | 'route' | 'event') => {
     if (!user) {
       toast({
@@ -185,7 +171,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setIsLoading(true);
     try {
-      // Map 'point' to 'spot' for database consistency
       const dbItemType = itemType === 'point' ? 'spot' : itemType;
       
       const { error } = await supabase
@@ -197,7 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       
       if (error) {
-        if (error.code === '23505') { // Unique violation
+        if (error.code === '23505') {
           toast({
             title: "Already in favorites",
             description: "This item is already in your favorites",
@@ -206,7 +191,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw error;
         }
       } else {
-        // Update local state
         setUser(prev => {
           if (!prev) return null;
           
@@ -250,13 +234,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Remove an item from favorites
   const removeFavorite = async (itemId: string, itemType: 'city' | 'point' | 'route' | 'event') => {
     if (!user) return;
     
     setIsLoading(true);
     try {
-      // Map 'point' to 'spot' for database consistency
       const dbItemType = itemType === 'point' ? 'spot' : itemType;
       
       const { error } = await supabase
@@ -268,7 +250,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       
-      // Update local state
       setUser(prev => {
         if (!prev) return null;
         
@@ -311,7 +292,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Check if an item is in favorites
   const isFavorite = (itemId: string, itemType: 'city' | 'point' | 'route' | 'event'): boolean => {
     if (!user) return false;
     
@@ -399,10 +379,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const googleSignIn = async () => {
     setIsLoading(true);
     try {
+      const currentUrl = window.location.origin;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/auth'
+          redirectTo: `${currentUrl}/cities`
         }
       });
       
@@ -423,10 +405,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const appleSignIn = async () => {
     setIsLoading(true);
     try {
+      const currentUrl = window.location.origin;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
-          redirectTo: window.location.origin + '/auth'
+          redirectTo: `${currentUrl}/cities`
         }
       });
       

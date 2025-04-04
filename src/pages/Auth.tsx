@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -8,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FcGoogle } from 'react-icons/fc';
 import { AiFillApple } from 'react-icons/ai';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const { t } = useLanguage();
@@ -72,10 +73,13 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
+      // Используем полный URL текущего окна вместо фиксированного
+      const currentUrl = window.location.origin;
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth`,
+          redirectTo: `${currentUrl}/cities`,  // Перенаправляем на cities после успешной аутентификации
           queryParams: {
             access_type: 'offline',
             prompt: 'consent'
@@ -97,7 +101,15 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
-      await appleSignIn();
+      // Также обновляем и для Apple авторизации
+      const currentUrl = window.location.origin;
+      
+      await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: `${currentUrl}/cities`, // Перенаправляем на cities после успешной аутентификации
+        }
+      });
       // No need to navigate as this will redirect to Apple
     } catch (err: any) {
       setError(err.message || 'Failed to sign in with Apple.');
