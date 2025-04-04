@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -11,7 +10,6 @@ import {
   Navigation as NavigationIcon, 
   Calendar,
   MapPin,
-  Info
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchSpotById } from '../services/spotsService';
@@ -121,7 +119,6 @@ const PointDetail = () => {
     navigate(`/events/${eventId}`);
   };
 
-  // Helper function to get spot type label
   const getSpotTypeLabel = (type: string) => {
     switch (type) {
       case 'temple': return t('temples');
@@ -142,7 +139,6 @@ const PointDetail = () => {
         </Button>
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          {/* Information panel */}
           <div className="bg-secondary/20 p-6">
             <div className="flex flex-col md:flex-row md:items-start justify-between mb-6">
               <div>
@@ -152,7 +148,6 @@ const PointDetail = () => {
                 </div>
                 
                 <div className="mt-3 flex flex-col gap-2">
-                  {/* Type */}
                   <div className="flex items-center text-sm">
                     <span className="font-medium mr-2">{t('type')}:</span>
                     <span className="inline-flex items-center px-3 py-1 bg-secondary rounded-full">
@@ -160,7 +155,6 @@ const PointDetail = () => {
                     </span>
                   </div>
                   
-                  {/* Location coordinates */}
                   {spot.location && (
                     <div className="flex items-center text-sm">
                       <span className="font-medium mr-2">{t('location')}:</span>
@@ -170,7 +164,6 @@ const PointDetail = () => {
                     </div>
                   )}
                   
-                  {/* Stats */}
                   <div className="flex items-center gap-4 mt-1">
                     <div className="inline-flex items-center text-sm">
                       <NavigationIcon className="h-4 w-4 mr-1 text-muted-foreground" />

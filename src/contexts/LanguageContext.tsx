@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Language } from '../types/models';
 
@@ -36,6 +35,8 @@ const translations: Record<Language, Record<string, string>> = {
     kunds: 'Kunds',
     routes: 'Routes',
     events: 'Events',
+    route: 'Route',
+    event: 'Event',
     viewOnMap: 'View on Map',
     hideMap: 'Hide Map',
     details: 'Details',
@@ -78,6 +79,8 @@ const translations: Record<Language, Record<string, string>> = {
     kunds: 'Кунды',
     routes: 'Маршруты',
     events: 'Мероприятия',
+    route: 'Маршрут',
+    event: 'Мероприятие',
     viewOnMap: 'Посмотреть на карте',
     hideMap: 'Скрыть карту',
     details: 'Подробнее',
@@ -120,6 +123,8 @@ const translations: Record<Language, Record<string, string>> = {
     kunds: 'कुंड',
     routes: 'मार्ग',
     events: 'कार्यक्रम',
+    route: 'मार्ग',
+    event: 'कार्यक्रम',
     viewOnMap: 'नक्शे पर देखें',
     hideMap: 'नक्शा छिपाएं',
     details: 'विवरण',

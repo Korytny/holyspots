@@ -12,7 +12,6 @@ import {
   Calendar,
   ArrowLeft,
   Eye,
-  Info
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCityById } from '../services/citiesService';
@@ -30,7 +29,7 @@ const CityDetail = () => {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
   
-  const [activeTab, setActiveTab] = useState('info');
+  const [activeTab, setActiveTab] = useState('spots');
   const [showMap, setShowMap] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
   const [spotRoutes, setSpotRoutes] = useState<any[]>([]);
@@ -168,7 +167,6 @@ const CityDetail = () => {
   
   const cityName = getCityName();
   const cityDescription = getCityDescription();
-  const cityInfo = getCityInfo();
   
   const mediaItems: MediaItem[] = Array.isArray(city?.images) ? city.images.map((url: string, index: number) => {
     const isVideo = typeof url === 'string' && (url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.mov'));
@@ -242,16 +240,32 @@ const CityDetail = () => {
         </Button>
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="p-6">
+          <div className="bg-secondary/20 p-6">
             <div className="flex flex-col md:flex-row md:items-start justify-between mb-6">
               <div>
-                <h1 className="text-3xl font-bold mb-2">{cityName}</h1>
-                {renderCityStats()}
+                <div className="flex items-center">
+                  <h1 className="text-3xl font-bold">{cityName}</h1>
+                </div>
+                
+                <div className="mt-3 flex flex-col gap-2">
+                  {renderCityStats()}
+                  
+                  {city.location && (
+                    <div className="flex items-center text-sm">
+                      <span className="font-medium mr-2">{t('location')}:</span>
+                      <span>
+                        {t('latitude')}: {city.location.latitude.toFixed(6)}, {t('longitude')}: {city.location.longitude.toFixed(6)}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             
-            <p className="text-muted-foreground mb-6">{cityDescription}</p>
+            <p className="text-muted-foreground mb-2">{cityDescription}</p>
+          </div>
             
+          <div className="p-6">
             <MediaGallery media={mediaItems} />
             
             <div className="mt-6 flex justify-end">
@@ -285,11 +299,7 @@ const CityDetail = () => {
               )}
 
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="w-full grid grid-cols-4">
-                  <TabsTrigger value="info" className="flex items-center">
-                    <Info className="mr-1 h-4 w-4" />
-                    {t('info')}
-                  </TabsTrigger>
+                <TabsList className="w-full grid grid-cols-3">
                   <TabsTrigger value="spots" className="flex items-center">
                     <MapPin className="mr-1 h-4 w-4" />
                     {t('spots')}
@@ -303,21 +313,6 @@ const CityDetail = () => {
                     {t('events')}
                   </TabsTrigger>
                 </TabsList>
-                
-                <TabsContent value="info" className="pt-4">
-                  {cityInfo ? (
-                    <div className="prose max-w-none">
-                      <h3 className="text-lg font-medium mb-2">{t('info')}</h3>
-                      {cityInfo.split('\n').map((paragraph, index) => (
-                        <p key={index} className="mb-4">{paragraph}</p>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">No detailed information available</p>
-                    </div>
-                  )}
-                </TabsContent>
                 
                 <TabsContent value="spots" className="pt-4">
                   <CitySpots 
