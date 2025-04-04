@@ -8,38 +8,32 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MapPin, Heart, LogOut } from 'lucide-react';
-import ItemCard from '../components/ItemCard';
 import { useToast } from '@/components/ui/use-toast';
-
-// Define proper types for the favorites to avoid type errors
-interface FavoriteItem {
-  id: string;
-  name: string;
-  description: string;
-  thumbnail: string;
-  location: string;
-  pointCount?: number;
-  date?: string;
-}
+import { supabase } from '@/integrations/supabase/client';
+import ItemCardWrapper from '../components/ItemCardWrapper';
+import { City, Point, Route, Event } from '../types/models';
 
 const Profile = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user, signOut, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('cities');
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Temporary mock data for favorites (replace with real data from API later)
   const [favorites, setFavorites] = useState<{
-    cities: FavoriteItem[];
-    points: FavoriteItem[];
-    routes: FavoriteItem[];
-    events: FavoriteItem[];
+    cities: City[];
+    points: Point[];
+    routes: Route[];
+    events: Event[];
+    isLoading: boolean;
+    error: Error | null;
   }>({
     cities: [],
     points: [],
     routes: [],
-    events: []
+    events: [],
+    isLoading: false,
+    error: null
   });
   
   useEffect(() => {
@@ -47,17 +41,130 @@ const Profile = () => {
       navigate('/auth');
     }
     
-    // For now, just set mock data
-    // In a real app, you would fetch this from an API
     if (user) {
-      setFavorites({
-        cities: user.favorites.cities as unknown as FavoriteItem[] || [],
-        points: user.favorites.points as unknown as FavoriteItem[] || [],
-        routes: user.favorites.routes as unknown as FavoriteItem[] || [],
-        events: user.favorites.events as unknown as FavoriteItem[] || []
-      });
+      fetchFavorites();
     }
   }, [user, authLoading, navigate]);
+  
+  const fetchFavorites = async () => {
+    if (!user) return;
+    
+    setFavorites(prev => ({ ...prev, isLoading: true, error: null }));
+    
+    try {
+      // Fetch favorite cities
+      if (user.favorites.cities.length > 0) {
+        const { data: citiesData, error: citiesError } = await supabase
+          .from('cities')
+          .select('*')
+          .in('id', user.favorites.cities);
+          
+        if (citiesError) throw citiesError;
+        
+        const cities = citiesData.map(city => ({
+          id: city.id,
+          name: typeof city.name === 'object' ? city.name : { en: city.name, ru: city.name },
+          description: city.info || { en: '', ru: '' },
+          thumbnail: city.images?.[0] || '/placeholder.svg',
+          pointIds: [],
+          routeIds: [],
+          eventIds: [],
+          location: { latitude: 0, longitude: 0 }
+        }));
+        
+        setFavorites(prev => ({ ...prev, cities }));
+      }
+      
+      // Fetch favorite spots (points)
+      if (user.favorites.points.length > 0) {
+        const { data: pointsData, error: pointsError } = await supabase
+          .from('spots')
+          .select('*')
+          .in('id', user.favorites.points);
+          
+        if (pointsError) throw pointsError;
+        
+        const points = pointsData.map(point => ({
+          id: point.id,
+          cityId: point.city || '',
+          type: point.type === 1 ? 'temple' : point.type === 2 ? 'ashram' : point.type === 3 ? 'kund' : 'other',
+          name: point.name || { en: 'Unnamed Point', ru: 'Безымянная точка' },
+          description: point.info || { en: '', ru: '' },
+          media: [],
+          thumbnail: point.images?.[0] || '/placeholder.svg',
+          location: point.coordinates ? {
+            latitude: point.coordinates.lat || 0,
+            longitude: point.coordinates.lng || 0
+          } : { latitude: 0, longitude: 0 },
+          routeIds: [],
+          eventIds: []
+        }));
+        
+        setFavorites(prev => ({ ...prev, points }));
+      }
+      
+      // Fetch favorite routes
+      if (user.favorites.routes.length > 0) {
+        const { data: routesData, error: routesError } = await supabase
+          .from('routes')
+          .select('*')
+          .in('id', user.favorites.routes);
+          
+        if (routesError) throw routesError;
+        
+        const routes = routesData.map(route => ({
+          id: route.id,
+          cityId: '',
+          name: route.name || { en: 'Unnamed Route', ru: 'Безымянный маршрут' },
+          description: { en: '', ru: '' },
+          media: [],
+          thumbnail: '/placeholder.svg',
+          pointIds: [],
+          eventIds: []
+        }));
+        
+        setFavorites(prev => ({ ...prev, routes }));
+      }
+      
+      // Fetch favorite events
+      if (user.favorites.events.length > 0) {
+        const { data: eventsData, error: eventsError } = await supabase
+          .from('events')
+          .select('*')
+          .in('id', user.favorites.events);
+          
+        if (eventsError) throw eventsError;
+        
+        const events = eventsData.map(event => ({
+          id: event.id,
+          cityId: '',
+          name: event.name || { en: 'Unnamed Event', ru: 'Безымянное событие' },
+          description: event.info || { en: '', ru: '' },
+          media: [],
+          thumbnail: event.images?.[0] || '/placeholder.svg',
+          pointIds: [],
+          startDate: event.time || new Date().toISOString(),
+          endDate: event.time || new Date().toISOString()
+        }));
+        
+        setFavorites(prev => ({ ...prev, events }));
+      }
+    } catch (error) {
+      console.error('Error fetching favorites:', error);
+      setFavorites(prev => ({ 
+        ...prev, 
+        error: error instanceof Error ? error : new Error('Failed to fetch favorites') 
+      }));
+      
+      toast({
+        title: "Error",
+        description: "Failed to fetch your favorites. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setFavorites(prev => ({ ...prev, isLoading: false }));
+    }
+  };
   
   const handleLogout = async () => {
     try {
@@ -171,16 +278,20 @@ const Profile = () => {
             
             <TabsContent value="cities" className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {favorites.cities.length > 0 ? (
+                {favorites.isLoading ? (
+                  Array(3).fill(0).map((_, index) => (
+                    <div key={index} className="animate-pulse bg-muted h-64 rounded-lg"></div>
+                  ))
+                ) : favorites.cities.length > 0 ? (
                   favorites.cities.map(city => (
-                    <ItemCard
+                    <ItemCardWrapper
                       key={city.id}
                       id={city.id}
                       type="city"
                       name={city.name}
                       description={city.description}
                       thumbnail={city.thumbnail}
-                      location={city.location}
+                      location={`${city.name[language] || city.name.en}`}
                       onClick={() => handleCityClick(city.id)}
                     />
                   ))
@@ -194,16 +305,21 @@ const Profile = () => {
             
             <TabsContent value="points" className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {favorites.points.length > 0 ? (
+                {favorites.isLoading ? (
+                  Array(3).fill(0).map((_, index) => (
+                    <div key={index} className="animate-pulse bg-muted h-64 rounded-lg"></div>
+                  ))
+                ) : favorites.points.length > 0 ? (
                   favorites.points.map(point => (
-                    <ItemCard
+                    <ItemCardWrapper
                       key={point.id}
                       id={point.id}
                       type="point"
                       name={point.name}
                       description={point.description}
                       thumbnail={point.thumbnail}
-                      location={point.location}
+                      location={`${point.name[language] || point.name.en}`}
+                      spotType={point.type}
                       onClick={() => handlePointClick(point.id)}
                     />
                   ))
@@ -217,17 +333,20 @@ const Profile = () => {
             
             <TabsContent value="routes" className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {favorites.routes.length > 0 ? (
+                {favorites.isLoading ? (
+                  Array(3).fill(0).map((_, index) => (
+                    <div key={index} className="animate-pulse bg-muted h-64 rounded-lg"></div>
+                  ))
+                ) : favorites.routes.length > 0 ? (
                   favorites.routes.map(route => (
-                    <ItemCard
+                    <ItemCardWrapper
                       key={route.id}
                       id={route.id}
                       type="route"
                       name={route.name}
                       description={route.description}
                       thumbnail={route.thumbnail}
-                      location={route.location}
-                      pointCount={route.pointCount}
+                      pointCount={route.pointIds?.length}
                       onClick={() => handleRouteClick(route.id)}
                     />
                   ))
@@ -241,17 +360,20 @@ const Profile = () => {
             
             <TabsContent value="events" className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {favorites.events.length > 0 ? (
+                {favorites.isLoading ? (
+                  Array(3).fill(0).map((_, index) => (
+                    <div key={index} className="animate-pulse bg-muted h-64 rounded-lg"></div>
+                  ))
+                ) : favorites.events.length > 0 ? (
                   favorites.events.map(event => (
-                    <ItemCard
+                    <ItemCardWrapper
                       key={event.id}
                       id={event.id}
                       type="event"
                       name={event.name}
                       description={event.description}
                       thumbnail={event.thumbnail}
-                      location={event.location}
-                      date={event.date}
+                      date={event.startDate ? new Date(event.startDate).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU') : undefined}
                       onClick={() => handleEventClick(event.id)}
                     />
                   ))

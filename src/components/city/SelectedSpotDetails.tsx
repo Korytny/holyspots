@@ -1,9 +1,10 @@
 
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../../contexts/LanguageContext";
-import ItemCard from "../ItemCard";
 import { Point, Route, Event } from "../../types/models";
 import { ChevronLeft, MapPin, Navigation, Calendar } from "lucide-react";
+import ItemCardWrapper from "../ItemCardWrapper";
+import FavoriteDetailButton from "../FavoriteDetailButton";
 
 interface SelectedSpotDetailsProps {
   selectedSpot: Point | null;
@@ -33,10 +34,17 @@ const SelectedSpotDetails: React.FC<SelectedSpotDetailsProps> = ({
           <MapPin className="mr-2 h-5 w-5" />
           {selectedSpot?.name?.[language] || selectedSpot?.name?.en || 'Selected Spot'}
         </h2>
-        <Button variant="ghost" size="sm" onClick={onClearSelectedSpot}>
-          <ChevronLeft className="mr-1 h-4 w-4" />
-          {t('back')}
-        </Button>
+        <div className="flex space-x-2">
+          <FavoriteDetailButton 
+            itemId={selectedSpot.id}
+            itemType="point"
+            size="sm"
+          />
+          <Button variant="ghost" size="sm" onClick={onClearSelectedSpot}>
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            {t('back')}
+          </Button>
+        </div>
       </div>
       
       <p className="text-sm text-muted-foreground mb-4">
@@ -51,7 +59,7 @@ const SelectedSpotDetails: React.FC<SelectedSpotDetailsProps> = ({
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {spotRoutes.map(route => (
-              <ItemCard
+              <ItemCardWrapper
                 key={route.id}
                 id={route.id}
                 type="route"
@@ -74,7 +82,7 @@ const SelectedSpotDetails: React.FC<SelectedSpotDetailsProps> = ({
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {spotEvents.map(event => (
-              <ItemCard
+              <ItemCardWrapper
                 key={event.id}
                 id={event.id}
                 type="event"

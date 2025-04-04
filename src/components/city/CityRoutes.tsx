@@ -1,7 +1,7 @@
 
 import { useLanguage } from '../../contexts/LanguageContext';
-import ItemCard from '../ItemCard';
 import { Route } from '../../types/models';
+import ItemCardWrapper from '../ItemCardWrapper';
 
 interface CityRoutesProps {
   routes: Route[];
@@ -38,7 +38,7 @@ const CityRoutes: React.FC<CityRoutesProps> = ({
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {routes.length > 0 ? (
         routes.map(route => (
-          <ItemCard
+          <ItemCardWrapper
             key={route.id}
             id={route.id}
             type="route"

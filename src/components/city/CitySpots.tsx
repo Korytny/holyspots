@@ -1,8 +1,8 @@
 
 import { useLanguage } from '../../contexts/LanguageContext';
-import ItemCard from '../ItemCard';
 import { Point } from '../../types/models';
 import { MapPin } from 'lucide-react';
+import ItemCardWrapper from '../ItemCardWrapper';
 
 interface CitySpotProps {
   spots: Point[];
@@ -41,7 +41,7 @@ const CitySpots: React.FC<CitySpotProps> = ({
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {spots.length > 0 ? (
         spots.map(spot => (
-          <ItemCard
+          <ItemCardWrapper
             key={spot.id}
             id={spot.id}
             type="point"

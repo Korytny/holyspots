@@ -1,7 +1,7 @@
 
 import { useLanguage } from '../../contexts/LanguageContext';
-import ItemCard from '../ItemCard';
 import { Event } from '../../types/models';
+import ItemCardWrapper from '../ItemCardWrapper';
 
 interface CityEventsProps {
   events: Event[];
@@ -38,7 +38,7 @@ const CityEvents: React.FC<CityEventsProps> = ({
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {events.length > 0 ? (
         events.map(event => (
-          <ItemCard
+          <ItemCardWrapper
             key={event.id}
             id={event.id}
             type="event"
