@@ -1,16 +1,20 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FcGoogle } from 'react-icons/fc';
+import { AiFillApple } from 'react-icons/ai';
+import { useToast } from '@/components/ui/use-toast';
 
 const Auth = () => {
   const { t } = useLanguage();
-  const { signIn, signUp, googleSignIn, appleSignIn, isAuthenticated } = useAuth();
+  const { signIn, signUp, googleSignIn, appleSignIn, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,11 +24,12 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   
-  // Redirect if already authenticated
-  if (isAuthenticated) {
-    navigate('/cities');
-    return null;
-  }
+  // Check if the user is already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/cities');
+    }
+  }, [isAuthenticated, navigate]);
   
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,8 +39,8 @@ const Auth = () => {
     try {
       await signIn(email, password);
       navigate('/cities');
-    } catch (err) {
-      setError('Failed to sign in. Please check your credentials.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in. Please check your credentials.');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -49,9 +54,13 @@ const Auth = () => {
     
     try {
       await signUp(email, password, name);
-      navigate('/cities');
-    } catch (err) {
-      setError('Failed to sign up. Please try again.');
+      toast({
+        title: "Account created successfully",
+        description: "Please check your email for verification instructions.",
+      });
+      // Not navigating away immediately after signup as they need to verify email
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign up. Please try again.');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -64,11 +73,10 @@ const Auth = () => {
     
     try {
       await googleSignIn();
-      navigate('/cities');
-    } catch (err) {
-      setError('Failed to sign in with Google.');
+      // No need to navigate as this will redirect to Google
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in with Google.');
       console.error(err);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -79,14 +87,27 @@ const Auth = () => {
     
     try {
       await appleSignIn();
-      navigate('/cities');
-    } catch (err) {
-      setError('Failed to sign in with Apple.');
+      // No need to navigate as this will redirect to Apple
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in with Apple.');
       console.error(err);
-    } finally {
       setIsLoading(false);
     }
   };
+  
+  // Show loading state during initial auth check
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">{t('loading')}</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // If user is authenticated, they will be redirected in the useEffect
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -114,6 +135,7 @@ const Auth = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               
@@ -128,6 +150,7 @@ const Auth = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               
@@ -136,7 +159,7 @@ const Auth = () => {
               )}
               
               <Button disabled={isLoading} className="w-full" type="submit">
-                {isLoading ? 'Loading...' : t('signIn')}
+                {isLoading ? t('loading') : t('signIn')}
               </Button>
               
               <div className="relative my-6">
@@ -145,7 +168,7 @@ const Auth = () => {
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-card px-2 text-muted-foreground">
-                    or
+                    {t('or')}
                   </span>
                 </div>
               </div>
@@ -154,20 +177,22 @@ const Auth = () => {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  className="w-full"
+                  className="w-full flex items-center justify-center gap-2"
                   onClick={handleGoogleSignIn}
                   disabled={isLoading}
                 >
+                  <FcGoogle size={20} />
                   {t('continueWithGoogle')}
                 </Button>
                 
                 <Button 
                   type="button" 
                   variant="outline" 
-                  className="w-full"
+                  className="w-full flex items-center justify-center gap-2"
                   onClick={handleAppleSignIn}
                   disabled={isLoading}
                 >
+                  <AiFillApple size={20} />
                   {t('continueWithApple')}
                 </Button>
               </div>
@@ -187,6 +212,7 @@ const Auth = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               
@@ -201,6 +227,7 @@ const Auth = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               
@@ -215,6 +242,8 @@ const Auth = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading}
+                  minLength={6}
                 />
               </div>
               
@@ -223,7 +252,7 @@ const Auth = () => {
               )}
               
               <Button disabled={isLoading} className="w-full" type="submit">
-                {isLoading ? 'Loading...' : t('signUp')}
+                {isLoading ? t('loading') : t('signUp')}
               </Button>
               
               <div className="relative my-6">
@@ -232,7 +261,7 @@ const Auth = () => {
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-card px-2 text-muted-foreground">
-                    or
+                    {t('or')}
                   </span>
                 </div>
               </div>
@@ -241,20 +270,22 @@ const Auth = () => {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  className="w-full"
+                  className="w-full flex items-center justify-center gap-2"
                   onClick={handleGoogleSignIn}
                   disabled={isLoading}
                 >
+                  <FcGoogle size={20} />
                   {t('continueWithGoogle')}
                 </Button>
                 
                 <Button 
                   type="button" 
                   variant="outline" 
-                  className="w-full"
+                  className="w-full flex items-center justify-center gap-2"
                   onClick={handleAppleSignIn}
                   disabled={isLoading}
                 >
+                  <AiFillApple size={20} />
                   {t('continueWithApple')}
                 </Button>
               </div>

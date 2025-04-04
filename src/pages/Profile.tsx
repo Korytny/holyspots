@@ -1,109 +1,46 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import Navigation from '../components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MapPin, Heart, LogOut } from 'lucide-react';
 import ItemCard from '../components/ItemCard';
+import { useToast } from '@/components/ui/use-toast';
 
 const Profile = () => {
   const { t } = useLanguage();
+  const { user, signOut, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('cities');
   const navigate = useNavigate();
+  const { toast } = useToast();
   
-  // Mock user data
-  const user = {
-    name: 'Alex Traveler',
-    email: 'alex@example.com',
-    avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&h=120',
-    favorites: {
-      cities: [
-        {
-          id: '1',
-          name: {
-            en: 'Varanasi',
-            ru: 'Варанаси'
-          },
-          description: {
-            en: 'One of the oldest continuously inhabited cities in the world.',
-            ru: 'Один из старейших постоянно населенных городов мира.'
-          },
-          thumbnail: 'https://images.unsplash.com/photo-1561361058-c24e01238a46?auto=format&fit=crop&w=600&h=400',
-          location: 'Uttar Pradesh, India'
-        },
-        {
-          id: '2',
-          name: {
-            en: 'Rishikesh',
-            ru: 'Ришикеш'
-          },
-          description: {
-            en: 'Known as the "Yoga Capital of the World".',
-            ru: 'Известен как "Мировая столица йоги".'
-          },
-          thumbnail: 'https://images.unsplash.com/photo-1592385862434-b3246b5f3814?auto=format&fit=crop&w=600&h=400',
-          location: 'Uttarakhand, India'
-        }
-      ],
-      points: [
-        {
-          id: '1',
-          name: {
-            en: 'Kashi Vishwanath Temple',
-            ru: 'Храм Каши Вишванатх'
-          },
-          description: {
-            en: 'One of the most famous Hindu temples dedicated to Lord Shiva.',
-            ru: 'Один из самых известных индуистских храмов, посвященных Господу Шиве.'
-          },
-          thumbnail: 'https://images.unsplash.com/photo-1625125976244-8a1f64b12c43?auto=format&fit=crop&w=600&h=400',
-          location: 'Varanasi, Uttar Pradesh'
-        }
-      ],
-      routes: [
-        {
-          id: '1',
-          name: {
-            en: 'Varanasi Temple Tour',
-            ru: 'Тур по храмам Варанаси'
-          },
-          description: {
-            en: 'A guided tour to the most significant temples in Varanasi.',
-            ru: 'Экскурсия по самым значимым храмам Варанаси.'
-          },
-          thumbnail: 'https://images.unsplash.com/photo-1577644923446-a636be1d1d4d?auto=format&fit=crop&w=600&h=400',
-          location: 'Varanasi, Uttar Pradesh',
-          pointCount: 5
-        }
-      ],
-      events: [
-        {
-          id: '1',
-          name: {
-            en: 'Ganga Aarti Ceremony',
-            ru: 'Церемония Ганга Аарти'
-          },
-          description: {
-            en: 'The spectacular Ganga Aarti is performed every evening at Dashashwamedh Ghat.',
-            ru: 'Впечатляющая церемония Ганга Аарти проводится каждый вечер на гхате Дашашвамедх.'
-          },
-          thumbnail: 'https://images.unsplash.com/photo-1627894005990-9e32d9009759?auto=format&fit=crop&w=600&h=400',
-          location: 'Varanasi, Uttar Pradesh',
-          date: '2023-06-01'
-        }
-      ]
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+  
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Logout failed",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive"
+      });
     }
   };
-  
-  const handleLogout = () => {
-    console.log('User logged out');
-    // In real app, would call auth context logout method and redirect to auth page
-  };
 
-  // Add navigation handlers for items
   const handleCityClick = (cityId: string) => {
     navigate(`/cities/${cityId}`);
   };
@@ -122,14 +59,29 @@ const Profile = () => {
   
   const getCounts = () => {
     return {
-      cities: user.favorites.cities.length,
-      points: user.favorites.points.length,
-      routes: user.favorites.routes.length,
-      events: user.favorites.events.length
+      cities: user?.favorites.cities.length || 0,
+      points: user?.favorites.points.length || 0,
+      routes: user?.favorites.routes.length || 0,
+      events: user?.favorites.events.length || 0
     };
   };
   
   const counts = getCounts();
+  
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">{t('loading')}</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return null;
+  }
   
   return (
     <div className="flex flex-col min-h-screen bg-muted">
@@ -139,8 +91,8 @@ const Profile = () => {
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="flex flex-col sm:flex-row items-center">
             <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
-              <AvatarImage src={user.avatarUrl} alt={user.name} />
-              <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+              <AvatarImage src={user.avatarUrl || ''} alt={user.name} />
+              <AvatarFallback>{user.name?.split(' ').map(n => n[0]).join('') || user.email.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="mt-4 sm:mt-0 sm:ml-6 text-center sm:text-left">
               <h1 className="text-2xl font-bold">{user.name}</h1>
@@ -198,7 +150,7 @@ const Profile = () => {
                   ))
                 ) : (
                   <div className="col-span-full text-center py-12">
-                    <p className="text-muted-foreground mb-2">No favorite cities found</p>
+                    <p className="text-muted-foreground mb-2">{t('noFavoriteCities')}</p>
                   </div>
                 )}
               </div>
@@ -221,7 +173,7 @@ const Profile = () => {
                   ))
                 ) : (
                   <div className="col-span-full text-center py-12">
-                    <p className="text-muted-foreground mb-2">No favorite points found</p>
+                    <p className="text-muted-foreground mb-2">{t('noFavoritePoints')}</p>
                   </div>
                 )}
               </div>
@@ -245,7 +197,7 @@ const Profile = () => {
                   ))
                 ) : (
                   <div className="col-span-full text-center py-12">
-                    <p className="text-muted-foreground mb-2">No favorite routes found</p>
+                    <p className="text-muted-foreground mb-2">{t('noFavoriteRoutes')}</p>
                   </div>
                 )}
               </div>
@@ -269,7 +221,7 @@ const Profile = () => {
                   ))
                 ) : (
                   <div className="col-span-full text-center py-12">
-                    <p className="text-muted-foreground mb-2">No favorite events found</p>
+                    <p className="text-muted-foreground mb-2">{t('noFavoriteEvents')}</p>
                   </div>
                 )}
               </div>
