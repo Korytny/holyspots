@@ -5,17 +5,52 @@ import { Route } from '../types/models';
 export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
   console.log('Fetching routes for city:', cityId);
   
+  // First, get all spots in the city
+  const { data: citySpots, error: spotError } = await supabase
+    .from('spots')
+    .select('id')
+    .eq('city', cityId);
+  
+  if (spotError) {
+    console.error('Error fetching city spots:', spotError);
+    throw spotError;
+  }
+  
+  if (!citySpots || citySpots.length === 0) {
+    return [];
+  }
+  
+  // Get all route IDs that are connected to these spots
+  const spotIds = citySpots.map(spot => spot.id);
+  const { data: relationData, error: relationError } = await supabase
+    .from('spot_route')
+    .select('route_id')
+    .in('spot_id', spotIds);
+  
+  if (relationError) {
+    console.error('Error fetching spot-route relations:', relationError);
+    throw relationError;
+  }
+  
+  if (!relationData || relationData.length === 0) {
+    return [];
+  }
+  
+  // Get unique route IDs
+  const uniqueRouteIds = [...new Set(relationData.map(relation => relation.route_id))];
+  
+  // Fetch all these routes
   const { data, error } = await supabase
     .from('routes')
     .select('*')
-    .eq('city', cityId);
+    .in('id', uniqueRouteIds);
   
   if (error) {
-    console.error('Error fetching routes:', error);
+    console.error('Error fetching routes for city spots:', error);
     throw error;
   }
   
-  console.log(`Retrieved ${data.length} routes for city ${cityId}`);
+  console.log(`Retrieved ${data?.length || 0} routes for city ${cityId} through spots`);
   
   return data.map((routeData): Route => ({
     id: routeData.id,

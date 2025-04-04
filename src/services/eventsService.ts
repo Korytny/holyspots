@@ -5,17 +5,52 @@ import { Event } from '../types/models';
 export const fetchEventsByCity = async (cityId: string): Promise<Event[]> => {
   console.log('Fetching events for city:', cityId);
   
+  // First, get all spots in the city
+  const { data: citySpots, error: spotError } = await supabase
+    .from('spots')
+    .select('id')
+    .eq('city', cityId);
+  
+  if (spotError) {
+    console.error('Error fetching city spots:', spotError);
+    throw spotError;
+  }
+  
+  if (!citySpots || citySpots.length === 0) {
+    return [];
+  }
+  
+  // Get all event IDs that are connected to these spots
+  const spotIds = citySpots.map(spot => spot.id);
+  const { data: relationData, error: relationError } = await supabase
+    .from('spot_event')
+    .select('event_id')
+    .in('spot_id', spotIds);
+  
+  if (relationError) {
+    console.error('Error fetching spot-event relations:', relationError);
+    throw relationError;
+  }
+  
+  if (!relationData || relationData.length === 0) {
+    return [];
+  }
+  
+  // Get unique event IDs
+  const uniqueEventIds = [...new Set(relationData.map(relation => relation.event_id))];
+  
+  // Fetch all these events
   const { data, error } = await supabase
     .from('events')
     .select('*')
-    .eq('city', cityId);
+    .in('id', uniqueEventIds);
   
   if (error) {
-    console.error('Error fetching events:', error);
+    console.error('Error fetching events for city spots:', error);
     throw error;
   }
   
-  console.log(`Retrieved ${data.length} events for city ${cityId}`);
+  console.log(`Retrieved ${data?.length || 0} events for city ${cityId} through spots`);
   
   return data.map((eventData): Event => ({
     id: eventData.id,
