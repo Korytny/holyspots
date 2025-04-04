@@ -2,9 +2,9 @@
 import { supabase } from '../lib/supabase';
 import { Route, Language } from '../types/models';
 
-// Базовая функция для преобразования данных из БД в модель Route
+// Basic function to transform data from DB to Route model
 const transformRouteData = (routeData: any): Route => {
-  // Обработка имени
+  // Process name
   let parsedName: Record<Language, string> = { en: 'Unknown route', ru: 'Неизвестный маршрут', hi: 'अज्ञात मार्ग' };
   try {
     if (typeof routeData.name === 'string') {
@@ -16,7 +16,7 @@ const transformRouteData = (routeData: any): Route => {
     console.warn('Could not parse route name:', e);
   }
   
-  // Обработка описания
+  // Process description
   let parsedDescription: Record<Language, string> = { en: '', ru: '', hi: '' };
   try {
     if (typeof routeData.info === 'string') {
@@ -28,18 +28,6 @@ const transformRouteData = (routeData: any): Route => {
     console.warn('Could not parse route description:', e);
   }
   
-  // Преобразование массива точек
-  let pointIds: string[] = [];
-  try {
-    if (Array.isArray(routeData.spots)) {
-      pointIds = routeData.spots;
-    } else if (typeof routeData.spots === 'string') {
-      pointIds = JSON.parse(routeData.spots);
-    }
-  } catch (e) {
-    console.warn('Could not parse route points:', e);
-  }
-  
   return {
     id: routeData.id,
     cityId: routeData.city_id || '',
@@ -47,14 +35,14 @@ const transformRouteData = (routeData: any): Route => {
     description: parsedDescription,
     media: [],
     thumbnail: '/placeholder.svg',
-    pointIds: pointIds,
+    pointIds: [], // Will be filled in by another function
     eventIds: [],
     distance: routeData.distance || 0,
     duration: routeData.duration || 0
   };
 };
 
-// Функция для получения всех маршрутов
+// Function to get all routes
 export const fetchAllRoutes = async (): Promise<Route[]> => {
   try {
     const { data, error } = await supabase
@@ -69,7 +57,7 @@ export const fetchAllRoutes = async (): Promise<Route[]> => {
   }
 };
 
-// Функция для получения маршрута по ID
+// Function to get a route by ID
 export const fetchRouteById = async (routeId: string): Promise<Route | null> => {
   try {
     const { data, error } = await supabase
@@ -81,14 +69,27 @@ export const fetchRouteById = async (routeId: string): Promise<Route | null> => 
     if (error) throw error;
     if (!data) return null;
     
-    return transformRouteData(data);
+    // Get related point IDs from the junction table
+    const { data: junctionData, error: junctionError } = await supabase
+      .from('spot_route')
+      .select('spot_id')
+      .eq('route_id', routeId);
+    
+    if (junctionError) throw junctionError;
+    
+    const routeObj = transformRouteData(data);
+    if (junctionData && junctionData.length > 0) {
+      routeObj.pointIds = junctionData.map(item => item.spot_id);
+    }
+    
+    return routeObj;
   } catch (error) {
     console.error(`Error fetching route with ID ${routeId}:`, error);
     return null;
   }
 };
 
-// Функция для получения маршрутов города
+// Function to get routes by city
 export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
   try {
     const { data, error } = await supabase
@@ -104,55 +105,49 @@ export const fetchRoutesByCity = async (cityId: string): Promise<Route[]> => {
   }
 };
 
-// Функция для получения маршрутов, содержащих точку
+// Function to get routes containing a specific point
 export const fetchRoutesByPoint = async (pointId: string): Promise<Route[]> => {
   try {
+    // Get route IDs from the junction table
+    const { data: junctionData, error: junctionError } = await supabase
+      .from('spot_route')
+      .select('route_id')
+      .eq('spot_id', pointId);
+    
+    if (junctionError) throw junctionError;
+    if (!junctionData || junctionData.length === 0) return [];
+    
+    const routeIds = junctionData.map(item => item.route_id);
+    
+    // Get the actual routes
     const { data, error } = await supabase
       .from('routes')
-      .select('*');
+      .select('*')
+      .in('id', routeIds);
     
     if (error) throw error;
-    
-    // Фильтруем маршруты, которые содержат эту точку
-    return data
-      .filter(route => {
-        if (!route.spots) return false;
-        
-        let spotIds: string[] = [];
-        try {
-          if (Array.isArray(route.spots)) {
-            spotIds = route.spots;
-          } else if (typeof route.spots === 'string') {
-            spotIds = JSON.parse(route.spots);
-          }
-          return spotIds.includes(pointId);
-        } catch (e) {
-          return false;
-        }
-      })
-      .map(transformRouteData);
+    return data.map(transformRouteData);
   } catch (error) {
     console.error(`Error fetching routes for point ${pointId}:`, error);
     return [];
   }
 };
 
-// Функция для получения маршрутов события
+// Function to get routes related to an event
 export const fetchRoutesByEvent = async (eventId: string): Promise<Route[]> => {
   try {
-    // Сначала получаем связи из таблицы route_event
-    const { data: junctions, error: junctionError } = await supabase
+    // Get route IDs from the junction table
+    const { data: junctionData, error: junctionError } = await supabase
       .from('route_event')
       .select('route_id')
       .eq('event_id', eventId);
     
     if (junctionError) throw junctionError;
-    if (!junctions || junctions.length === 0) return [];
+    if (!junctionData || junctionData.length === 0) return [];
     
-    // Извлекаем ID маршрутов
-    const routeIds = junctions.map(j => j.route_id);
+    const routeIds = junctionData.map(item => item.route_id);
     
-    // Получаем сами маршруты
+    // Get the actual routes
     const { data, error } = await supabase
       .from('routes')
       .select('*')
@@ -162,25 +157,6 @@ export const fetchRoutesByEvent = async (eventId: string): Promise<Route[]> => {
     return data.map(transformRouteData);
   } catch (error) {
     console.error(`Error fetching routes for event ${eventId}:`, error);
-    return [];
-  }
-};
-
-// Функция для получения точек маршрута
-export const fetchRoutePoints = async (routeId: string) => {
-  try {
-    const route = await fetchRouteById(routeId);
-    if (!route || !route.pointIds.length) return [];
-    
-    const { data, error } = await supabase
-      .from('spots')
-      .select('*')
-      .in('id', route.pointIds);
-    
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error(`Error fetching points for route ${routeId}:`, error);
     return [];
   }
 };

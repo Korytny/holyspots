@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { fetchAllPoints } from '../services/pointsService';
 import { fetchAllRoutes } from "../services/routesService";
@@ -10,12 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
 import ItemCardWrapper from '../components/ItemCardWrapper';
 import Navigation from '../components/Navigation';
 
 const Search = () => {
   const { t, language } = useLanguage();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCity, setSelectedCity] = useState<string>('');
@@ -103,13 +104,13 @@ const Search = () => {
   };
   
   const handleCityChange = (value: string) => {
-    setSelectedCity(value);
-    updateSearchParams({ city: value });
+    setSelectedCity(value === 'all' ? '' : value);
+    updateSearchParams({ city: value === 'all' ? '' : value });
   };
   
   const handleSpotTypeChange = (value: string) => {
-    setSelectedSpotType(value);
-    updateSearchParams({ type: value });
+    setSelectedSpotType(value === 'all' ? '' : value);
+    updateSearchParams({ type: value === 'all' ? '' : value });
   };
   
   const handleTabChange = (value: string) => {
@@ -170,6 +171,18 @@ const Search = () => {
   };
   
   const spotTypes = ['temple', 'ashram', 'kund', 'other'];
+
+  const handlePointClick = (pointId: string) => {
+    navigate(`/points/${pointId}`);
+  };
+
+  const handleRouteClick = (routeId: string) => {
+    navigate(`/routes/${routeId}`);
+  };
+
+  const handleEventClick = (eventId: string) => {
+    navigate(`/events/${eventId}`);
+  };
   
   return (
     <div className="min-h-screen bg-muted">
@@ -191,7 +204,7 @@ const Search = () => {
           
           <div className="space-y-2">
             <Label htmlFor="city">{t('city')}</Label>
-            <Select value={selectedCity} onValueChange={handleCityChange}>
+            <Select value={selectedCity || 'all'} onValueChange={handleCityChange}>
               <SelectTrigger id="city">
                 <SelectValue placeholder={t('allCities')} />
               </SelectTrigger>
@@ -208,7 +221,7 @@ const Search = () => {
           
           <div className="space-y-2">
             <Label htmlFor="spotType">{t('spotType')}</Label>
-            <Select value={selectedSpotType} onValueChange={handleSpotTypeChange}>
+            <Select value={selectedSpotType || 'all'} onValueChange={handleSpotTypeChange}>
               <SelectTrigger id="spotType">
                 <SelectValue placeholder={t('allSpotTypes')} />
               </SelectTrigger>
@@ -254,6 +267,7 @@ const Search = () => {
                               description={spot.description}
                               thumbnail={spot.thumbnail}
                               spotType={spot.type}
+                              onClick={() => handlePointClick(spot.id)}
                             />
                           ))}
                         </div>
@@ -283,6 +297,7 @@ const Search = () => {
                               description={route.description}
                               thumbnail={route.thumbnail}
                               pointCount={route.pointIds?.length || 0}
+                              onClick={() => handleRouteClick(route.id)}
                             />
                           ))}
                         </div>
@@ -312,6 +327,7 @@ const Search = () => {
                               description={event.description}
                               thumbnail={event.thumbnail}
                               date={event.startDate ? new Date(event.startDate).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU') : undefined}
+                              onClick={() => handleEventClick(event.id)}
                             />
                           ))}
                         </div>
@@ -347,6 +363,7 @@ const Search = () => {
                         description={spot.description}
                         thumbnail={spot.thumbnail}
                         spotType={spot.type}
+                        onClick={() => handlePointClick(spot.id)}
                       />
                     ))
                   ) : (
@@ -369,6 +386,7 @@ const Search = () => {
                         description={route.description}
                         thumbnail={route.thumbnail}
                         pointCount={route.pointIds?.length || 0}
+                        onClick={() => handleRouteClick(route.id)}
                       />
                     ))
                   ) : (
@@ -391,6 +409,7 @@ const Search = () => {
                         description={event.description}
                         thumbnail={event.thumbnail}
                         date={event.startDate ? new Date(event.startDate).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU') : undefined}
+                        onClick={() => handleEventClick(event.id)}
                       />
                     ))
                   ) : (

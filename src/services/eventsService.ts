@@ -2,9 +2,9 @@
 import { supabase } from '../lib/supabase';
 import { Event, Language } from '../types/models';
 
-// Базовая функция для преобразования данных из БД в модель Event
+// Basic function to transform data from DB to Event model
 const transformEventData = (eventData: any): Event => {
-  // Обработка имени
+  // Process name
   let parsedName: Record<Language, string> = { en: 'Unknown event', ru: 'Неизвестное событие', hi: 'अज्ञात आयोजन' };
   try {
     if (typeof eventData.name === 'string') {
@@ -16,7 +16,7 @@ const transformEventData = (eventData: any): Event => {
     console.warn('Could not parse event name:', e);
   }
   
-  // Обработка описания
+  // Process description
   let parsedDescription: Record<Language, string> = { en: '', ru: '', hi: '' };
   try {
     if (typeof eventData.info === 'string') {
@@ -28,25 +28,26 @@ const transformEventData = (eventData: any): Event => {
     console.warn('Could not parse event description:', e);
   }
   
-  // Обработка изображений
-  let mediaItems = [];
+  // Process images
+  let images = [];
   let thumbnail = '/placeholder.svg';
   
-  if (eventData.images) {
-    let images = [];
-    try {
+  try {
+    if (eventData.images) {
       if (Array.isArray(eventData.images)) {
         images = eventData.images;
       } else if (typeof eventData.images === 'string') {
         images = JSON.parse(eventData.images);
+      } else if (typeof eventData.images === 'object') {
+        images = Object.values(eventData.images);
       }
       
       if (images.length > 0) {
         thumbnail = images[0];
       }
-    } catch (e) {
-      console.warn('Could not parse event images:', e);
     }
+  } catch (e) {
+    console.warn('Could not parse event images:', e);
   }
   
   return {
@@ -54,16 +55,17 @@ const transformEventData = (eventData: any): Event => {
     cityId: eventData.city_id || '',
     name: parsedName,
     description: parsedDescription,
-    media: mediaItems,
+    media: [],
     thumbnail: thumbnail,
     pointIds: [],
     startDate: eventData.time || '',
     endDate: eventData.end_time || '',
-    type: eventData.type
+    type: eventData.type,
+    images: images
   };
 };
 
-// Функция для получения всех событий
+// Function to get all events
 export const fetchEvents = async (): Promise<Event[]> => {
   try {
     const { data, error } = await supabase
@@ -78,7 +80,7 @@ export const fetchEvents = async (): Promise<Event[]> => {
   }
 };
 
-// Функция для получения события по ID
+// Function to get an event by ID
 export const fetchEventById = async (eventId: string): Promise<Event | null> => {
   try {
     const { data, error } = await supabase
@@ -97,7 +99,7 @@ export const fetchEventById = async (eventId: string): Promise<Event | null> => 
   }
 };
 
-// Функция для получения событий города
+// Function to get events by city
 export const fetchEventsByCity = async (cityId: string): Promise<Event[]> => {
   try {
     const { data, error } = await supabase
@@ -113,7 +115,7 @@ export const fetchEventsByCity = async (cityId: string): Promise<Event[]> => {
   }
 };
 
-// Функция для получения событий, связанных с точкой
+// Function to get events by point ID
 export const fetchEventsByPoint = async (pointId: string): Promise<Event[]> => {
   try {
     const { data: junctions, error: junctionError } = await supabase
@@ -139,7 +141,7 @@ export const fetchEventsByPoint = async (pointId: string): Promise<Event[]> => {
   }
 };
 
-// Функция для получения событий маршрута
+// Function to get events by route
 export const fetchEventsByRoute = async (routeId: string): Promise<Event[]> => {
   try {
     const { data: junctions, error: junctionError } = await supabase
@@ -161,24 +163,6 @@ export const fetchEventsByRoute = async (routeId: string): Promise<Event[]> => {
     return data.map(transformEventData);
   } catch (error) {
     console.error(`Error fetching events for route ${routeId}:`, error);
-    return [];
-  }
-};
-
-// Вспомогательная функция для получения событий по ID
-export const fetchEventsByIds = async (eventIds: string[]): Promise<Event[]> => {
-  if (!eventIds.length) return [];
-  
-  try {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .in('id', eventIds);
-    
-    if (error) throw error;
-    return data.map(transformEventData);
-  } catch (error) {
-    console.error(`Error fetching events by IDs:`, error);
     return [];
   }
 };

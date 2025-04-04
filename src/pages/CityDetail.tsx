@@ -67,13 +67,13 @@ const CityDetail = () => {
         
         setCity(cityData);
         
-        // Загружаем связанные данные параллельно
+        // Load related data in parallel
         try {
           console.log('Fetching city points...');
           const spotsData = await fetchPointsByCity(cityId);
           setPoints(spotsData);
           
-          // Установка центральной точки для карты
+          // Set center point for the map
           if (spotsData.length > 0 && spotsData[0].location) {
             const firstPoint = spotsData[0].location;
             
@@ -215,6 +215,20 @@ const CityDetail = () => {
                 : city.description || ''}
             </p>
           )}
+          
+          {/* City images */}
+          {city.images && Array.isArray(city.images) && city.images.length > 0 && (
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+              {city.images.slice(0, 3).map((image, index) => (
+                <img 
+                  key={index}
+                  src={image}
+                  alt={`City view ${index + 1}`}
+                  className="w-full h-48 object-cover rounded-md"
+                />
+              ))}
+            </div>
+          )}
         </header>
         
         <div className="space-y-8">
@@ -260,7 +274,7 @@ const CityDetail = () => {
                 isLoading={false}
                 error={loadingError}
                 selectedSpot={selectedSpot ? selectedSpot.id : null}
-                onSpotClick={handleSpotClick} 
+                onSpotClick={handleViewSpotDetails} 
               />
             </TabsContent>
             

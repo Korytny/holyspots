@@ -2,9 +2,9 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Point, Language, MediaItem, GeoPoint } from '../types/models';
 
-// Функция преобразования данных из БД в модель Point
+// Function to transform data from DB to Point model
 const transformSpotToPoint = (spotData: any): Point => {
-  // Обработка имени
+  // Process name
   let parsedName: Record<Language, string> = { en: 'Unknown spot', ru: 'Неизвестная точка', hi: 'अज्ञात स्थान' };
   try {
     if (typeof spotData.name === 'string') {
@@ -16,7 +16,7 @@ const transformSpotToPoint = (spotData: any): Point => {
     console.warn('Could not parse spot name:', e);
   }
   
-  // Обработка описания
+  // Process description
   let parsedDescription: Record<Language, string> = { en: '', ru: '', hi: '' };
   try {
     if (typeof spotData.info === 'string') {
@@ -28,7 +28,7 @@ const transformSpotToPoint = (spotData: any): Point => {
     console.warn('Could not parse spot description:', e);
   }
   
-  // Обработка медиа и картинок
+  // Process media and images
   let mediaItems: MediaItem[] = [];
   let imageArray: string[] = [];
   let thumbnail = '/placeholder.svg';
@@ -39,6 +39,8 @@ const transformSpotToPoint = (spotData: any): Point => {
         imageArray = spotData.images.filter(img => typeof img === 'string');
       } else if (typeof spotData.images === 'string') {
         imageArray = JSON.parse(spotData.images);
+      } else if (typeof spotData.images === 'object') {
+        imageArray = Object.values(spotData.images);
       }
       
       if (imageArray.length > 0) {
@@ -56,7 +58,7 @@ const transformSpotToPoint = (spotData: any): Point => {
     }
   }
   
-  // Обработка координат
+  // Process coordinates
   let location = { latitude: 0, longitude: 0 };
   let geoPoint: GeoPoint = {
     type: "Point",
@@ -64,7 +66,7 @@ const transformSpotToPoint = (spotData: any): Point => {
   };
   
   if (spotData.point && typeof spotData.point === 'object') {
-    // Если есть геоточка
+    // If there's a geo point
     if (spotData.point.coordinates && Array.isArray(spotData.point.coordinates)) {
       geoPoint = {
         type: "Point",
@@ -79,7 +81,7 @@ const transformSpotToPoint = (spotData: any): Point => {
       };
     }
   } else if (spotData.coordinates && typeof spotData.coordinates === 'object') {
-    // Простые координаты
+    // Simple coordinates
     location = {
       latitude: Number(spotData.coordinates.latitude || 0),
       longitude: Number(spotData.coordinates.longitude || 0)
@@ -104,11 +106,12 @@ const transformSpotToPoint = (spotData: any): Point => {
     location,
     routeIds: [],
     eventIds: [],
-    point: geoPoint
+    point: geoPoint,
+    images: imageArray
   };
 };
 
-// Получение всех точек
+// Get all points
 export const fetchAllPoints = async (): Promise<Point[]> => {
   try {
     const { data, error } = await supabase
@@ -123,7 +126,7 @@ export const fetchAllPoints = async (): Promise<Point[]> => {
   }
 };
 
-// Получение точки по ID
+// Get a point by ID
 export const fetchPointById = async (pointId: string): Promise<Point | null> => {
   try {
     const { data, error } = await supabase
@@ -142,7 +145,7 @@ export const fetchPointById = async (pointId: string): Promise<Point | null> => 
   }
 };
 
-// Получение точек города
+// Get points by city
 export const fetchPointsByCity = async (cityId: string): Promise<Point[]> => {
   try {
     const { data, error } = await supabase
@@ -158,34 +161,21 @@ export const fetchPointsByCity = async (cityId: string): Promise<Point[]> => {
   }
 };
 
-// Получение точек маршрута
+// Get points by route
 export const fetchPointsByRouteId = async (routeId: string): Promise<Point[]> => {
   try {
-    // Сначала получаем маршрут, чтобы узнать ID точек
-    const { data: routeData, error: routeError } = await supabase
-      .from('routes')
-      .select('spots')
-      .eq('id', routeId)
-      .maybeSingle();
+    // Get point IDs from the junction table
+    const { data: junctionData, error: junctionError } = await supabase
+      .from('spot_route')
+      .select('spot_id')
+      .eq('route_id', routeId);
     
-    if (routeError) throw routeError;
-    if (!routeData || !routeData.spots) return [];
+    if (junctionError) throw junctionError;
+    if (!junctionData || junctionData.length === 0) return [];
     
-    let spotIds: string[] = [];
-    try {
-      if (Array.isArray(routeData.spots)) {
-        spotIds = routeData.spots;
-      } else if (typeof routeData.spots === 'string') {
-        spotIds = JSON.parse(routeData.spots);
-      }
-    } catch (e) {
-      console.warn('Could not parse route spots:', e);
-      return [];
-    }
+    const spotIds = junctionData.map(item => item.spot_id);
     
-    if (spotIds.length === 0) return [];
-    
-    // Получаем сами точки
+    // Get the actual points
     const { data, error } = await supabase
       .from('spots')
       .select('*')
@@ -199,7 +189,7 @@ export const fetchPointsByRouteId = async (routeId: string): Promise<Point[]> =>
   }
 };
 
-// Получение точек события
+// Get points by event
 export const fetchPointsByEventId = async (eventId: string): Promise<Point[]> => {
   try {
     const { data: junctions, error: junctionError } = await supabase
@@ -225,10 +215,10 @@ export const fetchPointsByEventId = async (eventId: string): Promise<Point[]> =>
   }
 };
 
-// Для обратной совместимости
+// For backward compatibility
 export const fetchPointsByCityId = fetchPointsByCity;
 
-// Вспомогательная функция для получения точек по списку ID
+// Helper function to get points by list of IDs
 export const fetchPointsByIds = async (pointIds: string[]): Promise<Point[]> => {
   if (!pointIds.length) return [];
   
