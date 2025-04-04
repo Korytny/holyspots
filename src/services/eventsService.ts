@@ -384,7 +384,7 @@ export const fetchEventsByRoute = async (routeId: string): Promise<Event[]> => {
   }
 };
 
-export const fetchEventsByIds = async (eventIds: string[]) => {
+export const fetchEventsByIds = async (eventIds: string[]): Promise<any[]> => {
   if (!eventIds.length) return [];
   
   const events = [];

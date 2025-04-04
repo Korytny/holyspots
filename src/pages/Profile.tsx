@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -41,18 +40,15 @@ const Profile = () => {
     console.log("Is authenticated:", isAuthenticated);
     console.log("User:", user);
     
-    // Проверяем аутентификацию пользователя
-    if (!authLoading) {
-      if (!isAuthenticated) {
-        console.log("User not authenticated, redirecting to auth page");
-        navigate('/auth');
-      }
+    if (!authLoading && !isAuthenticated) {
+      console.log("User not authenticated, redirecting to auth page");
+      navigate('/auth');
     }
-  }, [isAuthenticated, navigate, authLoading]);
+  }, [isAuthenticated, navigate, authLoading, user]);
   
-  // Загрузка избранных элементов
   useEffect(() => {
     if (user && isAuthenticated && !authLoading) {
+      console.log("User is authenticated, fetching favorites");
       fetchFavorites();
     }
   }, [user, isAuthenticated, authLoading]);
@@ -88,7 +84,6 @@ const Profile = () => {
       console.log("Fetching favorites for user:", user?.id);
       console.log("User favorites:", user?.favorites);
 
-      // Загрузка городов
       if (user.favorites.cities?.length) {
         const citiesPromises = user.favorites.cities.map(cityId => 
           fetchCityById(cityId)
@@ -102,7 +97,6 @@ const Profile = () => {
         }));
       }
 
-      // Загрузка точек
       if (user.favorites.points?.length) {
         const pointsPromises = user.favorites.points.map(pointId => 
           fetchPointById(pointId)
@@ -116,7 +110,6 @@ const Profile = () => {
         }));
       }
 
-      // Загрузка маршрутов
       if (user.favorites.routes?.length) {
         const routesPromises = user.favorites.routes.map(routeId => 
           fetchRouteById(routeId)
@@ -130,7 +123,6 @@ const Profile = () => {
         }));
       }
 
-      // Загрузка событий
       if (user.favorites.events?.length) {
         const eventsPromises = user.favorites.events.map(eventId => 
           fetchEventById(eventId)
@@ -152,7 +144,6 @@ const Profile = () => {
     }
   };
   
-  // Показать индикатор загрузки во время проверки аутентификации
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -164,7 +155,6 @@ const Profile = () => {
     );
   }
   
-  // Если пользователь не аутентифицирован, показать индикатор перенаправления
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">

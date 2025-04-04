@@ -71,15 +71,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Main authentication initialization function
+  // Исправленная инициализация аутентификации
   useEffect(() => {
     const initAuth = async () => {
       try {
         setIsLoading(true);
         
-        // Set up authentication state change listener
-        const { data: authListener } = supabase.auth.onAuthStateChange(
-          (event, currentSession) => {
+        // Сначала настраиваем слушатель изменений состояния аутентификации
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, currentSession) => {
             console.log("Auth state changed:", event, currentSession ? "Session exists" : "No session");
             
             if (currentSession?.user) {
@@ -104,21 +104,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               
               setUser(appUser);
               
-              // Load favorites after setting the user - use setTimeout to avoid recursion
-              setTimeout(() => {
-                fetchUserFavorites(appUser.id);
-              }, 0);
+              // Загружаем избранное с помощью setTimeout для предотвращения блокировки
+              if (event !== 'INITIAL_SESSION') {
+                setTimeout(() => {
+                  fetchUserFavorites(appUser.id);
+                }, 0);
+              }
             } else {
               setUser(null);
               setSession(null);
             }
+            
+            setIsLoading(false);
           }
         );
         
-        // First check the current session
-        const { data: sessionData } = await supabase.auth.getSession();
+        // Затем проверяем текущую сессию
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error("Error getting session:", sessionError);
+          setIsLoading(false);
+          return;
+        }
         
         if (sessionData?.session?.user) {
+          console.log("Session found on initialization:", sessionData.session.user.id);
           setSession(sessionData.session);
           const appUser: User = {
             id: sessionData.session.user.id,
@@ -140,14 +151,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           setUser(appUser);
           
-          // Load favorites
-          fetchUserFavorites(appUser.id);
+          // Загружаем избранное
+          await fetchUserFavorites(appUser.id);
         }
         
         setIsLoading(false);
         
         return () => {
-          authListener.subscription.unsubscribe();
+          subscription.unsubscribe();
         };
       } catch (error) {
         console.error("Error initializing auth:", error);
