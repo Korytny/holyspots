@@ -11,6 +11,7 @@ import {
   Navigation as NavigationIcon, 
   Calendar,
   MapPin,
+  Home
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchSpotById } from '../services/spotsService';
@@ -19,6 +20,7 @@ import { fetchEventsBySpot } from '../services/eventsService';
 import { MediaItem } from '../types/models';
 import CityRoutes from '../components/city/CityRoutes';
 import CityEvents from '../components/city/CityEvents';
+import FavoriteDetailButton from '../components/FavoriteDetailButton';
 
 const PointDetail = () => {
   const { pointId } = useParams<{ pointId: string }>();
@@ -179,44 +181,53 @@ const PointDetail = () => {
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="bg-secondary/20 p-6">
-            <div className="flex flex-col md:flex-row md:items-start justify-between mb-6">
-              <div>
-                <div className="flex items-center">
-                  <MapPin className="h-5 w-5 mr-2 text-primary" />
-                  <h1 className="text-3xl font-bold">{spotName}</h1>
-                </div>
-                
-                <div className="mt-3 flex flex-col gap-2">
-                  <div className="flex items-center text-sm">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+              <div className="flex-grow">
+                <h1 className="text-3xl font-bold">{spotName}</h1>
+                <div className="mt-3">
+                  <div className="flex items-center text-sm mb-2">
                     <span className="font-medium mr-2">{t('type')}:</span>
                     <span className="inline-flex items-center px-3 py-1 bg-secondary rounded-full">
                       {spot?.type && getSpotTypeLabel(spot.type)}
                     </span>
                   </div>
-                  
+                </div>
+                <p className="text-muted-foreground mt-2">{spotDescription}</p>
+              </div>
+              
+              <div className="md:ml-4 bg-white p-4 rounded-lg shadow-sm min-w-[220px] flex flex-col gap-2">
+                {spot.cityId && (
                   <div className="flex items-center text-sm">
-                    <span className="font-medium mr-2">{t('location')}:</span>
-                    <span>
-                      {getCoordinatesDisplay()}
-                    </span>
+                    <Home className="h-4 w-4 mr-2 text-primary" />
+                    <span className="font-medium">{spot.cityId}</span>
                   </div>
-                  
-                  <div className="flex items-center gap-4 mt-1">
-                    <div className="inline-flex items-center text-sm">
-                      <NavigationIcon className="h-4 w-4 mr-1 text-muted-foreground" />
-                      <span><span className="font-medium">{routes.length || 0}</span> {routes.length === 1 ? t('route') : t('routes')}</span>
-                    </div>
-                    
-                    <div className="inline-flex items-center text-sm">
-                      <Calendar className="h-4 w-4 mr-1 text-muted-foreground" />
-                      <span><span className="font-medium">{events.length || 0}</span> {events.length === 1 ? t('event') : t('events')}</span>
-                    </div>
-                  </div>
+                )}
+                
+                <div className="flex items-center text-sm">
+                  <MapPin className="h-4 w-4 mr-2 text-primary" />
+                  <span><span className="font-medium">{getCoordinatesDisplay()}</span></span>
+                </div>
+                
+                <div className="flex items-center text-sm">
+                  <NavigationIcon className="h-4 w-4 mr-2 text-primary" />
+                  <span><span className="font-medium">{routes.length || 0}</span> {t('routes')}</span>
+                </div>
+                
+                <div className="flex items-center text-sm">
+                  <Calendar className="h-4 w-4 mr-2 text-primary" />
+                  <span><span className="font-medium">{events.length || 0}</span> {t('events')}</span>
+                </div>
+                
+                <div className="mt-2">
+                  <FavoriteDetailButton
+                    itemId={spot.id}
+                    itemType="point"
+                    size="sm"
+                    className="w-full"
+                  />
                 </div>
               </div>
             </div>
-            
-            <p className="text-muted-foreground mb-2">{spotDescription}</p>
           </div>
             
           <div className="p-6">

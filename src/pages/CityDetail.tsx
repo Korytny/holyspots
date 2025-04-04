@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -12,6 +11,7 @@ import {
   Navigation as NavigationIcon, 
   Calendar,
   ArrowLeft,
+  Globe,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCityById } from '../services/citiesService';
@@ -23,6 +23,7 @@ import CitySpots from '../components/city/CitySpots';
 import CityRoutes from '../components/city/CityRoutes';
 import CityEvents from '../components/city/CityEvents';
 import SelectedSpotDetails from '../components/city/SelectedSpotDetails';
+import FavoriteDetailButton from '../components/FavoriteDetailButton';
 
 const CityDetail = () => {
   const { cityId } = useParams<{ cityId: string }>();
@@ -227,18 +228,45 @@ const CityDetail = () => {
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="bg-secondary/20 p-6">
-            <div className="flex flex-col md:flex-row md:items-start justify-between">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
               <div className="flex-grow">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                  <h1 className="text-3xl font-bold">{cityName}</h1>
-                  <div className="md:ml-auto mt-3 md:mt-0">
-                    {renderCityStats()}
+                <h1 className="text-3xl font-bold">{cityName}</h1>
+                <p className="text-muted-foreground mt-3">{cityDescription}</p>
+              </div>
+              
+              <div className="md:ml-4 bg-white p-4 rounded-lg shadow-sm min-w-[220px] flex flex-col gap-2">
+                {city.country && (
+                  <div className="flex items-center text-sm">
+                    <Globe className="h-4 w-4 mr-2 text-primary" />
+                    <span className="font-medium">{city.country}</span>
                   </div>
+                )}
+                
+                <div className="flex items-center text-sm">
+                  <MapPin className="h-4 w-4 mr-2 text-primary" />
+                  <span><span className="font-medium">{city.spots_count || spots.length || 0}</span> {t('spots')}</span>
+                </div>
+                
+                <div className="flex items-center text-sm">
+                  <NavigationIcon className="h-4 w-4 mr-2 text-primary" />
+                  <span><span className="font-medium">{city.routes_count || routes.length || 0}</span> {t('routes')}</span>
+                </div>
+                
+                <div className="flex items-center text-sm">
+                  <Calendar className="h-4 w-4 mr-2 text-primary" />
+                  <span><span className="font-medium">{city.events_count || events.length || 0}</span> {t('events')}</span>
+                </div>
+                
+                <div className="mt-2">
+                  <FavoriteDetailButton
+                    itemId={city.id}
+                    itemType="city"
+                    size="sm"
+                    className="w-full"
+                  />
                 </div>
               </div>
             </div>
-            
-            <p className="text-muted-foreground mb-2 mt-3">{cityDescription}</p>
           </div>
             
           <div className="p-6">

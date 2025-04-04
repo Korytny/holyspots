@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -11,7 +10,8 @@ import {
   Navigation as NavigationIcon, 
   Calendar,
   MapPin,
-  Info
+  Info,
+  Home
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchRouteById } from '../services/routesService';
@@ -21,6 +21,7 @@ import { MediaItem } from '../types/models';
 import CitySpots from '../components/city/CitySpots';
 import CityEvents from '../components/city/CityEvents';
 import RouteMap from '../components/RouteMap';
+import FavoriteDetailButton from '../components/FavoriteDetailButton';
 
 const RouteDetail = () => {
   const { routeId } = useParams<{ routeId: string }>();
@@ -149,19 +150,51 @@ const RouteDetail = () => {
         </Button>
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="p-6">
-            <div className="flex flex-col md:flex-row md:items-start justify-between mb-4">
-              <div>
-                <div className="flex items-center">
-                  <NavigationIcon className="h-5 w-5 mr-2 text-primary" />
-                  <h1 className="text-3xl font-bold">{routeName}</h1>
+          <div className="bg-secondary/20 p-6">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+              <div className="flex-grow">
+                <h1 className="text-3xl font-bold">{routeName}</h1>
+                <p className="text-muted-foreground mt-3">{routeDescription}</p>
+              </div>
+              
+              <div className="md:ml-4 bg-white p-4 rounded-lg shadow-sm min-w-[220px] flex flex-col gap-2">
+                {route.cityId && (
+                  <div className="flex items-center text-sm">
+                    <Home className="h-4 w-4 mr-2 text-primary" />
+                    <span className="font-medium">{route.cityId}</span>
+                  </div>
+                )}
+                
+                <div className="flex items-center text-sm">
+                  <MapPin className="h-4 w-4 mr-2 text-primary" />
+                  <span><span className="font-medium">{spots.length || 0}</span> {t('spots')}</span>
                 </div>
-                {renderRouteStats()}
+                
+                <div className="flex items-center text-sm">
+                  <Calendar className="h-4 w-4 mr-2 text-primary" />
+                  <span><span className="font-medium">{events.length || 0}</span> {t('events')}</span>
+                </div>
+                
+                {route.distance && (
+                  <div className="flex items-center text-sm">
+                    <NavigationIcon className="h-4 w-4 mr-2 text-primary" />
+                    <span>{route.distance} km</span>
+                  </div>
+                )}
+                
+                <div className="mt-2">
+                  <FavoriteDetailButton
+                    itemId={route.id}
+                    itemType="route"
+                    size="sm"
+                    className="w-full"
+                  />
+                </div>
               </div>
             </div>
+          </div>
             
-            <p className="text-muted-foreground mb-6">{routeDescription}</p>
-            
+          <div className="p-6">
             <MediaGallery media={mediaItems} />
             
             <div className="mt-6">

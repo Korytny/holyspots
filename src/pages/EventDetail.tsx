@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -14,7 +13,8 @@ import {
   Calendar,
   MapPin,
   Info,
-  Clock
+  Clock,
+  Home
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchEventById, fetchAllEvents } from '../services/eventsService';
@@ -23,6 +23,7 @@ import { fetchRoutesByEvent } from '../services/routesService';
 import { MediaItem } from '../types/models';
 import DailyEvents from '../components/events/DailyEvents';
 import EventCalendar from '../components/events/EventCalendar';
+import FavoriteDetailButton from '../components/FavoriteDetailButton';
 
 const EventDetail = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -127,10 +128,8 @@ const EventDetail = () => {
     ? new Date(event.startDate).toLocaleDateString(language === 'en' ? 'en-US' : 'ru-RU') 
     : '';
 
-  // Fix for images: Ensure media is correctly processed
   const mediaItems: MediaItem[] = event.media || [];
   if (event.thumbnail && mediaItems.length === 0) {
-    // If we have a thumbnail but no media items, create one
     mediaItems.push({
       id: 'main-image',
       type: 'image',
@@ -185,19 +184,46 @@ const EventDetail = () => {
         </Button>
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="p-6">
-            <div className="flex flex-col md:flex-row md:items-start justify-between mb-4">
-              <div>
-                <div className="flex items-center">
-                  <Calendar className="h-5 w-5 mr-2 text-primary" />
-                  <h1 className="text-3xl font-bold">{eventName}</h1>
+          <div className="bg-secondary/20 p-6">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+              <div className="flex-grow">
+                <h1 className="text-3xl font-bold">{eventName}</h1>
+                <p className="text-muted-foreground mt-3">{eventDescription}</p>
+              </div>
+              
+              <div className="md:ml-4 bg-white p-4 rounded-lg shadow-sm min-w-[220px] flex flex-col gap-2">
+                {event.cityId && (
+                  <div className="flex items-center text-sm">
+                    <Home className="h-4 w-4 mr-2 text-primary" />
+                    <span className="font-medium">{event.cityId}</span>
+                  </div>
+                )}
+                
+                <div className="flex items-center text-sm">
+                  <MapPin className="h-4 w-4 mr-2 text-primary" />
+                  <span><span className="font-medium">{spots.length || 0}</span> {t('spots')}</span>
                 </div>
-                {renderEventStats()}
+                
+                {formattedDate && (
+                  <div className="flex items-center text-sm">
+                    <Clock className="h-4 w-4 mr-2 text-primary" />
+                    <span>{formattedDate}</span>
+                  </div>
+                )}
+                
+                <div className="mt-2">
+                  <FavoriteDetailButton
+                    itemId={event.id}
+                    itemType="event"
+                    size="sm"
+                    className="w-full"
+                  />
+                </div>
               </div>
             </div>
-            
-            <p className="text-muted-foreground mb-6">{eventDescription}</p>
-            
+          </div>
+          
+          <div className="p-6">
             <MediaGallery media={mediaItems} />
             
             <div className="mt-6">
